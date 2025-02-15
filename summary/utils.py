@@ -280,6 +280,7 @@ def make_yaw_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", plot_folder="./
 
         config_env.TRACK_WIDTH_RIGHT = road_boundary
         config_env.TRACK_WIDTH_LEFT = road_boundary
+        config_env.enable_noise = True
 
         config_agent = config["agent"] 
         config_solver= config["solver"]

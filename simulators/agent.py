@@ -57,7 +57,7 @@ class Agent:
         self.agents_order = None
 
     def integrate_forward(
-        self, state: np.ndarray, control: np.ndarray = None
+        self, state: np.ndarray, control: np.ndarray = None, add_noise: bool = False
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Finds the next state of the vehicle given the current state and
@@ -76,7 +76,7 @@ class Agent:
         )
 
         return self.dyn.integrate_forward(
-            state=state, control=control
+            state=state, control=control, add_noise=add_noise
         )
 
     def get_dyn_jacobian(

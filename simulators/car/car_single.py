@@ -18,6 +18,7 @@ class CarSingle5DEnv(BaseSingleEnv):
         self.track_width_right = config_env.TRACK_WIDTH_RIGHT
         self.track_width_left = config_env.TRACK_WIDTH_LEFT
         self.track_len = config_env.TRACK_LEN
+        self.enable_noise = config_env.enable_noise
 
         # Constructs the cost and constraint. Assume the same constraint.
         config_constraint.EGO_RADIUS = config_agent.EGO_RADIUS

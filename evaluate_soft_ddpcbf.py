@@ -30,6 +30,7 @@ def main(config_file, road_boundary, is_task_ilqr):
     config = load_config(config_file)
     config_env = config['environment']
     config_agent = config['agent']
+    config_env.enable_noise = True
     config_solver = config['solver']
     config_solver.is_task_ilqr = is_task_ilqr
     config_cost = config['cost']

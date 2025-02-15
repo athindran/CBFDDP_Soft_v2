@@ -29,10 +29,13 @@ class Bicycle5D(BaseDynamics):
         self.delta_max = config.DELTA_MAX
         self.v_min = 0
         self.v_max = config.V_MAX
+        # Create a PRNG key
+        self.key = jax.random.PRNGKey(0)
+        self.noise_var = jnp.array([0.001, 0.001, 0.0001, 0.0001, 0.0001])
 
     @partial(jax.jit, static_argnames='self')
     def integrate_forward_jax(
-        self, state: DeviceArray, control: DeviceArray
+        self, state: DeviceArray, control: DeviceArray, add_noise = False
     ) -> Tuple[DeviceArray, DeviceArray]:
         """Clips the control and computes one-step time evolution of the system.
         Args:
@@ -42,6 +45,17 @@ class Bicycle5D(BaseDynamics):
             DeviceArray: next state.
             DeviceArray: clipped control.
         """
+        @jax.jit
+        def true_fn(args):
+            state_nxt = args[0]
+            noise = jax.random.uniform(self.key, shape=(self.dim_x, ))
+            noise = noise * self.noise_var
+            return state_nxt + noise, noise
+
+        @jax.jit
+        def false_fn(args):
+            return args
+
         # Clips the controller values between min and max accel and steer
         # values.
         ctrl_clip = jnp.clip(
@@ -49,7 +63,9 @@ class Bicycle5D(BaseDynamics):
 
         state_nxt = self._integrate_forward(state, ctrl_clip)
 
-        return state_nxt, ctrl_clip
+        state_nxt_out, noise = jax.lax.cond(add_noise, true_fn, false_fn, (state_nxt, jnp.zeros(self.dim_x)))
+
+        return state_nxt_out, ctrl_clip
 
     @partial(jax.jit, static_argnames='self')
     def disc_deriv(
