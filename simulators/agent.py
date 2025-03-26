@@ -1,6 +1,7 @@
 from typing import Optional, Tuple, Dict, List
 import copy
 import numpy as np
+import jax
 
 # Dynamics.
 from .dynamics.bicycle5d import Bicycle5D
@@ -75,8 +76,11 @@ class Agent:
             "You need to pass in a control!"
         )
 
+        # Hacky - fix later.
+        _, new_key = jax.random.split(self.dyn.key)
+        self.dyn.key = new_key
         return self.dyn.integrate_forward(
-            state=state, control=control, add_noise=add_noise
+            state=state, control=control, add_noise=add_noise, key=new_key
         )
 
     def get_dyn_jacobian(

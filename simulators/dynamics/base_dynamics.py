@@ -21,7 +21,7 @@ class BaseDynamics(ABC):
         self.dim_u: int = self.ctrl_space.shape[0]
 
     def integrate_forward(
-        self, state: np.ndarray, control: np.ndarray, add_noise=False, **kwargs
+        self, state: np.ndarray, control: np.ndarray, add_noise=False, key=jax.random.PRNGKey(43), **kwargs
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Finds the next state of the vehicle given the current state and
@@ -36,7 +36,7 @@ class BaseDynamics(ABC):
             np.ndarray: clipped control.
         """
         state_nxt, ctrl_clip = self.integrate_forward_jax(
-            jnp.array(state), jnp.array(control) , add_noise
+            jnp.array(state), jnp.array(control) , add_noise, key
         )
         return np.array(state_nxt), np.array(ctrl_clip)
 

@@ -30,12 +30,12 @@ class Bicycle4D(BaseDynamics):
         self.v_min = 0
         self.v_max = config.V_MAX
         # Create a PRNG key
-        self.key = jax.random.PRNGKey(0)
+        self.key = jax.random.PRNGKey(43)
         self.noise_var = jnp.array([0.001, 0.001, 0.0001, 0.00001])
 
     @partial(jax.jit, static_argnames='self')
     def integrate_forward_jax(
-        self, state: DeviceArray, control: DeviceArray, add_noise = False
+        self, state: DeviceArray, control: DeviceArray, add_noise = False, key=jax.random.PRNGKey(43)
     ) -> Tuple[DeviceArray, DeviceArray]:
         """Clips the control and computes one-step time evolution of the system.
         Args:
@@ -48,8 +48,9 @@ class Bicycle4D(BaseDynamics):
         @jax.jit
         def true_fn(args):
             state_nxt = args[0]
-            noise = jax.random.uniform(self.key, shape=(self.dim_x, ))
+            noise = jax.random.uniform(key, shape=(self.dim_x, ))
             noise = noise * self.noise_var
+            print(jax.debug.print("noise = {}", noise))
             return state_nxt + noise, noise
 
         @jax.jit
