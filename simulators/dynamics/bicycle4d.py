@@ -31,7 +31,7 @@ class Bicycle4D(BaseDynamics):
         self.v_max = config.V_MAX
         # Create a PRNG key
         self.key = jax.random.PRNGKey(43)
-        self.noise_var = jnp.array([0.001, 0.001, 0.0001, 0.00001])
+        self.noise_var = jnp.array([0.0001, 0.0001, 0.00001, 0.00001])
 
     @partial(jax.jit, static_argnames='self')
     def integrate_forward_jax(
@@ -50,7 +50,7 @@ class Bicycle4D(BaseDynamics):
             state_nxt = args[0]
             noise = jax.random.uniform(key, shape=(self.dim_x, ))
             noise = noise * self.noise_var
-            print(jax.debug.print("noise = {}", noise))
+            #print(jax.debug.print("noise = {}", noise))
             return state_nxt + noise, noise
 
         @jax.jit
