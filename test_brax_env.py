@@ -45,7 +45,7 @@ def warmup_safety_filter_with_task_policy_rollout(rng, state, brax_env, task_pol
     safety_filter.get_action(obs=state, state=state, task_ctrl=task_ctrl, prev_ctrl = np.zeros((brax_env.dim_u, )), warmup=True)
 
     # Substitute for rejection sampling
-    for _ in range(10):
+    for _ in range(1):
       task_ctrl, _ = task_policy(state.obs, act_rng)
       safety_filter.get_action(obs=state, state=state, task_ctrl=task_ctrl, prev_ctrl = np.zeros((brax_env.dim_u, )))
       state = brax_env.step(state, task_ctrl)
@@ -53,7 +53,7 @@ def warmup_safety_filter_with_task_policy_rollout(rng, state, brax_env, task_pol
 
 def main(seed: int, env_name='reacher', policy_type="neural"):
     # @param ['ant', 'halfcheetah', 'hopper', 'humanoid', 'humanoidstandup', 'inverted_pendulum', 'inverted_double_pendulum', 'pusher', 'reacher', 'walker2d']
-    backend = 'generalized'  # @param ['generalized', 'positional', 'spring']
+    backend = 'mjx'  # @param ['generalized', 'positional', 'spring']
     brax_env = WrappedBraxEnv(env_name, backend)
     assert brax_env.test_gc_rollout()
 
