@@ -55,6 +55,8 @@ def main(seed: int, env_name='reacher', policy_type="neural"):
     # @param ['ant', 'halfcheetah', 'hopper', 'humanoid', 'humanoidstandup', 'inverted_pendulum', 'inverted_double_pendulum', 'pusher', 'reacher', 'walker2d']
     backend = 'mjx'  # @param ['generalized', 'positional', 'spring']
     brax_env = WrappedBraxEnv(env_name, backend)
+    assert brax_env.test_gc_rollout()
+
     rng = jax.random.PRNGKey(seed=seed)
     state = brax_env.reset(rng=rng)
     save_folder = f"./brax_videos/{env_name}/seed_{seed}"
@@ -250,6 +252,6 @@ if __name__ == "__main__":
     for seed in range(1):
       for policy_type in ["ilqr_filter_with_neural_policy"]:
         print(seed, policy_type)
-        env_name = 'reacher'
+        env_name = 'ant'
         main(seed, env_name=env_name, policy_type=policy_type)
 

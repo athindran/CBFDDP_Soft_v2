@@ -73,6 +73,25 @@ class WrappedBraxEnv(ABC):
     def _get_obs(self, pipeline_state: State) -> jax.Array:
         return self.env._get_obs(pipeline_state)
 
+    def test_gc_rollout(self):
+        rng = jax.random.PRNGKey(seed=0)
+        test_state = self.reset(rng=rng)
+
+        for _ in range(100):
+            action = np.random.rand(self.dim_u)
+            new_state = self.step(test_state, action)
+            print(test_state.pipeline_state.qpos, test_state.pipeline_state.qvel)
+            new_gc_state = self.step_generalized_coordinates(test_state.pipeline_state.qpos, test_state.pipeline_state.qvel, action)
+
+            np.testing.assert_allclose(new_state.pipeline_state.qpos, new_gc_state[0:self.dim_q_states], atol=1e-4, rtol=1e-4)
+            np.testing.assert_allclose(new_state.pipeline_state.qvel, new_gc_state[self.dim_q_states:], atol=1e-4, rtol=1e-4)
+
+            test_state = new_state
+
+        print("Unit test passed")
+
+        return True
+
     def plot_states_and_controls(self, save_dict, save_folder):
         states = save_dict['gc_states']
         ctrls = save_dict['actions']
