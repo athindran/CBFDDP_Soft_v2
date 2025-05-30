@@ -168,6 +168,7 @@ def main(seed: int, env_name='reacher', policy_type="neural"):
     gc_states_sys = np.zeros((T, brax_env.dim_x))
     values_sys = np.zeros((T,))
     filter_active = np.full_like(values_sys, False)
+    filter_failed = np.full_like(values_sys, False)
     control_cycle_times = np.zeros((T, ))
     for idx in range(T):
       print(f"Starting time {idx}")
@@ -202,6 +203,7 @@ def main(seed: int, env_name='reacher', policy_type="neural"):
         # act_rng, rng = jax.random.split(rng)
         values_sys[idx] = solver_dict['marginopt']
         filter_active[idx] = solver_dict['mark_barrier_filter']
+        filter_failed[idx] = solver_dict['mark_complete_filter']
       elif policy_type=="ilqr_filter_with_ilqr_policy":
         time0 = time.time()
         task_ctrl, solver_dict_task = task_policy.get_action(state, controls=controls_init_task)
@@ -213,6 +215,7 @@ def main(seed: int, env_name='reacher', policy_type="neural"):
         controls_init = jnp.asarray(solver_dict['reinit_controls'])
         values_sys[idx] = solver_dict['marginopt']  
         filter_active[idx] = solver_dict['mark_barrier_filter']
+        filter_failed[idx] = solver_dict['mark_complete_filter']
         #print(f"value: {solver_dict['marginopt']}")
         #print(f"Gc coord: {brax_env.get_generalized_coordinates(state)}")
 
@@ -242,7 +245,7 @@ def main(seed: int, env_name='reacher', policy_type="neural"):
         fps=1.0 / brax_env.env.dt / render_every)
     save_dict = {'policy_type': policy_type,  'gc_states': gc_states_sys, 
                   'actions': actions_to_sys, 'process_times': control_cycle_times,
-                  'values': values_sys, 'filter_active': filter_active}
+                  'values': values_sys, 'filter_active': filter_active, 'filter_failed': filter_failed}
     brax_env.plot_states_and_controls(save_dict, save_folder)
     np.save(os.path.join(save_folder, f'{policy_type}_save_data.npy'), save_dict)
 

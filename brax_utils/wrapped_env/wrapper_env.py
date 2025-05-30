@@ -76,6 +76,7 @@ class WrappedBraxEnv(ABC):
         values = save_dict['values']
         policy_type = save_dict['policy_type']
         is_filter_active = save_dict['filter_active']
+        is_filter_fail = save_dict['filter_failed']
         nsteps = states.shape[0]
         range_space = np.arange(0, nsteps) * self.dt
 
@@ -146,6 +147,8 @@ class WrappedBraxEnv(ABC):
             axes[idx].set_ylim([-1.0, 1.0])
             axes[idx].fill_between(range_space, -1.0, 1.0,
                                     where=is_filter_active[0:nsteps], color='b', alpha=0.15)
+            axes[idx].fill_between(range_space, -1.0, 1.0,
+                            where=is_filter_fail[0:nsteps], color='r', alpha=0.15)
             axes[idx].yaxis.set_label_coords(-0.04, 0.5)
             axes[idx].xaxis.set_label_coords(0.5, -0.04)
             axes[idx].set_xticks(ticks=[0, round(self.dt*nsteps, 2)], labels=[0, round(self.dt*nsteps, 2)], fontsize=legend_fontsize)
