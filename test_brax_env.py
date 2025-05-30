@@ -248,7 +248,7 @@ def main(seed: int, env_name='reacher', policy_type="neural"):
 
 if __name__ == "__main__":
     for seed in range(5):
-      for policy_type in ["ilqr_filter_with_neural_policy"]:
+      for policy_type in ["neural", "ilqr_filter_with_neural_policy"]:
         print(seed, policy_type)
         env_name = 'reacher'
         main(seed, env_name=env_name, policy_type=policy_type)

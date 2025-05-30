@@ -20,6 +20,7 @@ class iLQRBraxReachability(iLQRBrax):
     # `controls` include control input at timestep N-1, which is a dummy
     # control of zeros.
     if controls is None:
+        np.random.seed(0)
         controls_np = np.random.rand(self.dim_u, self.N)
         controls = jnp.array(controls_np)
 
