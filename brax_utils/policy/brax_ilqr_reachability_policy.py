@@ -16,7 +16,7 @@ class iLQRBraxReachability(iLQRBrax):
   ) -> np.ndarray:
     status = 0
     self.tol = 1e-2
-    self.min_alpha = 1e-8
+    self.min_alpha = 1e-12
     # `controls` include control input at timestep N-1, which is a dummy
     # control of zeros.
     if controls is None:
