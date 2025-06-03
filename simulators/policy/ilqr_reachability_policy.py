@@ -206,7 +206,7 @@ class iLQRReachability(iLQR):
       #! Q_x, Q_xx are not used if this time step is critical.
       # Q_x = c_x[:, idx] + fx[:, :, idx].T @ V_x
       # Q_xx = c_xx[:, :, idx] + fx[:, :, idx].T @ V_xx @ fx[:, :, idx]
-      Q_ux = fu[:, :, idx].T @ V_xx @ fx[:, :, idx]
+      Q_ux = c_ux[:, :, idx] + fu[:, :, idx].T @ V_xx @ fx[:, :, idx]
       Q_u = c_u[:, idx] + fu[:, :, idx].T @ V_x
       Q_uu = c_uu[:, :, idx] + fu[:, :, idx].T @ V_xx @ fu[:, :, idx]
 
@@ -222,7 +222,7 @@ class iLQRReachability(iLQR):
 
       Q_x = fx[:, :, idx].T @ V_x
       Q_xx = fx[:, :, idx].T @ V_xx @ fx[:, :, idx]
-      Q_ux = fu[:, :, idx].T @ V_xx @ fx[:, :, idx]
+      Q_ux = c_ux[:, :, idx] + fu[:, :, idx].T @ V_xx @ fx[:, :, idx]
       Q_u = c_u[:, idx] + fu[:, :, idx].T @ V_x
       Q_uu = c_uu[:, :, idx] + fu[:, :, idx].T @ V_xx @ fu[:, :, idx]
 
@@ -295,10 +295,10 @@ class iLQRReachability(iLQR):
       #! Q_x, Q_xx are not used if this time step is critical.
       # Q_x = c_x[:, idx] + fx[:, :, idx].T @ V_x
       # Q_xx = c_xx[:, :, idx] + fx[:, :, idx].T @ V_xx @ fx[:, :, idx]
-      Q_ux_append = jnp.einsum('i, ijk->jk', V_x, fux[:, :, :, 0])
-      Q_ux = fu[:, :, idx].T @ V_xx @ fx[:, :, idx] + Q_ux_append
+      Q_ux_append = jnp.einsum('i, ijk->jk', V_x, fux[:, :, :, idx])
+      Q_ux = c_ux[:, :, idx] + fu[:, :, idx].T @ V_xx @ fx[:, :, idx] + Q_ux_append
       Q_u = c_u[:, idx] + fu[:, :, idx].T @ V_x
-      Q_uu_append = jnp.einsum('i, ijk->jk', V_x, fuu[:, :, :, 0])
+      Q_uu_append = jnp.einsum('i, ijk->jk', V_x, fuu[:, :, :, idx])
       Q_uu = c_uu[:, :, idx] + fu[:, :, idx].T @ V_xx @ fu[:, :, idx] + Q_uu_append
 
       Q_uu_inv = jnp.linalg.inv(Q_uu + reg_mat)
@@ -312,14 +312,14 @@ class iLQRReachability(iLQR):
       idx, V_x, V_xx, ks, Ks, V_x_critical, V_xx_critical = args
 
       Q_x = fx[:, :, idx].T @ V_x
-      Q_xx_append = jnp.einsum('i, ijk->jk', V_x, fxx[:, :, :, 0])
+      Q_xx_append = jnp.einsum('i, ijk->jk', V_x, fxx[:, :, :, idx])
       Q_xx = fx[:, :, idx].T @ V_xx @ fx[:, :, idx] + Q_xx_append
 
-      Q_ux_append = jnp.einsum('i, ijk->jk', V_x, fux[:, :, :, 0])
-      Q_ux = fu[:, :, idx].T @ V_xx @ fx[:, :, idx] + Q_ux_append
+      Q_ux_append = jnp.einsum('i, ijk->jk', V_x, fux[:, :, :, idx])
+      Q_ux = c_ux[:, :, idx] + fu[:, :, idx].T @ V_xx @ fx[:, :, idx] + Q_ux_append
 
       Q_u = c_u[:, idx] + fu[:, :, idx].T @ V_x
-      Q_uu_append = jnp.einsum('i, ijk->jk', V_x, fuu[:, :, :, 0])
+      Q_uu_append = jnp.einsum('i, ijk->jk', V_x, fuu[:, :, :, idx])
       Q_uu = c_uu[:, :, idx] + fu[:, :, idx].T @ V_xx @ fu[:, :, idx] + Q_uu_append
 
       Q_uu_inv = jnp.linalg.inv(Q_uu + reg_mat)
