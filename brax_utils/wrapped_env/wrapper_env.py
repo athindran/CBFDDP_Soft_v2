@@ -53,6 +53,21 @@ class WrappedBraxEnv(ABC):
         state_grad = jax.jacobian(self.step_generalized_coordinates, argnums=0)(state, action).pipeline_state
         action_grad = jax.jacobian(self.step_generalized_coordinates, argnums=1)(state, action)
         return jnp.concatenate([state_grad.q[..., 0:self.dim_q_states], state_grad.qd[..., 0:self.dim_qd_states], state_grad.qdd[..., 0:self.dim_qdd_states]], axis=-1), action_grad
+    
+    @partial(jax.jit, static_argnames=['self'])
+    def get_generalized_coordinates_hess(self, state, action):
+        hess_xx, hess_ux = jax.jacfwd(self.get_generalized_coordinates_grad, argnums=0)(state, action)
+        _, hess_uu = jax.jacfwd(self.get_generalized_coordinates_grad, argnums=1)(state, action)
+
+        f_xx = jnp.concatenate([hess_xx.pipeline_state.q[..., 0:self.dim_q_states], 
+                                hess_xx.pipeline_state.qd[..., 0:self.dim_qd_states],
+                                hess_xx.pipeline_state.qdd[..., 0:self.dim_qdd_states]], axis=-1)
+
+        f_ux = jnp.concatenate([hess_ux.pipeline_state.q[..., 0:self.dim_q_states], 
+                                hess_ux.pipeline_state.qd[..., 0:self.dim_qd_states],
+                                hess_ux.pipeline_state.qdd[..., 0:self.dim_qdd_states]], axis=-1)
+
+        return f_xx, f_ux, hess_uu
 
     @partial(jax.jit, static_argnames=['self'])
     def get_obs_grad(self, pipeline_state):
