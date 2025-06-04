@@ -152,6 +152,33 @@ class iLQRBrax(BasePolicy):
         return X, U, fx, fu
 
     @partial(jax.jit, static_argnames='self')
+    def rollout_no_grad(
+        self, initial_state, nominal_gc_states: DeviceArray, nominal_controls: DeviceArray,
+        K_closed_loop: DeviceArray, k_open_loop: DeviceArray, alpha: float
+    ) -> Tuple[DeviceArray, DeviceArray]:
+
+        @jax.jit
+        def _rollout_step(i, args):
+            X, U, state_prev = args
+            u_fb = jnp.einsum(
+                "ik,k->i", K_closed_loop[:, :,
+                                         i], (X[:, i] - nominal_gc_states[:, i])
+            )
+            u = nominal_controls[:, i] + alpha * k_open_loop[:, i] + u_fb
+            u_clip = jnp.clip(u, min=self.brax_env.action_limits[0], max=self.brax_env.action_limits[1])
+            state_nxt = self.brax_env.step(state_prev, u_clip)
+            X = X.at[:, i + 1].set(self.brax_env.get_generalized_coordinates(state_nxt))
+            U = U.at[:, i].set(u_clip)
+            return X, U, state_nxt
+
+        X = jnp.zeros((self.dim_x, self.N))
+        U = jnp.zeros((self.dim_u, self.N))  # Assumes the last ctrl are zeros.
+        X = X.at[:, 0].set(nominal_gc_states[:, 0])
+
+        X, U, _ = jax.lax.fori_loop(0, self.N, _rollout_step, (X, U, initial_state))
+        return X, U,
+
+    @partial(jax.jit, static_argnames='self')
     def rollout_nominal(
         self, state, controls: DeviceArray,
     ) -> Tuple[DeviceArray, DeviceArray]:

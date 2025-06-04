@@ -88,7 +88,7 @@ class iLQRBraxReachability(iLQRBrax):
     def run_forward_pass(args):
       alpha, J, J_new = args
       alpha = beta*alpha
-      _, _, _, _, J_new, _, _, _ = self.forward_pass(initial_state, gc_states, controls, K_closed_loop, k_open_loop, alpha)
+      _, _, J_new, _, _, _ = self.forward_pass_no_grad(initial_state, gc_states, controls, K_closed_loop, k_open_loop, alpha)
       return alpha, J, J_new
 
     @jax.jit
@@ -151,6 +151,24 @@ class iLQRBraxReachability(iLQRBrax):
     critical, reachable_margin = self.get_critical_points(failure_margins)
     J = (reachable_margin + jnp.sum(ctrl_costs)).astype(float)
     return X, U, fx, fu, J, critical, failure_margins, reachable_margin
+
+  @partial(jax.jit, static_argnames='self')
+  def forward_pass_no_grad(
+      self, initial_state, nominal_gc_states: DeviceArray, nominal_controls: DeviceArray,
+      K_closed_loop: DeviceArray, k_open_loop: DeviceArray, alpha: float
+  ) -> Tuple[DeviceArray, DeviceArray, float, DeviceArray, DeviceArray,
+             DeviceArray]:
+    X, U = self.rollout_no_grad(
+        initial_state, nominal_gc_states, nominal_controls, K_closed_loop, k_open_loop, alpha
+    )
+
+    # J = self.cost.get_traj_cost(X, U, closest_pt, slope, theta)
+    failure_margins = self.cost.constraint.get_mapped_margin(X, U)
+    ctrl_costs = self.cost.ctrl_cost.get_mapped_margin(X, U)
+
+    critical, reachable_margin = self.get_critical_points(failure_margins)
+    J = (reachable_margin + jnp.sum(ctrl_costs)).astype(float)
+    return X, U, J, critical, failure_margins, reachable_margin
 
   @partial(jax.jit, static_argnames='self')
   def backward_pass(
