@@ -4,7 +4,7 @@ import copy
 import numpy as np
 import jax
 from jax import numpy as jnp
-from jax import Array  as DeviceArray
+from jaxlib.xla_extension import ArrayImpl as DeviceArray
 from functools import partial
 
 from simulators import BasePolicy
