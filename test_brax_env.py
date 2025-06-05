@@ -67,18 +67,6 @@ def main(seed: int, env_name='reacher', policy_type="neural"):
       act_rng, rng = jax.random.split(rng)
       task_ctrl, _ = policy(state.obs, act_rng)
 
-      # batched_state = jax.tree.map(lambda *xs: jnp.stack(xs), state, state)
-      # batched_action = jnp.stack([task_ctrl, task_ctrl])
-      # state_expanded = jax.tree.map(lambda xs: jnp.expand_dims(xs, axis=-1), state)
-      # pipeline_states = jax.tree.map(lambda xs: jnp.repeat(xs, 10, axis=-1), state_expanded)
-      # print(pipeline_states)
-      # pipeline_states = jax.tree.map(lambda xs, ys: xs.at[..., 1].set(ys), pipeline_states, state)
-      # print(pipeline_states)
-      # task_ctrl_expanded = jnp.expand_dims(task_ctrl, axis=-1)
-      # batched_action = jnp.repeat(task_ctrl_expanded, 10, axis=-1)
-      # fx, fu = brax_env.get_batched_generalized_coordinates_grad(pipeline_states, batched_action)
-      # print(fx.shape, fu.shape)
-
       # Load safety filter for logging value function
       config = load_config(f'./brax_utils/configs/{env_name}.yaml')
       config_solver = config['solver']
