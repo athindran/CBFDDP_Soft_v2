@@ -432,10 +432,9 @@ class iLQRReachAvoid(iLQR):
             #! Q_x, Q_xx are not used if this time step is critical.
             # Q_x = c_x[:, idx] + fx[:, :, idx].T @ V_x
             # Q_xx = c_xx[:, :, idx] + fx[:, :, idx].T @ V_xx @ fx[:, :, idx]
-            Q_ux_reg = c_ux[:, :, idx] + fu[:, :, idx].T @ (V_xx + reg_mat) @ fx[:, :, idx]            
+            Q_ux_reg = fu[:, :, idx].T @ (V_xx + reg_mat) @ fx[:, :, idx]
             Q_u = c_u_t[:, idx] + fu[:, :, idx].T @ V_x
-            Q_uu_reg = c_uu[:, :, idx] + \
-                fu[:, :, idx].T @ (V_xx + reg_mat) @ fu[:, :, idx]
+            Q_uu_reg = fu[:, :, idx].T @ (V_xx + reg_mat) @ fu[:, :, idx]
 
             Q_uu_inv = jnp.linalg.inv(Q_uu_reg)
             Ks = Ks.at[:, :, idx].set(-Q_uu_inv @ Q_ux_reg)            
@@ -593,11 +592,10 @@ class iLQRReachAvoid(iLQR):
             # Q_x = c_x[:, idx] + fx[:, :, idx].T @ V_x
             # Q_xx = c_xx[:, :, idx] + fx[:, :, idx].T @ V_xx @ fx[:, :, idx]
             Q_ux_append = jnp.einsum('i, ijk->jk', V_x, fux[:, :, :, idx])
-            Q_ux_reg = (c_ux[:, :, idx] + fu[:, :, idx].T @ (V_xx + reg_mat) @ fx[:, :, idx] + Q_ux_append)            
+            Q_ux_reg = (fu[:, :, idx].T @ (V_xx + reg_mat) @ fx[:, :, idx] + Q_ux_append)       
             Q_u = c_u_t[:, idx] + fu[:, :, idx].T @ V_x
             Q_uu_append = jnp.einsum('i, ijk->jk', V_x, fuu[:, :, :, idx])
-            Q_uu_reg = (c_uu[:, :, idx] + \
-                fu[:, :, idx].T @ (V_xx + reg_mat) @ fu[:, :, idx] + Q_uu_append)
+            Q_uu_reg = (fu[:, :, idx].T @ (V_xx + reg_mat) @ fu[:, :, idx] + Q_uu_append)
 
             Q_uu_inv = jnp.linalg.inv(Q_uu_reg)
             Ks = Ks.at[:, :, idx].set(-Q_uu_inv @ Q_ux_reg)

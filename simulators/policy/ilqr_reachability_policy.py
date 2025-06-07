@@ -230,6 +230,11 @@ class iLQRReachability(iLQR):
       Ks = Ks.at[:, :, idx].set(-Q_uu_inv @ Q_ux)
       ks = ks.at[:, idx].set(-Q_uu_inv @ Q_u)
 
+      # The terms will cancel out but for the regularization added. 
+      # See https://studywolf.wordpress.com/2016/02/03/the-iterative-linear-quadratic-regulator-method/ and references therein.
+      # V_x = Q_x + Q_ux.T @ ks[:, idx]
+      # V_xx = Q_xx + Q_ux.T @ Ks[:, :, idx]
+
       V_x = Q_x + Ks[:, :, idx].T @ Q_u + Q_ux.T @ ks[:, idx] + Ks[:, :, idx].T @ Q_uu @ ks[:, idx]
       V_xx = (Q_xx + Ks[:, :, idx].T @ Q_ux + Q_ux.T @ Ks[:, :, idx]
             + Ks[:, :, idx].T @ Q_uu @ Ks[:, :, idx])
