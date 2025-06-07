@@ -413,11 +413,8 @@ class iLQRReachAvoid(iLQR):
             #! Q_x, Q_xx are not used if this time step is critical.
             # Q_x = c_x[:, idx] + fx[:, :, idx].T @ V_x
             # Q_xx = c_xx[:, :, idx] + fx[:, :, idx].T @ V_xx @ fx[:, :, idx]
-            Q_ux = c_ux[:, :, idx] + fu[:, :, idx].T @ V_xx @ fx[:, :, idx]
             Q_ux_reg = c_ux[:, :, idx] + fu[:, :, idx].T @ (V_xx + reg_mat) @ fx[:, :, idx]             
             Q_u = c_u[:, idx] + fu[:, :, idx].T @ V_x
-            Q_uu = c_uu[:, :, idx] + \
-                fu[:, :, idx].T @ V_xx @ fu[:, :, idx]
             Q_uu_reg = c_uu[:, :, idx] + \
                 fu[:, :, idx].T @ (V_xx + reg_mat) @ fu[:, :, idx]
 
@@ -435,11 +432,8 @@ class iLQRReachAvoid(iLQR):
             #! Q_x, Q_xx are not used if this time step is critical.
             # Q_x = c_x[:, idx] + fx[:, :, idx].T @ V_x
             # Q_xx = c_xx[:, :, idx] + fx[:, :, idx].T @ V_xx @ fx[:, :, idx]
-            Q_ux = c_ux[:, :, idx] + fu[:, :, idx].T @ V_xx @ fx[:, :, idx]
             Q_ux_reg = c_ux[:, :, idx] + fu[:, :, idx].T @ (V_xx + reg_mat) @ fx[:, :, idx]            
             Q_u = c_u_t[:, idx] + fu[:, :, idx].T @ V_x
-            Q_uu = c_uu[:, :, idx] + \
-                fu[:, :, idx].T @ V_xx @ fu[:, :, idx]
             Q_uu_reg = c_uu[:, :, idx] + \
                 fu[:, :, idx].T @ (V_xx + reg_mat) @ fu[:, :, idx]
 
@@ -468,6 +462,11 @@ class iLQRReachAvoid(iLQR):
             Ks = Ks.at[:, :, idx].set(-Q_uu_inv @ Q_ux_reg)
             kst = -Q_uu_inv @ Q_u
             ks = ks.at[:, idx].set(kst)
+
+            # The terms will cancel out but for the regularization added. 
+            # See https://studywolf.wordpress.com/2016/02/03/the-iterative-linear-quadratic-regulator-method/ and references therein.
+            # V_x_new = Q_x + Q_ux.T @ ks[:, idx]
+            # V_xx_new = Q_xx + Q_ux.T @ Ks[:, :, idx]
 
             V_x_new = Q_x + Ks[:, :, idx].T @ Q_u + Q_ux.T @ ks[:, idx] + Ks[:, :, idx].T @ Q_uu @ ks[:, idx]
             V_xx_new = (Q_xx + Ks[:, :, idx].T @ Q_ux + Q_ux.T @ Ks[:, :, idx]
@@ -573,12 +572,9 @@ class iLQRReachAvoid(iLQR):
             # Q_x = c_x[:, idx] + fx[:, :, idx].T @ V_x
             # Q_xx = c_xx[:, :, idx] + fx[:, :, idx].T @ V_xx @ fx[:, :, idx]
             Q_ux_append = jnp.einsum('i, ijk->jk', V_x, fux[:, :, :, idx])
-            Q_ux = (c_ux[:, :, idx] + fu[:, :, idx].T @ V_xx @ fx[:, :, idx] + Q_ux_append)
             Q_ux_reg = (c_ux[:, :, idx] + fu[:, :, idx].T @ (V_xx + reg_mat) @ fx[:, :, idx] + Q_ux_append)             
             Q_u = c_u[:, idx] + fu[:, :, idx].T @ V_x
             Q_uu_append = jnp.einsum('i, ijk->jk', V_x, fuu[:, :, :, idx])
-            Q_uu = (c_uu[:, :, idx] + \
-                fu[:, :, idx].T @ V_xx @ fu[:, :, idx] + Q_uu_append)
             Q_uu_reg = (c_uu[:, :, idx] + \
                 fu[:, :, idx].T @ (V_xx + reg_mat) @ fu[:, :, idx] + Q_uu_append)
 
@@ -597,12 +593,9 @@ class iLQRReachAvoid(iLQR):
             # Q_x = c_x[:, idx] + fx[:, :, idx].T @ V_x
             # Q_xx = c_xx[:, :, idx] + fx[:, :, idx].T @ V_xx @ fx[:, :, idx]
             Q_ux_append = jnp.einsum('i, ijk->jk', V_x, fux[:, :, :, idx])
-            Q_ux = (c_ux[:, :, idx] + fu[:, :, idx].T @ V_xx @ fx[:, :, idx] + Q_ux_append)
             Q_ux_reg = (c_ux[:, :, idx] + fu[:, :, idx].T @ (V_xx + reg_mat) @ fx[:, :, idx] + Q_ux_append)            
             Q_u = c_u_t[:, idx] + fu[:, :, idx].T @ V_x
             Q_uu_append = jnp.einsum('i, ijk->jk', V_x, fuu[:, :, :, idx])
-            Q_uu = (c_uu[:, :, idx] + \
-                fu[:, :, idx].T @ V_xx @ fu[:, :, idx] + Q_uu_append)
             Q_uu_reg = (c_uu[:, :, idx] + \
                 fu[:, :, idx].T @ (V_xx + reg_mat) @ fu[:, :, idx] + Q_uu_append)
 
@@ -634,6 +627,11 @@ class iLQRReachAvoid(iLQR):
             Ks = Ks.at[:, :, idx].set(-Q_uu_inv @ Q_ux_reg)
             kst = -Q_uu_inv @ Q_u
             ks = ks.at[:, idx].set(kst)
+
+            # The terms will cancel out but for the regularization added. 
+            # See https://studywolf.wordpress.com/2016/02/03/the-iterative-linear-quadratic-regulator-method/ and references therein.
+            # V_x_new = Q_x + Q_ux.T @ ks[:, idx]
+            # V_xx_new = Q_xx + Q_ux.T @ Ks[:, :, idx]
 
             V_x_new = Q_x + Ks[:, :, idx].T @ Q_u + Q_ux.T @ ks[:, idx] + Ks[:, :, idx].T @ Q_uu @ ks[:, idx]
             V_xx_new = (Q_xx + Ks[:, :, idx].T @ Q_ux + Q_ux.T @ Ks[:, :, idx]
