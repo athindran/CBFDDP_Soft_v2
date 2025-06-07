@@ -204,8 +204,9 @@ class iLQR(BasePolicy):
             Ks = Ks.at[:, :, n].set(-Q_uu_inv @ Q_ux)
             ks = ks.at[:, n].set(-Q_uu_inv @ Q_u)
 
-            V_x = Q_x + Q_ux.T @ ks[:, n]
-            V_xx = Q_xx + Q_ux.T @ Ks[:, :, n]
+            V_x = Q_x + Ks[:, :, n].T @ Q_u + Q_ux.T @ ks[:, n] + Ks[:, :, n].T @ Q_uu @ ks[:, n]
+            V_xx = (Q_xx + Ks[:, :, n].T @ Q_ux + Q_ux.T @ Ks[:, :, n]
+                    + Ks[:, :, n].T @ Q_uu @ Ks[:, :, n])
 
             return V_x, V_xx, ks, Ks
 
