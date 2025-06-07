@@ -413,13 +413,16 @@ class iLQRReachAvoid(iLQR):
             #! Q_x, Q_xx are not used if this time step is critical.
             # Q_x = c_x[:, idx] + fx[:, :, idx].T @ V_x
             # Q_xx = c_xx[:, :, idx] + fx[:, :, idx].T @ V_xx @ fx[:, :, idx]
-            Q_ux = c_ux[:, :, idx] + fu[:, :, idx].T @ (V_xx + reg_mat) @ fx[:, :, idx]
+            Q_ux = c_ux[:, :, idx] + fu[:, :, idx].T @ V_xx @ fx[:, :, idx]
+            Q_ux_reg = c_ux[:, :, idx] + fu[:, :, idx].T @ (V_xx + reg_mat) @ fx[:, :, idx]             
             Q_u = c_u[:, idx] + fu[:, :, idx].T @ V_x
             Q_uu = c_uu[:, :, idx] + \
+                fu[:, :, idx].T @ V_xx @ fu[:, :, idx]
+            Q_uu_reg = c_uu[:, :, idx] + \
                 fu[:, :, idx].T @ (V_xx + reg_mat) @ fu[:, :, idx]
 
-            Q_uu_inv = jnp.linalg.inv(Q_uu + reg_ctrl_mat)
-            Ks = Ks.at[:, :, idx].set(-Q_uu_inv @ Q_ux)
+            Q_uu_inv = jnp.linalg.inv(Q_uu_reg)
+            Ks = Ks.at[:, :, idx].set(-Q_uu_inv @ Q_ux_reg)
             ks = ks.at[:, idx].set(-Q_uu_inv @ Q_u)
 
             return jnp.array(c_x[:, idx]), jnp.array(c_xx[:, :, idx]), ns, ks, Ks, jnp.array(
@@ -432,13 +435,16 @@ class iLQRReachAvoid(iLQR):
             #! Q_x, Q_xx are not used if this time step is critical.
             # Q_x = c_x[:, idx] + fx[:, :, idx].T @ V_x
             # Q_xx = c_xx[:, :, idx] + fx[:, :, idx].T @ V_xx @ fx[:, :, idx]
-            Q_ux = fu[:, :, idx].T @ (V_xx + reg_mat) @ fx[:, :, idx]
+            Q_ux = c_ux[:, :, idx] + fu[:, :, idx].T @ V_xx @ fx[:, :, idx]
+            Q_ux_reg = c_ux[:, :, idx] + fu[:, :, idx].T @ (V_xx + reg_mat) @ fx[:, :, idx]            
             Q_u = c_u_t[:, idx] + fu[:, :, idx].T @ V_x
-            Q_uu = c_uu_t[:, :, idx] + \
+            Q_uu = c_uu[:, :, idx] + \
+                fu[:, :, idx].T @ V_xx @ fu[:, :, idx]
+            Q_uu_reg = c_uu[:, :, idx] + \
                 fu[:, :, idx].T @ (V_xx + reg_mat) @ fu[:, :, idx]
 
-            Q_uu_inv = jnp.linalg.inv(Q_uu + reg_ctrl_mat)
-            Ks = Ks.at[:, :, idx].set(-Q_uu_inv @ Q_ux)
+            Q_uu_inv = jnp.linalg.inv(Q_uu_reg)
+            Ks = Ks.at[:, :, idx].set(-Q_uu_inv @ Q_ux_reg)            
             ks = ks.at[:, idx].set(-Q_uu_inv @ Q_u)
 
             return jnp.array(c_x_t[:, idx]), jnp.array(c_xx_t[:, :, idx]), ns, ks, Ks, jnp.array(
@@ -450,15 +456,18 @@ class iLQRReachAvoid(iLQR):
 
             Q_x = fx[:, :, idx].T @ V_x
             Q_xx = fx[:, :, idx].T @ V_xx @ fx[:, :, idx]
-            Q_ux = c_ux[:, :, idx] + fu[:, :, idx].T @ (V_xx + reg_mat) @ fx[:, :, idx]
+            Q_ux = c_ux[:, :, idx] + fu[:, :, idx].T @ V_xx @ fx[:, :, idx]
+            Q_ux_reg = c_ux[:, :, idx] + fu[:, :, idx].T @ (V_xx + reg_mat) @ fx[:, :, idx]
             Q_u = c_u[:, idx] + fu[:, :, idx].T @ V_x
             Q_uu = c_uu[:, :, idx] + \
+                fu[:, :, idx].T @ V_xx @ fu[:, :, idx]
+            Q_uu_reg = c_uu[:, :, idx] + \
                 fu[:, :, idx].T @ (V_xx + reg_mat) @ fu[:, :, idx]
 
-            Q_uu_inv = jnp.linalg.inv(Q_uu + reg_ctrl_mat)
-            Ks = Ks.at[:, :, idx].set(-Q_uu_inv @ Q_ux)
-            kst = Q_uu_inv @ Q_u
-            ks = ks.at[:, idx].set(-kst)
+            Q_uu_inv = jnp.linalg.inv(Q_uu_reg)
+            Ks = Ks.at[:, :, idx].set(-Q_uu_inv @ Q_ux_reg)
+            kst = -Q_uu_inv @ Q_u
+            ks = ks.at[:, idx].set(kst)
 
             V_x_new = Q_x + Ks[:, :, idx].T @ Q_u + Q_ux.T @ ks[:, idx] + Ks[:, :, idx].T @ Q_uu @ ks[:, idx]
             V_xx_new = (Q_xx + Ks[:, :, idx].T @ Q_ux + Q_ux.T @ Ks[:, :, idx]
@@ -564,14 +573,17 @@ class iLQRReachAvoid(iLQR):
             # Q_x = c_x[:, idx] + fx[:, :, idx].T @ V_x
             # Q_xx = c_xx[:, :, idx] + fx[:, :, idx].T @ V_xx @ fx[:, :, idx]
             Q_ux_append = jnp.einsum('i, ijk->jk', V_x, fux[:, :, :, idx])
-            Q_ux = (c_ux[:, :, idx] + fu[:, :, idx].T @ (V_xx + reg_mat) @ fx[:, :, idx] + Q_ux_append)
+            Q_ux = (c_ux[:, :, idx] + fu[:, :, idx].T @ V_xx @ fx[:, :, idx] + Q_ux_append)
+            Q_ux_reg = (c_ux[:, :, idx] + fu[:, :, idx].T @ (V_xx + reg_mat) @ fx[:, :, idx] + Q_ux_append)             
             Q_u = c_u[:, idx] + fu[:, :, idx].T @ V_x
             Q_uu_append = jnp.einsum('i, ijk->jk', V_x, fuu[:, :, :, idx])
             Q_uu = (c_uu[:, :, idx] + \
+                fu[:, :, idx].T @ V_xx @ fu[:, :, idx] + Q_uu_append)
+            Q_uu_reg = (c_uu[:, :, idx] + \
                 fu[:, :, idx].T @ (V_xx + reg_mat) @ fu[:, :, idx] + Q_uu_append)
 
-            Q_uu_inv = jnp.linalg.inv(Q_uu + reg_ctrl_mat)
-            Ks = Ks.at[:, :, idx].set(-Q_uu_inv @ Q_ux)
+            Q_uu_inv = jnp.linalg.inv(Q_uu_reg)
+            Ks = Ks.at[:, :, idx].set(-Q_uu_inv @ Q_ux_reg)
             ks = ks.at[:, idx].set(-Q_uu_inv @ Q_u)
 
             return jnp.array(c_x[:, idx]), jnp.array(c_xx[:, :, idx]), ns, ks, Ks, jnp.array(
@@ -585,14 +597,17 @@ class iLQRReachAvoid(iLQR):
             # Q_x = c_x[:, idx] + fx[:, :, idx].T @ V_x
             # Q_xx = c_xx[:, :, idx] + fx[:, :, idx].T @ V_xx @ fx[:, :, idx]
             Q_ux_append = jnp.einsum('i, ijk->jk', V_x, fux[:, :, :, idx])
-            Q_ux = (fu[:, :, idx].T @ (V_xx + reg_mat) @ fx[:, :, idx]  + Q_ux_append)
+            Q_ux = (c_ux[:, :, idx] + fu[:, :, idx].T @ V_xx @ fx[:, :, idx] + Q_ux_append)
+            Q_ux_reg = (c_ux[:, :, idx] + fu[:, :, idx].T @ (V_xx + reg_mat) @ fx[:, :, idx] + Q_ux_append)            
             Q_u = c_u_t[:, idx] + fu[:, :, idx].T @ V_x
             Q_uu_append = jnp.einsum('i, ijk->jk', V_x, fuu[:, :, :, idx])
-            Q_uu = (c_uu_t[:, :, idx] + \
+            Q_uu = (c_uu[:, :, idx] + \
+                fu[:, :, idx].T @ V_xx @ fu[:, :, idx] + Q_uu_append)
+            Q_uu_reg = (c_uu[:, :, idx] + \
                 fu[:, :, idx].T @ (V_xx + reg_mat) @ fu[:, :, idx] + Q_uu_append)
 
-            Q_uu_inv = jnp.linalg.inv(Q_uu + reg_ctrl_mat)
-            Ks = Ks.at[:, :, idx].set(-Q_uu_inv @ Q_ux)
+            Q_uu_inv = jnp.linalg.inv(Q_uu_reg)
+            Ks = Ks.at[:, :, idx].set(-Q_uu_inv @ Q_ux_reg)
             ks = ks.at[:, idx].set(-Q_uu_inv @ Q_u)
 
             return jnp.array(c_x_t[:, idx]), jnp.array(c_xx_t[:, :, idx]), ns, ks, Ks, jnp.array(
@@ -606,16 +621,19 @@ class iLQRReachAvoid(iLQR):
             Q_xx_append = jnp.einsum('i, ijk->jk', V_x, fxx[:, :, :, idx])
             Q_xx = (fx[:, :, idx].T @ V_xx @ fx[:, :, idx] + Q_xx_append)
             Q_ux_append = jnp.einsum('i, ijk->jk', V_x, fux[:, :, :, idx])
-            Q_ux = (c_ux[:, :, idx] + fu[:, :, idx].T @ (V_xx + reg_mat) @ fx[:, :, idx] + Q_ux_append)
+            Q_ux = (c_ux[:, :, idx] + fu[:, :, idx].T @ V_xx @ fx[:, :, idx] + Q_ux_append)
+            Q_ux_reg = (c_ux[:, :, idx] + fu[:, :, idx].T @ (V_xx + reg_mat) @ fx[:, :, idx] + Q_ux_append)
             Q_u = c_u[:, idx] + fu[:, :, idx].T @ V_x
             Q_uu_append = jnp.einsum('i, ijk->jk', V_x, fuu[:, :, :, idx])
             Q_uu = (c_uu[:, :, idx] + \
+                fu[:, :, idx].T @ V_xx @ fu[:, :, idx] + Q_uu_append)
+            Q_uu_reg = (c_uu[:, :, idx] + \
                 fu[:, :, idx].T @ (V_xx + reg_mat) @ fu[:, :, idx] + Q_uu_append)
 
-            Q_uu_inv = jnp.linalg.inv(Q_uu + reg_ctrl_mat)
-            Ks = Ks.at[:, :, idx].set(-Q_uu_inv @ Q_ux)
-            kst = Q_uu_inv @ Q_u
-            ks = ks.at[:, idx].set(-kst)
+            Q_uu_inv = jnp.linalg.inv(Q_uu_reg)
+            Ks = Ks.at[:, :, idx].set(-Q_uu_inv @ Q_ux_reg)
+            kst = -Q_uu_inv @ Q_u
+            ks = ks.at[:, idx].set(kst)
 
             V_x_new = Q_x + Ks[:, :, idx].T @ Q_u + Q_ux.T @ ks[:, idx] + Ks[:, :, idx].T @ Q_uu @ ks[:, idx]
             V_xx_new = (Q_xx + Ks[:, :, idx].T @ Q_ux + Q_ux.T @ Ks[:, :, idx]
