@@ -127,59 +127,170 @@ class iLQRReachability(iLQR):
     return alpha
 
   @partial(jax.jit, static_argnames='self')
-  def armijo_line_search(self, states, controls, Ks1,
-                          ks1, critical, J, Q_u, alpha_init=1.0, beta=0.8):
-      @jax.jit
-      def run_forward_pass(args):
-          states, controls, Ks1, ks1, J, J_new, t_star, deltat, deltat_new, Q_u, alpha = args
-          alpha = beta * alpha
-          X, U, J_new, critical, _, _ = self.forward_pass(nominal_states=states, nominal_controls=controls,
-                                                                  K_closed_loop=Ks1, k_open_loop=ks1, alpha=alpha)
-          # critical*
-          t_star = jnp.argwhere(critical != 0, size=self.N - 1)[0][0]
+    def armijo_line_search(self, states, controls, Ks1,
+                           ks1, critical, J, Q_u, alpha_init=1.0, beta=0.8):
+        @jax.jit
+        def run_forward_pass(args):
+            states, controls, Ks1, ks1, J, _, _, _, Q_u, alpha = args
+            alpha = beta * alpha
+            X, U, J_new, critical_new, _, _ = self.forward_pass(nominal_states=states, nominal_controls=controls,
+                                                                    K_closed_loop=Ks1, k_open_loop=ks1, alpha=alpha)
+            # critical point
+            t_star = jnp.argwhere(critical_new != 0, size=self.N - 1)[0][0]
 
-          # # Cost gradients
-          # c_x, c_u, c_xx, c_uu, c_ux = self.cost.get_derivatives(
-          #     X, U
-          # )
-          # c_x_t, c_u_t, c_xx_t, c_uu_t, c_ux_t = self.cost.get_derivatives_target(
-          #    X, U
-          # )
-          # fx, fu = self.dyn.get_jacobian(X[:, :-1], U[:, :-1])
+            # Calculate gradient for armijo decrease condition
+            grad_u = Ks1[:, :, t_star] @ (X[:, t_star] - states[:, t_star]) + ks1[:, t_star]
 
-          # # Backward pass
-          # _, _, _, ks1_new, Ks1_new, _, _, Q_u_new = self.backward_pass(
-          #     c_x=c_x, c_u=c_u, c_xx=c_xx, c_uu=c_uu, c_ux=c_ux,
-          #     c_x_t=c_x_t, c_u_t=c_u_t, c_xx_t=c_xx_t, c_uu_t=c_uu_t, c_ux_t=None, fx=fx, fu=fu,
-          #     critical=critical
-          # )
+            # update gradient along alpha
+            grad_alpha = Q_u @ grad_u
 
-          # Calculate gradient for armijo decrease condition
-          delta_u = Ks1[:, :, t_star] @ (X[:, t_star] - states[:, t_star]) + ks1[:, t_star]
-          # delta_u_new = Ks1_new[:, :, t_star_new] @ (X[:, t_star_new] - states[:, t_star_new]) + ks1_new[:, t_star_new]
+            return states, controls, Ks1, ks1, J, J_new, t_star, grad_alpha, Q_u, alpha
 
-          # update returns
-          deltat = Q_u @ delta_u
-          deltat_new = 0.0
+        @jax.jit
+        def check_continue(args):
+            _, _, _, _, J, J_new, _, grad_alpha, _, alpha = args
+            armijo_check = ( J_new < J + 0.5 * grad_alpha * alpha )
+            return jnp.logical_and(alpha > self.min_alpha, armijo_check)
 
-          return states, controls, Ks1, ks1, J, J_new, t_star, deltat, deltat_new, Q_u, alpha
+        alpha = alpha_init
+        J_new = -jnp.inf
+        grad_alpha = 0
+        t_star = jnp.argwhere(critical != 0, size=self.N - 1)[0][0]
 
-      @jax.jit
-      def check_continue(args):
-          _, _, _, _, J, J_new, _, deltat, deltat_new, _, alpha = args
-          armijo_check = ( J_new < J + 0.5 * deltat * alpha )
-          return jnp.logical_and(alpha > self.min_alpha, armijo_check)
+        states, controls, Ks1, ks1, J, J_new, _, _, _, alpha = jax.lax.while_loop(check_continue, run_forward_pass, (states, controls,
+                                                                                                                            Ks1, ks1, J, J_new, t_star, grad_alpha, 
+                                                                                                                             Q_u, alpha))
 
-      alpha = alpha_init
-      J_new = -jnp.inf
-      deltat = 0
-      t_star = jnp.argwhere(critical != 0, size=self.N - 1)[0][0]
+        return alpha
 
-      states, controls, Ks1, ks1, J, J_new, _, _, _, _, alpha = jax.lax.while_loop(check_continue, run_forward_pass, (states, controls,
-                                                                                                                          Ks1, ks1, J, J_new, t_star, deltat, 
-                                                                                                                          deltat, Q_u, alpha))
+    @partial(jax.jit, static_argnames='self')
+    def trust_region_search_constant_margin(self, states, controls, Ks1,
+                           ks1, critical, J, Q_u, alpha_init=1.0, beta=0.8):
+        @jax.jit
+        def run_forward_pass(args):
+            states, controls, Ks1, ks1, J, J_new, t_star, grad_alpha, _, Q_u, alpha = args
+            alpha = beta * alpha
+            X, U, J_new, critical_new, _, _ = self.forward_pass(nominal_states=states, nominal_controls=controls,
+                                                                    K_closed_loop=Ks1, k_open_loop=ks1, alpha=alpha)
+            # critical point
+            t_star = jnp.argwhere(critical_new != 0, size=self.N - 1)[0][0]
+            traj_diff = jnp.max(jnp.array([jnp.linalg.norm(x_new - x_old)
+                                for x_new, x_old in zip(X[:2, :], states[:2, :])]))
 
-      return alpha
+            # Calculate gradient for armijo decrease condition
+            grad_u = Ks1[:, :, t_star] @ (X[:, t_star] - states[:, t_star]) + ks1[:, t_star]
+
+            # update returns
+            grad_alpha = Q_u @ grad_u
+
+            return states, controls, Ks1, ks1, J, J_new, t_star, grad_alpha, traj_diff, Q_u, alpha
+
+        @jax.jit
+        def check_continue(args):
+            _, _, _, _, J, J_new, _, grad_alpha, traj_diff, _, alpha = args
+            armijo_violation = ( J_new < J + 0.5 * grad_alpha * alpha )
+            trust_region_violation = (traj_diff > self.margin)
+            return jnp.logical_and(alpha > self.min_alpha, jnp.logical_or(armijo_violation, trust_region_violation))
+
+        alpha = alpha_init
+        J_new = -jnp.inf
+        grad_alpha = 0
+        t_star = jnp.argwhere(critical != 0, size=self.N - 1)[0][0]
+        self.margin = 2.0
+        traj_diff = 0.0
+
+        states, controls, Ks1, ks1, J, J_new, _, _, _, _, alpha = jax.lax.while_loop(check_continue, run_forward_pass, (states, controls,
+                                                                                                                            Ks1, ks1, J, J_new, t_star, grad_alpha, 
+                                                                                                                            traj_diff, Q_u, alpha))
+
+        return alpha
+
+    @partial(jax.jit, static_argnames='self')
+    def trust_region_search_tune_margin(self, states, controls, Ks1,
+                           ks1, critical, J, c_x, c_xx, Q_u, alpha_init=1.0, beta=0.8):
+        @jax.jit
+        def decrease_margin(args):
+            traj_diff, rho, margin = args
+            margin = 0.85 * margin
+            return traj_diff, rho, margin
+
+        @jax.jit
+        def increase_margin(args):
+            traj_diff, rho, margin = args
+            margin = 1.3 * margin
+            return traj_diff, rho, margin
+
+        @jax.jit
+        def fix_margin(args):
+            return args
+
+        @jax.jit
+        def increase_or_fix_margin(args):
+            traj_diff, rho, margin = args
+            traj_diff, rho, margin = jax.lax.cond(jnp.logical_and(jnp.abs(traj_diff - margin) < 0.1, rho > 0.75), increase_margin,
+                                fix_margin, (traj_diff, rho, margin))
+            return traj_diff, rho, margin
+
+        @jax.jit
+        def run_forward_pass(args):
+            states, controls, Ks1, ks1, alpha, J, _, _, _, _, _, margin = args
+            alpha = beta * alpha
+            X, U, J_new, critical_new, _, _ = self.forward_pass(nominal_states=states, nominal_controls=controls,
+                                                                    K_closed_loop=Ks1, k_open_loop=ks1, alpha=alpha)
+            t_star = jnp.argwhere(critical_new != 0, size=self.N - 1)[0][0]
+
+            # Calculate gradient for armijo decrease condition
+            grad_u = Ks1[:, :, t_star] @ (X[:, t_star] - states[:, t_star]) + ks1[:, t_star]
+            # update gradient along alpha
+            grad_alpha = Q_u @ grad_u
+
+            # find margin
+            traj_diff = jnp.max(jnp.array([jnp.linalg.norm(x_new - x_old)
+                                for x_new, x_old in zip(X[:2, :], states[:2, :])]))
+
+            # use the quality of approximation to increase or decrease margin
+            x_diff = X[:, t_star] - states[:, t_star]
+            delta_cost_quadratic_approx = 0.5 * \
+                (x_diff @ c_xx[:, :, t_star] + 2 * c_x[:, t_star]) @ x_diff
+            delta_cost_actual = J_new - J
+            # old_cost_error = jnp.abs(cost_error)
+            # cost_error = jnp.abs(
+            #     delta_cost_quadratic_approx -
+            #     delta_cost_actual)
+            rho = jnp.abs(delta_cost_actual / delta_cost_quadratic_approx)
+
+            return states, controls, Ks1, ks1, alpha, J, t_star, J_new, traj_diff, rho, grad_alpha, margin
+
+        @jax.jit
+        def check_continue(args):
+            _, _, _, _, alpha, J, _, J_new, traj_diff, rho, grad_alpha, margin = args
+            # Check trust region constraint.
+            trust_region_violation = (traj_diff > margin)
+            # Check armijo constraint.
+            armijo_violation = ( J_new < J + 0.5 * grad_alpha * alpha )
+            # update margin.
+            traj_diff, rho, margin = jax.lax.cond(rho <= 0.15, decrease_margin,
+                                                                      increase_or_fix_margin, (traj_diff, rho, margin))
+            return jnp.logical_and(alpha > self.min_alpha, jnp.logical_or(
+                trust_region_violation, armijo_violation))
+
+        alpha = alpha_init
+        J_new = -jnp.inf
+        t_star = jnp.where(critical != 0, size=self.N - 1)[0][0]
+        grad_alpha = 0.0
+        traj_diff = 0.0
+
+        # set these to not cause change in margin after first iteration.
+        margin = 2.5
+        traj_diff = 0.2
+        rho = 0.5
+
+        _, _, _, _, alpha, _, _, _, _, _, _, _ = (
+            jax.lax.while_loop(check_continue, run_forward_pass, (states, controls,
+                                                                  Ks1, ks1, alpha, J, t_star, J_new,
+                                                                  traj_diff, rho, grad_alpha, margin)))
+
+        return alpha
   
 
   @partial(jax.jit, static_argnames='self')
