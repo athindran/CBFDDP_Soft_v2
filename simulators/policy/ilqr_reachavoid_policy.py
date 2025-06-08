@@ -19,6 +19,7 @@ class iLQRReachAvoid(iLQR):
         status = 0
         self.tol = 1e-5
         self.min_alpha = 1e-12
+        line_search = 'trust_region_constant_margin'
 
         if controls is None:
             controls = np.zeros((self.dim_u, self.N))
@@ -84,7 +85,15 @@ class iLQRReachAvoid(iLQR):
                 )
 
             # Choose the best alpha scaling using appropriate line search methods
-            alpha_chosen = self.baseline_line_search( states, controls, K_closed_loop, k_open_loop, J)
+            if line_search == 'baseline':
+                alpha_chosen = self.baseline_line_search( states, controls, K_closed_loop, k_open_loop, J)
+            elif line_search == 'armijo':
+                alpha_chosen = self.armijo_line_search( states=states, controls=controls, Ks1=K_closed_loop, ks1=k_open_loop, critical=critical, J=J, Q_u=Q_u)
+            elif line_search == 'trust_region_constant_margin':
+                alpha_chosen = self.trust_region_search_constant_margin( states=states, controls=controls, Ks1=K_closed_loop, ks1=k_open_loop, critical=critical, J=J, Q_u=Q_u)
+            elif line_search == 'trust_region_tune_margin':
+                alpha_chosen = self.trust_region_search_tune_margin( states=states, controls=controls, Ks1=K_closed_loop, ks1=k_open_loop, critical=critical, J=J,  
+                    c_x=c_x, c_xx=c_xx, Q_u=Q_u)            
             #alpha_chosen = self.armijo_line_search( states=states, controls=controls, Ks1=K_closed_loop, ks1=k_open_loop, critical=critical, J=J, Q_u=Q_u)
             # alpha_chosen = self.trust_region_search_conservative(states=states, controls=controls, Ks1=K_closed_loop, ks1=k_open_loop, critical=critical,
             #                                                      J=J, c_x=c_x, c_xx=c_xx)
