@@ -130,8 +130,7 @@ class iLQR(BasePolicy):
         def _rollout_step(i, args):
             X, U = args
             u_fb = jnp.einsum(
-                "ik,k->i", K_closed_loop[:, :,
-                                         i], (X[:, i] - nominal_states[:, i])
+                "ik,k->i", K_closed_loop[:, :, i], (X[:, i] - nominal_states[:, i])
             )
             u = nominal_controls[:, i] + alpha * k_open_loop[:, i] + u_fb
             x_nxt, u_clip = self.dyn.integrate_forward_jax(X[:, i], u)
