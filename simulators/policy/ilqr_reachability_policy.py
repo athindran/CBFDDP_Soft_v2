@@ -72,8 +72,8 @@ class iLQRReachability(iLQR):
       
       alpha_chosen = 1.0
       # Choose the best alpha scaling using appropriate line search methods
-      alpha_chosen = self.baseline_line_search( states, controls, K_closed_loop, k_open_loop, J)
-      # alpha_chosen = self.armijo_wolfe_line_search( states=states, controls=controls, Ks1=K_closed_loop, ks1=k_open_loop, critical=critical, J=J)
+      # alpha_chosen = self.baseline_line_search( states, controls, K_closed_loop, k_open_loop, J)
+      alpha_chosen = self.armijo_wolfe_line_search( states=states, controls=controls, Ks1=K_closed_loop, ks1=k_open_loop, critical=critical, J=J, Q_u=Q_u)
       
       states, controls, J_new, critical, failure_margins, reachable_margin = self.forward_pass(states, controls, K_closed_loop, k_open_loop, alpha_chosen) 
 
@@ -126,38 +126,60 @@ class iLQRReachability(iLQR):
 
     return alpha
 
-  @partial(jax.jit, static_argnames='self')
-  def armijo_wolfe_line_search(self, states, controls, Ks1,
-                          ks1, critical, J, alpha_init=1.0, beta=0.8):
-    @jax.jit
-    def run_forward_pass(args):
-        states, controls, Ks1, ks1, J, J_new, deltat, deltat_new, alpha = args
-        alpha = beta * alpha
-        X, U, J_new, critical, failure_margins, reachable_margin = self.forward_pass(nominal_states=states, nominal_controls=controls,
-                                                                K_closed_loop=Ks1, k_open_loop=ks1, alpha=alpha)
-        # critical*
+    @partial(jax.jit, static_argnames='self')
+    def armijo_line_search(self, states, controls, Ks1,
+                           ks1, critical, J, Q_u, alpha_init=1.0, beta=0.8):
+        @jax.jit
+        def run_forward_pass(args):
+            states, controls, Ks1, ks1, J, J_new, t_star, deltat, deltat_new, Q_u, alpha = args
+            alpha = beta * alpha
+            X, U, J_new, critical, _, _, _ = self.forward_pass(nominal_states=states, nominal_controls=controls,
+                                                                    K_closed_loop=Ks1, k_open_loop=ks1, alpha=alpha)
+            # critical*
+            t_star = jnp.argwhere(critical != 0, size=self.N - 1)[0][0]
+
+            # # Cost gradients
+            # c_x, c_u, c_xx, c_uu, c_ux = self.cost.get_derivatives(
+            #     X, U
+            # )
+            # c_x_t, c_u_t, c_xx_t, c_uu_t, c_ux_t = self.cost.get_derivatives_target(
+            #    X, U
+            # )
+            # fx, fu = self.dyn.get_jacobian(X[:, :-1], U[:, :-1])
+
+            # # Backward pass
+            # _, _, _, ks1_new, Ks1_new, _, _, Q_u_new = self.backward_pass(
+            #     c_x=c_x, c_u=c_u, c_xx=c_xx, c_uu=c_uu, c_ux=c_ux,
+            #     c_x_t=c_x_t, c_u_t=c_u_t, c_xx_t=c_xx_t, c_uu_t=c_uu_t, c_ux_t=None, fx=fx, fu=fu,
+            #     critical=critical
+            # )
+
+            # Calculate gradient for armijo decrease condition
+            delta_u = Ks1[:, :, t_star] @ (X[:, t_star] - states[:, t_star]) + ks1[:, t_star]
+            # delta_u_new = Ks1_new[:, :, t_star_new] @ (X[:, t_star_new] - states[:, t_star_new]) + ks1_new[:, t_star_new]
+
+            # update returns
+            deltat = Q_u @ delta_u
+            deltat_new = 0.0
+
+            return states, controls, Ks1, ks1, J, J_new, t_star, deltat, deltat_new, Q_u, alpha
+
+        @jax.jit
+        def check_continue(args):
+            _, _, _, _, J, J_new, _, deltat, deltat_new, _, alpha = args
+            armijo_check = ( J_new < J + 0.5 * deltat * alpha )
+            return jnp.logical_and(alpha > self.min_alpha, armijo_check)
+
+        alpha = alpha_init
+        J_new = -jnp.inf
+        deltat = 0
         t_star = jnp.argwhere(critical != 0, size=self.N - 1)[0][0]
 
-        # Cost gradients
-        c_x, c_u, c_xx, c_uu, c_ux = self.cost.get_derivatives(
-            X, U
-        )
-        fx, fu = self.dyn.get_jacobian(X[:, :-1], U[:, :-1])
+        states, controls, Ks1, ks1, J, J_new, _, _, _, _, alpha = jax.lax.while_loop(check_continue, run_forward_pass, (states, controls,
+                                                                                                                            Ks1, ks1, J, J_new, t_star, deltat, 
+                                                                                                                            deltat, Q_u, alpha))
 
-        # Backward pass
-        _, _, ks1_new, Ks1_new, _, _, Q_u = self.backward_pass(
-          c_x=c_x, c_u=c_u, c_xx=c_xx, c_uu=c_uu, c_ux=c_ux, fx=fx, fu=fu,
-          critical=critical, failure_margins=failure_margins)
-
-        # Calculate gradient for armijo decrease condition
-        delta_u = Ks1[:, :, t_star] @ (X[:, t_star] - states[:, t_star]) + ks1[:, t_star]
-        delta_u_new = Ks1_new[:, :, t_star] @ (X[:, t_star] - states[:, t_star]) + ks1_new[:, t_star]
-
-        # update returns
-        deltat = Q_u @ delta_u
-        deltat_new = Q_u @ delta_u_new
-
-        return states, controls, Ks1, ks1, J, J_new, deltat, deltat_new, alpha
+        return alpha
 
     @jax.jit
     def check_continue(args):
