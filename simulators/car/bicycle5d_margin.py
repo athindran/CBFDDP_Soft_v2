@@ -172,6 +172,9 @@ class Bicycle5DConstraintMargin(BaseMargin):
         self.dim_x = plan_dyn.dim_x
         self.dim_u = plan_dyn.dim_u
 
+        # for temporary visualization
+        self.target_constraint = CircleObsMargin(circle_spec=[4.1, 0.7, 0.4], buffer=0.0)
+
         self.obs_constraint = []
         if self.obsc_type == 'circle':
             for circle_spec in self.obs_spec:
@@ -555,6 +558,9 @@ class Bicycle5DSoftConstraintMargin(BaseMargin):
         self.dim_x = plan_dyn.dim_x
         self.dim_u = plan_dyn.dim_u
 
+        # for temporary debugging only.
+        self.target_constraint = CircleObsMargin(circle_spec=[4.1, 0.7, 0.4], buffer=0.0)
+
         self.obs_constraint = []
         if self.obsc_type == 'circle':
             for circle_spec in self.obs_spec:
@@ -793,6 +799,22 @@ class Bicycle5DSoftConstraintMargin(BaseMargin):
             return dict(
                 road_min_cons=road_min_cons, road_max_cons=road_max_cons, obs_cons=obs_cons
             )
+
+class Bicycle5DTargetConstraintMargin(Bicycle5DSoftConstraintMargin):
+    
+    @partial(jax.jit, static_argnames='self')
+    def get_target_stage_margin(
+        self, state: DeviceArray, ctrl: DeviceArray
+    ) -> DeviceArray:
+        """
+        Args:
+            state (DeviceArray, vector shape)
+            ctrl (DeviceArray, vector shape)
+
+        Returns:
+            DeviceArray: scalar.
+        """
+        return -1*self.target_constraint.get_stage_margin(state, ctrl)
 
 class BicycleReachAvoid5DMargin(BaseMargin):
 

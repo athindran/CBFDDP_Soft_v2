@@ -30,6 +30,7 @@ class iLQR(BasePolicy):
         self.max_iter = config.MAX_ITER
         self.tol = 1e-5  # ILQR update tolerance.
         self.eps = getattr(config, "EPS", 1e-6)
+        self.min_alpha = 1e-12
         # Stepsize scheduler.
         self.alphas = 0.5**(np.arange(30))
 
