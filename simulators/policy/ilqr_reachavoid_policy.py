@@ -19,7 +19,7 @@ class iLQRReachAvoid(iLQR):
         status = 0
         self.tol = 1e-5
         self.min_alpha = 1e-12
-        line_search = 'trust_region_constant_margin'
+        line_search = 'trust_region_tune_margin'
 
         if controls is None:
             controls = np.zeros((self.dim_u, self.N))

@@ -18,7 +18,7 @@ class iLQRReachability(iLQR):
         status = 0
         self.tol = 1e-5
         self.min_alpha = 1e-12
-        line_search = 'trust_region_constant_margin'
+        line_search = 'trust_region_tune_margin'
 
         # `controls` include control input at timestep N-1, which is a dummy
         # control of zeros.
@@ -300,62 +300,62 @@ class iLQRReachability(iLQR):
 
         return alpha
 
-      @partial(jax.jit, static_argnames='self')
-      def get_critical_points(
-          self, failure_margins: DeviceArray
-      ) -> Tuple[DeviceArray, DeviceArray]:
+    @partial(jax.jit, static_argnames='self')
+    def get_critical_points(
+        self, failure_margins: DeviceArray
+    ) -> Tuple[DeviceArray, DeviceArray]:
 
-          @jax.jit
-          def true_func(args):
-              idx, critical, cur_margin, reachable_margin = args
-              critical = critical.at[idx].set(True)
-              return critical, cur_margin
+        @jax.jit
+        def true_func(args):
+            idx, critical, cur_margin, reachable_margin = args
+            critical = critical.at[idx].set(True)
+            return critical, cur_margin
 
-          @jax.jit
-          def false_func(args):
-              idx, critical, cur_margin, reachable_margin = args
-              return critical, reachable_margin
+        @jax.jit
+        def false_func(args):
+            idx, critical, cur_margin, reachable_margin = args
+            return critical, reachable_margin
 
-          @jax.jit
-          def critical_pt(i, _carry):
-              idx = self.N - 1 - i
-              critical, reachable_margin = _carry
-              critical, reachable_margin = jax.lax.cond(
-                  failure_margins[idx] < reachable_margin, true_func, false_func,
-                  (idx, critical, failure_margins[idx], reachable_margin)
-              )
-              return critical, reachable_margin
+        @jax.jit
+        def critical_pt(i, _carry):
+            idx = self.N - 1 - i
+            critical, reachable_margin = _carry
+            critical, reachable_margin = jax.lax.cond(
+                failure_margins[idx] < reachable_margin, true_func, false_func,
+                (idx, critical, failure_margins[idx], reachable_margin)
+            )
+            return critical, reachable_margin
 
-          critical = jnp.zeros(shape=(self.N,), dtype=bool)
-          critical = critical.at[self.N - 1].set(True)
-          critical, reachable_margin = jax.lax.fori_loop(
-              1, self.N, critical_pt, (critical, failure_margins[-1])
-          )  # backward until timestep 1
+        critical = jnp.zeros(shape=(self.N,), dtype=bool)
+        critical = critical.at[self.N - 1].set(True)
+        critical, reachable_margin = jax.lax.fori_loop(
+            1, self.N, critical_pt, (critical, failure_margins[-1])
+        )  # backward until timestep 1
 
-          return critical, reachable_margin
+        return critical, reachable_margin
 
-      def forward_pass(
-          self, nominal_states: DeviceArray, nominal_controls: DeviceArray,
-          K_closed_loop: DeviceArray, k_open_loop: DeviceArray, alpha: float
-      ) -> Tuple[DeviceArray, DeviceArray, float, DeviceArray, DeviceArray,
-                DeviceArray]:
-          X, U = self.rollout(
-              nominal_states, nominal_controls, K_closed_loop, k_open_loop, alpha
-          )
+    def forward_pass(
+        self, nominal_states: DeviceArray, nominal_controls: DeviceArray,
+        K_closed_loop: DeviceArray, k_open_loop: DeviceArray, alpha: float
+    ) -> Tuple[DeviceArray, DeviceArray, float, DeviceArray, DeviceArray,
+              DeviceArray]:
+        X, U = self.rollout(
+            nominal_states, nominal_controls, K_closed_loop, k_open_loop, alpha
+        )
 
-          failure_margins = self.cost.constraint.get_mapped_margin(X, U)
-          ctrl_costs = self.cost.ctrl_cost.get_mapped_margin(X, U)
+        failure_margins = self.cost.constraint.get_mapped_margin(X, U)
+        ctrl_costs = self.cost.ctrl_cost.get_mapped_margin(X, U)
 
-          critical, reachable_margin = self.get_critical_points(failure_margins)
-          J = (reachable_margin + jnp.sum(ctrl_costs)).astype(float)
-          return X, U, J, critical, failure_margins, reachable_margin
+        critical, reachable_margin = self.get_critical_points(failure_margins)
+        J = (reachable_margin + jnp.sum(ctrl_costs)).astype(float)
+        return X, U, J, critical, failure_margins, reachable_margin
 
-      @partial(jax.jit, static_argnames='self')
-      def backward_pass(
-          self, c_x: DeviceArray, c_u: DeviceArray, c_xx: DeviceArray,
-          c_uu: DeviceArray, c_ux: DeviceArray, fx: DeviceArray, fu: DeviceArray,
-          critical: DeviceArray, failure_margins:DeviceArray
-      ) -> Tuple[DeviceArray, DeviceArray, DeviceArray, DeviceArray, DeviceArray,DeviceArray, DeviceArray]:
+    @partial(jax.jit, static_argnames='self')
+    def backward_pass(
+        self, c_x: DeviceArray, c_u: DeviceArray, c_xx: DeviceArray,
+        c_uu: DeviceArray, c_ux: DeviceArray, fx: DeviceArray, fu: DeviceArray,
+        critical: DeviceArray, failure_margins:DeviceArray
+    ) -> Tuple[DeviceArray, DeviceArray, DeviceArray, DeviceArray, DeviceArray,DeviceArray, DeviceArray]:
         """
         Jitted backward pass looped computation.
 
@@ -444,13 +444,13 @@ class iLQRReachability(iLQR):
         return V_x, V_xx, ks, Ks, V_x_critical, V_xx_critical, Q_u
 
 
-      @partial(jax.jit, static_argnames='self')
-      def backward_pass_ddp(
-          self, c_x: DeviceArray, c_u: DeviceArray, c_xx: DeviceArray,
-          c_uu: DeviceArray, c_ux: DeviceArray, fx: DeviceArray, fu: DeviceArray,
-          fxx: DeviceArray, fuu: DeviceArray, fux: DeviceArray,
-          critical: DeviceArray, failure_margins:DeviceArray
-      ) -> Tuple[DeviceArray, DeviceArray, DeviceArray, DeviceArray, DeviceArray,DeviceArray, DeviceArray]:
+    @partial(jax.jit, static_argnames='self')
+    def backward_pass_ddp(
+        self, c_x: DeviceArray, c_u: DeviceArray, c_xx: DeviceArray,
+        c_uu: DeviceArray, c_ux: DeviceArray, fx: DeviceArray, fu: DeviceArray,
+        fxx: DeviceArray, fuu: DeviceArray, fux: DeviceArray,
+        critical: DeviceArray, failure_margins:DeviceArray
+    ) -> Tuple[DeviceArray, DeviceArray, DeviceArray, DeviceArray, DeviceArray,DeviceArray, DeviceArray]:
         """
         Jitted backward pass looped computation.
 
