@@ -18,7 +18,7 @@ class iLQRReachability(iLQR):
         status = 0
         self.tol = 1e-5
         self.min_alpha = 1e-12
-        line_search = 'trust_region_tune_margin'
+        line_search = self.line_search
 
         # `controls` include control input at timestep N-1, which is a dummy
         # control of zeros.

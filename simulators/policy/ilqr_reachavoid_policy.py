@@ -19,7 +19,7 @@ class iLQRReachAvoid(iLQR):
         status = 0
         self.tol = 1e-5
         self.min_alpha = 1e-12
-        line_search = 'trust_region_tune_margin'
+        line_search = self.line_search
 
         if controls is None:
             controls = np.zeros((self.dim_u, self.N))
@@ -43,7 +43,7 @@ class iLQRReachAvoid(iLQR):
         )
 
         # Target cost derivatives are manually computed for more well-behaved backpropagation
-        target_margins = self.cost.get_mapped_target_margin(states, controls)
+        target_margins = self.cost.constraint.get_mapped_target_margin(states, controls)
         # target_margins, c_x_t, c_xx_t, c_u_t, c_uu_t = self.cost.get_mapped_target_margin_with_derivative(
         #     states, controls)
 
@@ -73,14 +73,14 @@ class iLQRReachAvoid(iLQR):
                 fxx, fuu, fux = self.dyn.get_hessian(states[:, :-1], controls[:, :-1])
                 V_x, V_xx, constant_term_loop, k_open_loop, K_closed_loop, _, _, Q_u = self.backward_pass_ddp(
                     c_x=c_x, c_u=c_u, c_xx=c_xx, c_uu=c_uu, c_ux=c_ux,
-                    c_x_t=c_x_t, c_u_t=c_u_t, c_xx_t=c_xx_t, c_uu_t=c_uu_t, c_ux_t=c_ux_t, fx=fx, fu=fu,
+                    c_x_t=c_x_t, c_u_t=c_u_t, c_xx_t=c_xx_t, c_uu_t=c_uu_t, c_ux_t=None, fx=fx, fu=fu,
                     fxx=fxx, fuu=fuu, fux=fux,
                     critical=critical
                 )
             else:
                 V_x, V_xx, constant_term_loop, k_open_loop, K_closed_loop, _, _, Q_u = self.backward_pass(
                     c_x=c_x, c_u=c_u, c_xx=c_xx, c_uu=c_uu, c_ux=c_ux,
-                    c_x_t=c_x_t, c_u_t=c_u_t, c_xx_t=c_xx_t, c_uu_t=c_uu_t, c_ux_t=c_ux_t, fx=fx, fu=fu,
+                    c_x_t=c_x_t, c_u_t=c_u_t, c_xx_t=c_xx_t, c_uu_t=c_uu_t, c_ux_t=None, fx=fx, fu=fu,
                     critical=critical
                 )
 
@@ -172,15 +172,15 @@ class iLQRReachAvoid(iLQR):
             grad_u = Ks1[:, :, t_star] @ (X[:, t_star] - states[:, t_star]) + ks1[:, t_star]
 
             # update gradient along alpha
-            grad_alpha = Q_u @ grad_u
+            grad_alpha = jnp.maximum(Q_u @ grad_u, 0)
 
             return states, controls, Ks1, ks1, J, J_new, t_star, grad_alpha, Q_u, alpha
 
         @jax.jit
         def check_continue(args):
             _, _, _, _, J, J_new, _, grad_alpha, _, alpha = args
-            armijo_check = ( J_new < J + 0.5 * grad_alpha * alpha )
-            return jnp.logical_and(alpha > self.min_alpha, armijo_check)
+            armijo_violation = ( J_new < J + 0.2 * grad_alpha * alpha )
+            return jnp.logical_and(alpha > self.min_alpha, armijo_violation)
 
         alpha = alpha_init
         J_new = -jnp.inf
@@ -211,14 +211,14 @@ class iLQRReachAvoid(iLQR):
             grad_u = Ks1[:, :, t_star] @ (X[:, t_star] - states[:, t_star]) + ks1[:, t_star]
 
             # update returns
-            grad_alpha = Q_u @ grad_u
+            grad_alpha = jnp.maximum(Q_u @ grad_u, 0)
 
             return states, controls, Ks1, ks1, J, J_new, t_star, grad_alpha, traj_diff, Q_u, alpha
 
         @jax.jit
         def check_continue(args):
             _, _, _, _, J, J_new, _, grad_alpha, traj_diff, _, alpha = args
-            armijo_violation = ( J_new < J + 0.5 * grad_alpha * alpha )
+            armijo_violation = ( J_new < J + 0.2 * grad_alpha * alpha )
             trust_region_violation = (traj_diff > self.margin)
             return jnp.logical_and(alpha > self.min_alpha, jnp.logical_or(armijo_violation, trust_region_violation))
 
@@ -272,7 +272,7 @@ class iLQRReachAvoid(iLQR):
             # Calculate gradient for armijo decrease condition
             grad_u = Ks1[:, :, t_star] @ (X[:, t_star] - states[:, t_star]) + ks1[:, t_star]
             # update gradient along alpha
-            grad_alpha = Q_u @ grad_u
+            grad_alpha = jnp.maximum(Q_u @ grad_u, 0)
 
             # find margin
             traj_diff = jnp.max(jnp.array([jnp.linalg.norm(x_new - x_old)
@@ -297,7 +297,7 @@ class iLQRReachAvoid(iLQR):
             # Check trust region constraint.
             trust_region_violation = (traj_diff > margin)
             # Check armijo constraint.
-            armijo_violation = ( J_new < J + 0.5 * grad_alpha * alpha )
+            armijo_violation = ( J_new < J + 0.2 * grad_alpha * alpha )
             # update margin.
             traj_diff, rho, margin = jax.lax.cond(rho <= 0.15, decrease_margin,
                                                                       increase_or_fix_margin, (traj_diff, rho, margin))
@@ -399,7 +399,7 @@ class iLQRReachAvoid(iLQR):
         # J = self.cost.get_traj_cost(X, U, closest_pt, slope, theta)
         #! hacky
         failure_margins = self.cost.constraint.get_mapped_margin(X, U)
-        target_margins = self.cost.get_mapped_target_margin(X, U)
+        target_margins = self.cost.constraint.get_mapped_target_margin(X, U)
         # target_margins, c_x_t, c_xx_t, c_u_t, c_uu_t = self.cost.get_mapped_target_margin_with_derivative(
         #     X, U)
 
