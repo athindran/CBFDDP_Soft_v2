@@ -21,6 +21,7 @@ class iLQR(BasePolicy):
         self.policy_type = "iLQR"
         self.dyn = copy.deepcopy(dyn)
         self.cost = copy.deepcopy(cost)
+        self.line_search = getattr(config, "LINE_SEARCH", 'baseline')
 
         # iLQR parameters
         self.dim_x = dyn.dim_x
