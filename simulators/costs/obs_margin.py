@@ -52,7 +52,7 @@ class BoxObsMargin(BaseMargin):
         """
         super().__init__()
         # Box obstacle
-        self.box_center = jnp.array([box_spec[0], box_spec[1]])
+        self.box_center = jnp.array([[box_spec[0]], [box_spec[1]]])
         self.box_yaw = box_spec[2]
         # rotate clockwise (to move the world frame to obstacle frame)
         self.obs_rot_mat = jnp.array([[
@@ -66,8 +66,8 @@ class BoxObsMargin(BaseMargin):
     def get_stage_margin(
         self, state: DeviceArray, ctrl: DeviceArray,
     ) -> DeviceArray:
-        pos = jnp.array(state[0:2])
-        pos_final = self.obs_rot_mat @ (pos - self.box_center).T
+        pos = state[0:2].reshape(2, -1)
+        pos_final = self.obs_rot_mat @ (pos - self.box_center)
 
         diff_x = jnp.maximum(
             pos_final[0] - self.box_halflength,
@@ -78,6 +78,7 @@ class BoxObsMargin(BaseMargin):
             - self.box_halfwidth - pos_final[1]
         )
         diff = jnp.maximum(diff_x, diff_y)
+        diff = diff.squeeze()
 
         return diff - self.buffer
 
