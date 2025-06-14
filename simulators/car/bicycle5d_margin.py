@@ -547,7 +547,11 @@ class Bicycle5DConstraintMargin(BaseMargin):
                 obs_cons, _obs_constraint.get_stage_margin(
                     state, ctrl))
 
-        if self.use_yaw:
+        if not self.use_yaw:
+            return dict(
+                road_min_cons=road_min_cons, road_max_cons=road_max_cons, obs_cons=obs_cons
+            )
+        else:
             yaw_min_cons = self.yaw_min_cost.get_stage_margin(
                 state, ctrl
             )
@@ -558,10 +562,7 @@ class Bicycle5DConstraintMargin(BaseMargin):
             return dict(
                 road_min_cons=road_min_cons, road_max_cons=road_max_cons, obs_cons=obs_cons, yaw_min_cons=yaw_min_cons, yaw_max_cons=yaw_max_cons
             )
-        else:
-            return dict(
-                road_min_cons=road_min_cons, road_max_cons=road_max_cons, obs_cons=obs_cons
-            )
+
 
 class Bicycle5DSoftConstraintMargin(Bicycle5DConstraintMargin):
     @partial(jax.jit, static_argnames='self')
