@@ -88,6 +88,6 @@ solver:
   OUT_FOLDER: exps/ilqr/bic5D/reachability_experiment_mulobs_box_config1/
   DEVICE: cpu
   # options: 'ILQR', 'DDP'.
-  ORDER: 'ILQR'
+  ORDER: 'DDP'
   FIG_SIZE_X: 8
   FIG_SIZE_Y: 2.0
