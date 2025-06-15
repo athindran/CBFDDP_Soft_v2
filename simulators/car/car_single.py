@@ -441,7 +441,12 @@ class CarSingle5DEnv(BaseSingleEnv):
 
     def report(self):
         if self.track_len is not None:
-            print("Straight road, circle footprint, circle obstacles!")
+            if self.obsc_type == 'circle':
+                print("Straight road, circle footprint, circle obstacles!")
+            elif self.obsc_type == 'box':
+                print("Straight road, circle footprint, box obstacles!")
+            elif self.obsc_type == 'ellipse':
+                print("Straight road, circle footprint, ellipse obstacles!")
         else:
             print("road from file, circle footprint, circle obstacles!")
 
