@@ -97,12 +97,14 @@ def plot_bic_run_summary(dyn_id, env, state_history, action_history, config_solv
     ax.set_ylabel("Velocity (m/s)")
     ax.grid()
     
-    ax = axes[1]
-    ax.plot(states[4, :])
-    ax.set_xlabel("Timestep")
-    ax.set_ylabel("Road wheel angle (rad)")
-    ax.grid()
-    fig.savefig(os.path.join(fig_folder, "auxiliary_rwa.png"), dpi=200)
+    if states.shape[0]>4:
+        ax = axes[1]
+        ax.plot(states[4, :])
+        ax.set_xlabel("Timestep")
+        ax.set_ylabel("Road wheel angle (rad)")
+        ax.grid()
+
+    fig.savefig(os.path.join(fig_folder, "auxiliary_vel_rwa.png"), dpi=200)
 
     fig = plt.figure(figsize=(7, 4))
     plt.plot(kwargs["process_time_history"])
