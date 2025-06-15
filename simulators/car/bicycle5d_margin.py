@@ -158,17 +158,17 @@ class Bicycle5DConstraintMargin(BaseMargin):
         self.track_width_left = config.TRACK_WIDTH_LEFT
         self.kappa = config.SMOOTHING_TEMP
 
+        # Constraints toggling.
         self.use_yaw = getattr(config, 'USE_YAW', False)
         self.use_vel = getattr(config, 'USE_VEL', False)
-
-        self.use_road = config.USE_ROAD
+        self.use_road = getattr(config, 'USE_ROAD', False)
         self.use_delta = getattr(config, 'USE_DELTA', False)
         self.use_track_exit = False
+        self.yaw_min = getattr(config, 'YAW_MIN', -1.8)
+        self.yaw_max = getattr(config, 'YAW_MAX', 1.8)
+        self.delta_min = getattr(config, 'DELTA_MIN', -1.6)
+        self.delta_max = getattr(config, 'DELTA_MAX', 1.6)
 
-        self.yaw_min = config.YAW_MIN
-        self.yaw_max = config.YAW_MAX
-        self.delta_min = config.DELTA_MIN
-        self.delta_max = config.DELTA_MAX
         self.obs_spec = config.OBS_SPEC
         self.obsc_type = config.OBSC_TYPE
         self.plan_dyn = plan_dyn
