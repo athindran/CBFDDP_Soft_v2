@@ -20,7 +20,7 @@ class CircleObsMargin(BaseMargin):
         Args:
             circle_spec (np.ndarray): [x, y, radius], spec of the circular obstacles.
             buffer (float): the minimum required distance to the obstacle, i.e., if
-                the distance is smaller than `buffer`, the cost will be positive as
+                the distance is smaller than `buffer`, the cost will be negative as
                 well. Defaults to 0.
         """
         super().__init__()
@@ -54,7 +54,7 @@ class BoxObsMargin(BaseMargin):
             box_spec (np.ndarray): [x, y, heading, half_length, half_width], spec
                 of the box obstacles.
             buffer (float): the minimum required distance to the obstacle, i.e., if
-                the distance is smaller than `buffer`, the cost will be positive as
+                the distance is smaller than `buffer`, the cost will be negative as
                 well. Defaults to 0.
         """
         super().__init__()
@@ -106,7 +106,7 @@ class SoftBoxObsMargin(BaseMargin):
             box_spec (np.ndarray): [x, y, heading, half_length, half_width], spec
                 of the box obstacles.
             buffer (float): the minimum required distance to the obstacle, i.e., if
-                the distance is smaller than `buffer`, the cost will be positive as
+                the distance is smaller than `buffer`, the cost will be negative as
                 well. Defaults to 0.
         """
         super().__init__()
@@ -156,7 +156,7 @@ class EllipseObsMargin(BaseMargin):
             ellipse_spec (np.ndarray): [x, y, heading, half_length, half_width], spec
                 of the box obstacles.
             buffer (float): the minimum required distance to the obstacle, i.e., if
-                the distance is smaller than `buffer`, the cost will be positive as
+                the distance is smaller than `buffer`, the cost will be negative as
                 well. Defaults to 0.
         """
         super().__init__()
