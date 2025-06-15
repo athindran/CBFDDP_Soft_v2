@@ -167,9 +167,6 @@ class EllipseObsMargin(BaseMargin):
         self.obs_rot_mat = jnp.array([[jnp.cos(self.ellipse_yaw), jnp.sin(self.ellipse_yaw)], 
                             [-jnp.sin(self.ellipse_yaw), jnp.cos(self.ellipse_yaw)]])
         self.buffer = buffer
-        # Convert the buffer to cost function units which is not distance.
-        self.buffer_margin = jnp.maximum((self.buffer/self.ellipse_half_length), 
-                                            (self.buffer/self.ellipse_half_width))
         self.max_radius = jnp.maximum(self.ellipse_half_length, self.ellipse_half_width)
 
     @partial(jax.jit, static_argnames='self')
@@ -181,9 +178,13 @@ class EllipseObsMargin(BaseMargin):
         and positive outside.
         """
         pos = state[0:2].reshape(2, -1)
-        pos_final = self.obs_rot_mat @ (pos - self.ellipse_center)
+        relative_vector = (pos - self.ellipse_center)
+        pos_final = self.obs_rot_mat @ relative_vector
+        buffer_margin_vector = self.buffer*pos_final /jnp.linalg.norm(pos_final , axis=0, keepdims=True)
+        pos_final = pos_final - buffer_margin_vector
         obs_margin = jnp.sqrt((pos_final[0]/self.ellipse_half_length)**2 + (pos_final[1]/self.ellipse_half_width)**2) - 1.0
-        return (obs_margin.squeeze() - self.buffer_margin)*self.max_radius
+
+        return obs_margin.squeeze()*self.max_radius
 
     @partial(jax.jit, static_argnames='self')
     def get_target_stage_margin(
