@@ -160,17 +160,22 @@ class EllipseObsMargin(BaseMargin):
                 well. Defaults to 0.
         """
         super().__init__()
-        self.ellipse_center = jnp.array([[ellipse_spec[0]], [ellipse_spec[1]]])
+        self.ellipse_center = jnp.array([[[ellipse_spec[0]]], [[ellipse_spec[1]]]])
         self.ellipse_yaw = ellipse_spec[2]
         self.ellipse_half_length = ellipse_spec[3]
         self.ellipse_half_width = ellipse_spec[4]
         self.obs_rot_mat = jnp.array([[jnp.cos(self.ellipse_yaw), jnp.sin(self.ellipse_yaw)], 
                             [-jnp.sin(self.ellipse_yaw), jnp.cos(self.ellipse_yaw)]])
-        # This is a conservative approximation of how much units of cost margin we provide to the buffer.
-        # A better approximation would be the to sample footprint and choose minimum or smooth minimum.
-        # We use this approximaiton for speed and smoothness.
-        self.buffer_margin = buffer/jnp.minimum(self.ellipse_half_length, self.ellipse_half_width)
-        self.avg_radius = (self.ellipse_half_length + self.ellipse_half_width)/2.0
+        self.buffer = buffer
+
+        # Add the entire boundary of ego circular footprint.
+        nsamples = 200
+        self.offset = jnp.zeros((2, 1, nsamples))
+        phase_space = jnp.linspace(0, 2*jnp.pi, num=nsamples)
+        self.offset = self.offset.at[0, 0].set(self.buffer*jnp.cos(phase_space))
+        self.offset = self.offset.at[1, 0].set(self.buffer*jnp.sin(phase_space))
+
+        self.max_radius = jnp.maximum(self.ellipse_half_length, self.ellipse_half_width)
 
     @partial(jax.jit, static_argnames='self')
     def get_stage_margin(
@@ -180,11 +185,14 @@ class EllipseObsMargin(BaseMargin):
         This is not exactly the distance to the ellipse but only a cost function which is negative inside the ellipse
         and positive outside.
         """
-        pos = state[0:2].reshape(2, -1)
+        pos = state[0:2].reshape(2, -1, 1)
         relative_vector = (pos - self.ellipse_center)
-        pos_final = self.obs_rot_mat @ relative_vector
-        obs_margin = jnp.sqrt((pos_final[0]/self.ellipse_half_length)**2 + (pos_final[1]/self.ellipse_half_width)**2) - 1.0 - self.buffer_margin
-        return obs_margin.squeeze()*self.avg_radius
+        relative_vector_offset = relative_vector - self.offset
+        pos_final = jnp.einsum("ij, jkl -> ikl", self.obs_rot_mat, relative_vector_offset)
+        obs_margin = jnp.sqrt((pos_final[0]/self.ellipse_half_length)**2 + (pos_final[1]/self.ellipse_half_width)**2) - 1.0
+        obs_margin = jnp.min(obs_margin, axis=1)
+
+        return obs_margin.squeeze()*self.max_radius
 
     @partial(jax.jit, static_argnames='self')
     def get_target_stage_margin(
