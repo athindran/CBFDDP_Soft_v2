@@ -127,7 +127,7 @@ class SoftBoxObsMargin(BaseMargin):
         ], [-jnp.sin(self.box_yaw), jnp.cos(self.box_yaw)]])
         self.box_halflength = box_spec[3]
         self.box_halfwidth = box_spec[4]
-        self.box_kappa = 4.0
+        self.box_kappa = 5.0
         self.buffer = buffer
 
     @partial(jax.jit, static_argnames='self')
