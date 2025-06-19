@@ -130,7 +130,7 @@ def plot_pvtol_run_summary(dyn_id, env, obs_history, action_history, config_solv
 
     # track, obstacles, footprint
     env.render_obs(ax=ax, c=c_obs)
-    env.render_footprint(ax=ax, state=obs_history[-3], c=c_ego)
+    env.render_footprint(ax=ax, obs=obs_history[-3], c=c_ego)
     ax.axis(env.visual_extent)
     ax.set_aspect('equal')
 
@@ -253,11 +253,11 @@ def make_bic_animation_plots(env, obs_history, solver_info, safety_plan, config_
     env.render_obs(ax=ax, c=c_obs)
 
     if solver_info['mark_complete_filter']:
-        env.render_footprint(ax=ax, state=obs_history[-1], c='r', lw=0.5)
+        env.render_footprint(ax=ax, obs=obs_history[-1], c='r', lw=0.5)
     elif solver_info['mark_barrier_filter']:
-        env.render_footprint(ax=ax, state=obs_history[-1], c='b', lw=0.5)
+        env.render_footprint(ax=ax, obs=obs_history[-1], c='b', lw=0.5)
     else:    
-        env.render_footprint(ax=ax, state=obs_history[-1], c=c_ego, lw=0.5)
+        env.render_footprint(ax=ax, obs=obs_history[-1], c=c_ego, lw=0.5)
 
     # plan.
     if safety_plan is not None:
@@ -314,11 +314,11 @@ def make_pvtol_animation_plots(env, obs_history, solver_info, safety_plan, confi
     env.render_obs(ax=ax, c=c_obs)
 
     if solver_info['mark_complete_filter']:
-        env.render_footprint(ax=ax, state=obs_history[-1], c='r', lw=0.5)
+        env.render_footprint(ax=ax, obs=obs_history[-1], c='r', lw=0.5)
     elif solver_info['mark_barrier_filter']:
-        env.render_footprint(ax=ax, state=obs_history[-1], c='b', lw=0.5)
+        env.render_footprint(ax=ax, obs=obs_history[-1], c='b', lw=0.5)
     else:    
-        env.render_footprint(ax=ax, state=obs_history[-1], c=c_ego, lw=0.5)
+        env.render_footprint(ax=ax, obs=obs_history[-1], c=c_ego, lw=0.5)
 
     # plan.
     if safety_plan is not None:

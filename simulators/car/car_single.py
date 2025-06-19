@@ -345,10 +345,9 @@ class CarSingle5DEnv(BaseSingleEnv):
         ax.set_aspect('equal')
 
     def render_footprint(
-        self, ax, state: np.ndarray, c: str = 'b', s: float = 12,
+        self, ax, obs: np.ndarray, c: str = 'b', s: float = 12,
         lw: float = 1.5, alpha: float = 1.
     ):
-        obs = self.get_obs(state)
         ax.scatter(obs[0], obs[1], c=c, s=s)
         ego = self.agent.footprint
         ego.set_center(obs[0:2])
