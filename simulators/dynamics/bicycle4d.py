@@ -40,7 +40,7 @@ class Bicycle4D(BaseDynamics):
             state_offset 
         """
         state_offset = state.at[0].set(state[0] + 0.5*self.rear_wheel_offset*jnp.cos(state[3]))
-        state_offset = state.at[1].set(state[1] + 0.5*self.rear_wheel_offset*jnp.sin(state[3]))
+        state_offset = state_offset.at[1].set(state_offset[1] + 0.5*self.rear_wheel_offset*jnp.sin(state[3]))
 
         return state_offset
 
