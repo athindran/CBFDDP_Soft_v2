@@ -29,7 +29,7 @@ class Bicycle5D(BaseDynamics):
         self.delta_max = config.DELTA_MAX
         self.v_min = 0
         self.v_max = config.V_MAX
-        self.rear_wheel_offset = 0.5 * self.wheelbase
+        self.rear_wheel_offset = 0.4 * self.wheelbase
 
     @partial(jax.jit, static_argnames='self')
     def apply_rear_offset_correction(self, state: DeviceArray):
