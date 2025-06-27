@@ -76,7 +76,7 @@ class iLQRSafetyFilter(BasePolicy):
 
         # Find safe policy from step 0
         if prev_sol is not None:
-            controls_initialize = prev_sol['reinit_controls']
+            controls_initialize = jnp.asarray(prev_sol['reinit_controls'])
         else:
             controls_initialize = None
 
@@ -154,7 +154,7 @@ class iLQRSafetyFilter(BasePolicy):
             gamma = self.gamma
             cutoff = gamma * solver_info_0['Vopt']
 
-            control_cbf_cand = task_ctrl
+            control_cbf_cand = np.array(task_ctrl)
 
             solver_initial = np.zeros((self.dim_u,))
             if prev_sol is not None:
@@ -185,7 +185,7 @@ class iLQRSafetyFilter(BasePolicy):
                 num_iters = num_iters + 1
 
                 # Extract information from solver for enforcing constraint
-                grad_x = jnp.array(solver_info_1['grad_x'])
+                grad_x = jnp.asarray(solver_info_1['grad_x'])
                 _, B0 = self.dyn.get_jacobian(
                     initial_state_jnp, control_cbf_cand_jnp)
 
@@ -241,7 +241,7 @@ class iLQRSafetyFilter(BasePolicy):
                     solver_info_0['mark_barrier_filter'] = True
                 solver_info_0['barrier_filter_steps'] = self.barrier_filter_steps
                 solver_info_0['filter_steps'] = self.filter_steps
-                solver_info_0['resolve'] = False
+                solver_info_0['resolve'] = True
                 solver_info_0['bootstrap_next_solution'] = solver_info_1
                 solver_info_0['reinit_controls'] = jnp.array(
                     solver_info_1['controls'])
