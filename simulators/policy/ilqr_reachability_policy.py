@@ -76,13 +76,11 @@ class iLQRReachability(iLQR):
             # Choose the best alpha scaling using appropriate line search methods
             if line_search == 'baseline':
                 alpha_chosen = self.baseline_line_search( states, controls, K_closed_loop, k_open_loop, J)
-            elif line_search == 'armijo':
-                alpha_chosen = self.armijo_line_search( states=states, controls=controls, Ks1=K_closed_loop, ks1=k_open_loop, critical=critical, J=J, Q_u=Q_u)
             elif line_search == 'trust_region_constant_margin':
-                alpha_chosen = self.trust_region_search_constant_margin( states=states, controls=controls, Ks1=K_closed_loop, ks1=k_open_loop, critical=critical, J=J, Q_u=Q_u)
+                alpha_chosen = self.trust_region_search_constant_margin( states=states, controls=controls, Ks1=K_closed_loop, ks1=k_open_loop, critical=critical, J=J)
             elif line_search == 'trust_region_tune_margin':
                 alpha_chosen = self.trust_region_search_tune_margin( states=states, controls=controls, Ks1=K_closed_loop, ks1=k_open_loop, critical=critical, J=J,  
-                    c_x=c_x, c_xx=c_xx, Q_u=Q_u)
+                    c_x=c_x, c_xx=c_xx)
             
             states, controls, J_new, critical, failure_margins, reachable_margin = self.forward_pass(states, controls, K_closed_loop, k_open_loop, alpha_chosen) 
 
@@ -173,10 +171,10 @@ class iLQRReachability(iLQR):
         return alpha
 
     @partial(jax.jit, static_argnames='self')
-    def trust_region_search_constant_margin(self, states, controls, Ks1, ks1, critical, J, Q_u, alpha_init=1.0, beta=0.8):
+    def trust_region_search_constant_margin(self, states, controls, Ks1, ks1, critical, J, alpha_init=1.0, beta=0.8):
         @jax.jit
         def run_forward_pass(args):
-            states, controls, Ks1, ks1, J, J_new, t_star, grad_alpha, _, Q_u, alpha = args
+            states, controls, Ks1, ks1, J, J_new, t_star, _, alpha = args
             alpha = beta * alpha
             X, U, J_new, critical_new, _, _ = self.forward_pass(nominal_states=states, nominal_controls=controls,
                                                                     K_closed_loop=Ks1, k_open_loop=ks1, alpha=alpha)
@@ -185,37 +183,30 @@ class iLQRReachability(iLQR):
             traj_diff = jnp.max(jnp.array([jnp.linalg.norm(x_new - x_old)
                                 for x_new, x_old in zip(X[:2, :], states[:2, :])]))
 
-            # Calculate gradient for armijo decrease condition
-            grad_u = Ks1[:, :, t_star] @ (X[:, t_star] - states[:, t_star]) + ks1[:, t_star]
-
-            # update returns
-            grad_alpha = Q_u @ grad_u
-
-            return states, controls, Ks1, ks1, J, J_new, t_star, grad_alpha, traj_diff, Q_u, alpha
+            return states, controls, Ks1, ks1, J, J_new, t_star, traj_diff, alpha
 
         @jax.jit
         def check_continue(args):
-            _, _, _, _, J, J_new, _, grad_alpha, traj_diff, _, alpha = args
-            armijo_violation = ( J_new < J + 0.5 * grad_alpha * alpha )
+            _, _, _, _, J, J_new, _, traj_diff, alpha = args
+            improvement_violation = ( J_new < J )
             trust_region_violation = (traj_diff > self.margin)
-            return jnp.logical_and(alpha > self.min_alpha, jnp.logical_or(armijo_violation, trust_region_violation))
+            return jnp.logical_and(alpha > self.min_alpha, jnp.logical_or(improvement_violation, trust_region_violation))
 
         alpha = alpha_init
         J_new = -jnp.inf
-        grad_alpha = 0
         t_star = jnp.argwhere(critical != 0, size=self.N - 1)[0][0]
         self.margin = 2.0
         traj_diff = 0.0
 
-        states, controls, Ks1, ks1, J, J_new, _, _, _, _, alpha = jax.lax.while_loop(check_continue, run_forward_pass, (states, controls,
-                                                                                                                            Ks1, ks1, J, J_new, t_star, grad_alpha, 
-                                                                                                                            traj_diff, Q_u, alpha))
+        states, controls, Ks1, ks1, J, J_new, _, _, alpha = jax.lax.while_loop(check_continue, run_forward_pass, (states, controls,
+                                                                                                                            Ks1, ks1, J, J_new, t_star, 
+                                                                                                                            traj_diff, alpha))
 
         return alpha
 
     @partial(jax.jit, static_argnames='self')
     def trust_region_search_tune_margin(self, states, controls, Ks1,
-                            ks1, critical, J, c_x, c_xx, Q_u, alpha_init=1.0, beta=0.8):
+                            ks1, critical, J, c_x, c_xx, alpha_init=1.0, beta=0.8):
         @jax.jit
         def decrease_margin(args):
             traj_diff, rho, margin = args
@@ -241,16 +232,11 @@ class iLQRReachability(iLQR):
 
         @jax.jit
         def run_forward_pass(args):
-            states, controls, Ks1, ks1, alpha, J, _, _, _, _, _, margin = args
+            states, controls, Ks1, ks1, alpha, J, _, _, _, _, margin = args
             alpha = beta * alpha
             X, U, J_new, critical_new, _, _ = self.forward_pass(nominal_states=states, nominal_controls=controls,
                                                                     K_closed_loop=Ks1, k_open_loop=ks1, alpha=alpha)
             t_star = jnp.argwhere(critical_new != 0, size=self.N - 1)[0][0]
-
-            # Calculate gradient for armijo decrease condition
-            grad_u = Ks1[:, :, t_star] @ (X[:, t_star] - states[:, t_star]) + ks1[:, t_star]
-            # update gradient along alpha
-            grad_alpha = Q_u @ grad_u
 
             # find margin
             traj_diff = jnp.max(jnp.array([jnp.linalg.norm(x_new - x_old)
@@ -267,25 +253,24 @@ class iLQRReachability(iLQR):
             #     delta_cost_actual)
             rho = jnp.abs(delta_cost_actual / delta_cost_quadratic_approx)
 
-            return states, controls, Ks1, ks1, alpha, J, t_star, J_new, traj_diff, rho, grad_alpha, margin
+            return states, controls, Ks1, ks1, alpha, J, t_star, J_new, traj_diff, rho, margin
 
         @jax.jit
         def check_continue(args):
-            _, _, _, _, alpha, J, _, J_new, traj_diff, rho, grad_alpha, margin = args
+            _, _, _, _, alpha, J, _, J_new, traj_diff, rho, margin = args
             # Check trust region constraint.
             trust_region_violation = (traj_diff > margin)
             # Check armijo constraint.
-            armijo_violation = ( J_new < J + 0.5 * grad_alpha * alpha )
+            improvement_violation = ( J_new < J )
             # update margin.
             traj_diff, rho, margin = jax.lax.cond(rho <= 0.15, decrease_margin,
                                                                       increase_or_fix_margin, (traj_diff, rho, margin))
             return jnp.logical_and(alpha > self.min_alpha, jnp.logical_or(
-                trust_region_violation, armijo_violation))
+                trust_region_violation, improvement_violation))
 
         alpha = alpha_init
         J_new = -jnp.inf
         t_star = jnp.where(critical != 0, size=self.N - 1)[0][0]
-        grad_alpha = 0.0
         traj_diff = 0.0
 
         # set these to not cause change in margin after first iteration.
@@ -293,10 +278,10 @@ class iLQRReachability(iLQR):
         traj_diff = 0.2
         rho = 0.5
 
-        _, _, _, _, alpha, _, _, _, _, _, _, _ = (
+        _, _, _, _, alpha, _, _, _, _, _, _ = (
             jax.lax.while_loop(check_continue, run_forward_pass, (states, controls,
                                                                   Ks1, ks1, alpha, J, t_star, J_new,
-                                                                  traj_diff, rho, grad_alpha, margin)))
+                                                                  traj_diff, rho, margin)))
 
         return alpha
 
