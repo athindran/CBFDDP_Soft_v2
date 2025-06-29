@@ -37,31 +37,36 @@ def main(config_file, road_boundary, filter_type, is_task_ilqr, line_search):
             *args,
             **kwargs):
         solver_info = plan_history[-1]
-        states = np.array(state_history).T  # last one is the next state.
+        states = np.asarray(state_history).T  # last one is the next state.
+        action_history = np.asarray(action_history)
         make_animation_plots(
             env,
             obs_history,
+            action_history,
             solver_info,
             kwargs['safety_plan'],
             config_solver,
+            config_agent,
+            np.asarray(kwargs['barrier_filter_indices']),
+            np.asarray(kwargs['complete_filter_indices']),
             fig_prog_folder)
 
-        if config_solver.FILTER_TYPE == "none":
-            print(
-                "[{}]: solver returns status {}, cost {:.1e}, and uses {:.3f}.".format(
-                    states.shape[1] - 1,
-                    solver_info['status'],
-                    solver_info['Vopt'],
-                    solver_info['t_process']),
-                end=' -> ')
-        else:
-            print(
-                "[{}]: solver returns status {}, margin {:.1e}, future margin {:.1e}, and uses {:.3f}.".format(
-                    states.shape[1] - 1,
-                    solver_info['status'],
-                    solver_info['marginopt'],
-                    solver_info['marginopt_next'],
-                    solver_info['process_time']))
+        # if config_solver.FILTER_TYPE == "none":
+        #     print(
+        #         "[{}]: solver returns status {}, cost {:.1e}, and uses {:.3f}.".format(
+        #             states.shape[1] - 1,
+        #             solver_info['status'],
+        #             solver_info['Vopt'],
+        #             solver_info['t_process']),
+        #         end=' -> ')
+        # else:
+        #     print(
+        #         "[{}]: solver returns status {}, margin {:.1e}, future margin {:.1e}, and uses {:.3f}.".format(
+        #             states.shape[1] - 1,
+        #             solver_info['status'],
+        #             solver_info['marginopt'],
+        #             solver_info['marginopt_next'],
+        #             solver_info['process_time']))
     
     # Callback after episode for plotting and summarizing evaluation
     def rollout_episode_callback(
@@ -260,6 +265,7 @@ def main(config_file, road_boundary, filter_type, is_task_ilqr, line_search):
         reset_kwargs=dict(state=x_cur),
         rollout_step_callback=rollout_step_callback,
         rollout_episode_callback=rollout_episode_callback,
+        advanced_animate=False,
     )
 
     print("result:", result)

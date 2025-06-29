@@ -280,10 +280,12 @@ class BaseSingleEnv(BaseEnv):
             else:
                 safety_plan = None
 
-            if rollout_step_callback is not None:
-                rollout_step_callback(
-                    self, state_history, obs_history, action_history, plan_history, step_history, safety_plan=safety_plan
-                )
+            if advanced_animate:
+                if rollout_step_callback is not None:
+                    rollout_step_callback(
+                        self, state_history, obs_history, action_history, plan_history, step_history, safety_plan=safety_plan, 
+                                barrier_filter_indices=barrier_filter_indices, complete_filter_indices=complete_filter_indices,
+                    )
 
             # Checks termination criterion.
             if done:
