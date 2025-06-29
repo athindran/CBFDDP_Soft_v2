@@ -1,6 +1,6 @@
 from summary.utils import(
     make_animation_plots,
-    make_yaw_report,
+    make_bicycle_comparison_report,
     plot_run_summary)
 from simulators import(
     load_config,
@@ -329,7 +329,7 @@ if __name__ == "__main__":
         out_folder, plot_tag, config_agent = main(args.config_file, args.road_boundary, filter_type=filter_type, is_task_ilqr=(not args.naive_task),         
                                                     line_search=args.line_search)
 
-    make_yaw_report(
+    make_bicycle_comparison_report(
         out_folder,
         plot_folder='./plots_summary_' + args.line_search + '/',
         tag=plot_tag + "_" + str(args.road_boundary,),

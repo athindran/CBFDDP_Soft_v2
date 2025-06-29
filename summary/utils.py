@@ -395,7 +395,7 @@ def make_animation_plots(env, obs_history, action_history, solver_info, safety_p
                          fig_prog_folder)
 
 
-def make_yaw_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", plot_folder="./plots_paper/", 
+def make_bicycle_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", plot_folder="./plots_paper/", 
                     tag="reachavoid", road_boundary=1.2, dt=0.01, filters=['SoftCBF']):
     if not os.path.exists(plot_folder):
         os.makedirs(plot_folder)
@@ -418,9 +418,10 @@ def make_yaw_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", plot_folder="./
     showlist = []
     showcontrollist = []
     colors = {}
-    colors['SoftLR'] = 'k'
-    colors['CBF'] = 'r'
-    colors['SoftCBF'] = 'b'
+    colors['SoftLR'] = 'g'
+    colors['LR'] = 'r'
+    colors['CBF'] = 'b'
+    colors['SoftCBF'] = 'k'
     styles = ['solid', 'dashed', 'dotted']
 
     for sh in filters:
