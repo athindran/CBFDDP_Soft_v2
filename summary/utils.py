@@ -819,10 +819,10 @@ def make_pvtol_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", pl
     showlist = []
     showcontrollist = []
     colors = {}
-    colors['SoftLR'] = 'k'
-    colors['LR'] = 'g'
-    colors['CBF'] = 'r'
-    colors['SoftCBF'] = 'b'
+    colors['SoftLR'] = 'g'
+    colors['LR'] = 'r'
+    colors['CBF'] = 'b'
+    colors['SoftCBF'] = 'k'
     styles = ['solid', 'dashed', 'dotted']
 
     for sh in filters:
