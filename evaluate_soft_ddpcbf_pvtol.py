@@ -127,9 +127,13 @@ def main(config_file, filter_type, is_task_ilqr):
         make_animation_plots(
             env,
             obs_history,
+            action_history,
             solver_info,
             kwargs['safety_plan'],
             config_solver,
+            config_agent,
+            np.asarray(kwargs['barrier_filter_indices']),
+            np.asarray(kwargs['complete_filter_indices']),
             fig_prog_folder)
 
         if config_solver.FILTER_TYPE == "none":
@@ -241,6 +245,7 @@ def main(config_file, filter_type, is_task_ilqr):
         reset_kwargs=dict(state=x_cur),
         rollout_step_callback=rollout_step_callback,
         rollout_episode_callback=rollout_episode_callback,
+        advanced_animate=False,
     )
 
     print("result:", result)
