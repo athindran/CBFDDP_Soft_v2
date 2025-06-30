@@ -422,7 +422,7 @@ def make_bicycle_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", 
     colors['LR'] = 'r'
     colors['CBF'] = 'b'
     colors['SoftCBF'] = 'k'
-    styles = ['solid', 'dashed', 'dotted']
+    styles = ['solid', 'solid', 'solid', 'solid']
 
     for sh in filters:
         for rb in road_bounds:
@@ -607,7 +607,6 @@ def make_bicycle_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", 
         axes = subfigs_col1[1].subplots(2, 1)
         
         maxsteps = 0
-        styles = ['solid', 'solid', 'solid']
         for idx, controls_data in enumerate(plot_actions_list):
             if showcontrollist[idx]:
                 nsteps = controls_data.shape[0]
@@ -824,7 +823,7 @@ def make_pvtol_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", pl
     colors['LR'] = 'r'
     colors['CBF'] = 'b'
     colors['SoftCBF'] = 'k'
-    styles = ['solid', 'dashed', 'dotted']
+    styles = ['solid', 'solid', 'solid', 'solid']
 
     for sh in filters:
         suffixlist.append(sh)
@@ -988,7 +987,6 @@ def make_pvtol_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", pl
         axes = subfigs_col1[1].subplots(2, 1)
         
         maxsteps = 0
-        styles = ['solid', 'solid', 'solid']
         for idx, controls_data in enumerate(plot_actions_list):
             if showcontrollist[idx]:
                 nsteps = controls_data.shape[0]
