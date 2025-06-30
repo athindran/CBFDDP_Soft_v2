@@ -307,7 +307,7 @@ def make_bic_animation_plots(env, obs_history, action_history, solver_info, safe
     axes[2].set_yticks(ticks=[action_space[1, 0], action_space[1, 1]], 
                         labels=[action_space[1, 0], action_space[1, 1]], 
                         fontsize=8)
-    axes[2].set_xlabel('Time step', fontsize=8)
+    #axes[2].set_xlabel('Time step', fontsize=8)
     axes[2].set_ylabel('Steer control', fontsize=8)
     axes[2].yaxis.set_label_coords(-0.04, 0.5)
     axes[2].xaxis.set_label_coords(0.5, -0.04)
