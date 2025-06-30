@@ -545,31 +545,31 @@ def make_bicycle_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", 
                         if not hide_label:
                             ax.plot(obs_data[complete_filter_indices, 0], 
                                     obs_data[complete_filter_indices, 1], 'o', 
-                                    color=colorlist[int(idx)], alpha=0.35, markersize=3.0, 
+                                    color=colorlist[int(idx)], alpha=0.65, markersize=3.0, 
                                     label='Complete filter')
                         else:
                             ax.plot(obs_data[complete_filter_indices, 0], 
                             obs_data[complete_filter_indices, 1], 'o', 
-                            color=colorlist[int(idx)], alpha=0.35, markersize=3.0, label='                ')
+                            color=colorlist[int(idx)], alpha=0.65, markersize=3.0, label='                ')
                         #lgd_c = False
                     else:
                         ax.plot(obs_data[complete_filter_indices, 0], 
                                 obs_data[complete_filter_indices, 1], 'o', 
-                                color=colorlist[int(idx)], alpha=0.35, markersize=3.0)
+                                color=colorlist[int(idx)], alpha=0.65, markersize=3.0)
                 if len(barrier_filter_indices)>0:
                     if lgd_b:
                         if not hide_label:
                             ax.plot(obs_data[barrier_filter_indices, 0], 
                                     obs_data[barrier_filter_indices, 1], 'x', 
-                                    color=colorlist[int(idx)], alpha=0.35, markersize=3.0, 
+                                    color=colorlist[int(idx)], alpha=0.65, markersize=3.0, 
                                     label=labellist[int(idx)] + ' filter')
                         else:
                             ax.plot(obs_data[barrier_filter_indices, 0], 
                                     obs_data[barrier_filter_indices, 1], 'x', 
-                                    color=colorlist[int(idx)], alpha=0.35, markersize=3.0, label='            ')
+                                    color=colorlist[int(idx)], alpha=0.65, markersize=3.0, label='            ')
                         #lgd_b = False
                     else:
-                        ax.plot(obs_data[barrier_filter_indices, 0], obs_data[barrier_filter_indices, 1], 'x', color=colorlist[int(idx)], alpha=0.15, markersize=5.0)
+                        ax.plot(obs_data[barrier_filter_indices, 0], obs_data[barrier_filter_indices, 1], 'x', color=colorlist[int(idx)], alpha=0.65, markersize=5.0)
     
             ax.legend(framealpha=0, fontsize=legend_fontsize, loc='upper left', 
                       ncol=2, bbox_to_anchor=(-0.05, 1.35), fancybox=False, shadow=False)
@@ -928,31 +928,31 @@ def make_pvtol_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", pl
                         if not hide_label:
                             ax.plot(obs_data[complete_filter_indices, 0], 
                                     obs_data[complete_filter_indices, 1], 'o', 
-                                    color=colorlist[int(idx)], alpha=0.15, markersize=3.0, 
+                                    color=colorlist[int(idx)], alpha=0.65, markersize=3.0, 
                                     label='Complete filter')
                         else:
                             ax.plot(obs_data[complete_filter_indices, 0], 
                             obs_data[complete_filter_indices, 1], 'o', 
-                            color=colorlist[int(idx)], alpha=0.15, markersize=3.0, label='                ')
+                            color=colorlist[int(idx)], alpha=0.65, markersize=3.0, label='                ')
                         #lgd_c = False
                     else:
                         ax.plot(obs_data[complete_filter_indices, 0], 
                                 obs_data[complete_filter_indices, 1], 'o', 
-                                color=colorlist[int(idx)], alpha=0.15, markersize=3.0)
+                                color=colorlist[int(idx)], alpha=0.65, markersize=3.0)
                 if len(barrier_filter_indices)>0:
                     if lgd_b:
                         if not hide_label:
                             ax.plot(obs_data[barrier_filter_indices, 0], 
                                     obs_data[barrier_filter_indices, 1], 'x', 
-                                    color=colorlist[int(idx)], alpha=0.15, markersize=3.0, 
+                                    color=colorlist[int(idx)], alpha=0.65, markersize=3.0, 
                                     label=labellist[int(idx)] + ' filter')
                         else:
                             ax.plot(obs_data[barrier_filter_indices, 0], 
                                     obs_data[barrier_filter_indices, 1], 'x', 
-                                    color=colorlist[int(idx)], alpha=0.15, markersize=3.0, label='            ')
+                                    color=colorlist[int(idx)], alpha=0.65, markersize=3.0, label='            ')
                         #lgd_b = False
                     else:
-                        ax.plot(obs_data[barrier_filter_indices, 0], obs_data[barrier_filter_indices, 1], 'x', color=colorlist[int(idx)], alpha=0.15, markersize=5.0)
+                        ax.plot(obs_data[barrier_filter_indices, 0], obs_data[barrier_filter_indices, 1], 'x', color=colorlist[int(idx)], alpha=0.65, markersize=5.0)
     
             ax.legend(framealpha=0, fontsize=legend_fontsize, loc='upper left', 
                       ncol=2, bbox_to_anchor=(-0.05, 1.35), fancybox=False, shadow=False)
