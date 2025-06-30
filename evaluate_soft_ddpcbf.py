@@ -260,12 +260,13 @@ def main(config_file, road_boundary, filter_type, is_task_ilqr, line_search):
     # Warms up jit again
     env.agent.get_action(obs=x_cur, state=x_cur, warmup=True)
 
+    should_animate = False
     nominal_states, result, traj_info = env.simulate_one_trajectory(
         T_rollout=max_iter_receding, end_criterion=end_criterion,
         reset_kwargs=dict(state=x_cur),
         rollout_step_callback=rollout_step_callback,
         rollout_episode_callback=rollout_episode_callback,
-        advanced_animate=False,
+        advanced_animate=should_animate,
     )
 
     print("result:", result)
@@ -276,19 +277,20 @@ def main(config_file, road_boundary, filter_type, is_task_ilqr, line_search):
 
     # endregion
 
-    # region: Visualizes
-    gif_path = os.path.join(fig_folder, 'rollout.gif')
-    frame_skip = getattr(config_solver, "FRAME_SKIP", 10)
-    with imageio.get_writer(gif_path, mode='I') as writer:
-        for i in range(len(nominal_states) - 1):
-            if frame_skip != 1 and (i + 1) % frame_skip != 0:
-                continue
-            filename = os.path.join(
-                fig_prog_folder, str(i + 1) + ".png")
-            image = imageio.imread(filename)
-            writer.append_data(image)
-            #Image(open(gif_path, 'rb').read(), width=400)
-    # endregion
+    if should_animate:
+        # region: Visualizes
+        gif_path = os.path.join(fig_folder, 'rollout.gif')
+        frame_skip = getattr(config_solver, "FRAME_SKIP", 10)
+        with imageio.get_writer(gif_path, mode='I') as writer:
+            for i in range(len(nominal_states) - 1):
+                if frame_skip != 1 and (i + 1) % frame_skip != 0:
+                    continue
+                filename = os.path.join(
+                    fig_prog_folder, str(i + 1) + ".png")
+                image = imageio.imread(filename)
+                writer.append_data(image)
+                #Image(open(gif_path, 'rb').read(), width=400)
+        # endregion
 
     return out_folder, plot_tag, config_agent
 
