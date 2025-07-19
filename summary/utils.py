@@ -675,7 +675,7 @@ def make_bicycle_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", 
 
     subfigs_col2 = subfigs[1].subfigures(2, 1)
     ax_v = subfigs_col2[0].subplots(1, 1)
-    max_value = 1.8
+    max_value = 2.5
     for idx, values_data in enumerate(plot_values_list):
         if showcontrollist[idx]:
             x_times = dt*np.arange(values_data.size)
