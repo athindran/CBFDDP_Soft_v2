@@ -53,7 +53,7 @@ cost:
   YAW_MAX: 1.57
   DELTA_MIN: -0.5
   DELTA_MAX: 0.5
-  SMOOTHING_TEMP: 2.5
+  SMOOTHING_TEMP: 3.5
 
 agent:
   AGENT_ID: ego
