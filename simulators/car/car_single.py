@@ -406,7 +406,7 @@ class CarSingle5DEnv(BaseSingleEnv):
         v = jnp.where(v>0, 0.0, v)
         v = jnp.where(v<0, -10.0, v)
         ax.imshow(
-            v.T, interpolation='none', extent=[xmin, xmax, ymin, ymax], cmap='gray'
+            v.T, interpolation='none', extent=[xmin, xmax, ymin, ymax], cmap='gray', label='SoftMargin (with ego radius)'
         )
 
     def _reshape(
