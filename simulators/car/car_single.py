@@ -402,10 +402,11 @@ class CarSingle5DEnv(BaseSingleEnv):
         else:
             assert cost_type == "constraint"
             cost = self.cost
-        v = cost.get_stage_margin(state, ctrl).reshape(nx, ny)
+        v = cost.get_mapped_margin(state, ctrl).reshape(nx, ny)
+        v = jnp.where(v>0, 0.0, v)
+        v = jnp.where(v<0, -10.0, v)
         ax.imshow(
-            v.T, interpolation='none', extent=[xmin, xmax, ymin, ymax],
-            origin="lower", cmap=cmap, vmin=vmin, vmax=vmax, zorder=-1, alpha=alpha
+            v.T, interpolation='none', extent=[xmin, xmax, ymin, ymax], cmap='gray'
         )
 
     def _reshape(
