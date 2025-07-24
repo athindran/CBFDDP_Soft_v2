@@ -21,7 +21,7 @@ config_file = './test_configs/reachability/test_config_cbf_reachability_non_conv
 road_boundary = 3.5
 
 fig = plt.figure(layout='constrained', figsize=(7.0, 3.4))
-colorlist = [(1, 0, 0, 1), (0, 0, 1, 1), (0.5, 0.4, 0.9, 1.0)]
+colorlist = [(1, 0, 0, 1), (0.0, 0.0, 0.0, 1.0), (0, 0, 1, 1)]
 labellist = ['CBFDDP-HM', 'CBFDDP-SM', 'CBFDDP-HM-Ellipse']
 stylelist = ['solid', 'solid', 'solid']
 legend_fontsize = 8.0
@@ -81,7 +81,7 @@ ellipse_config_env.TRACK_WIDTH_RIGHT = road_boundary
 ellipse_config_env.TRACK_WIDTH_LEFT = road_boundary
 ellipse_config_agent.FILTER_TYPE = 'CBF'
 ellipse_env = CarSingle5DEnv(ellipse_config_env, ellipse_config_agent, ellipse_config_cost)
-ellipse_env.render_obs(ax=ax, c='#A9CCE3')
+ellipse_env.render_obs(ax=ax, c='b')
 
 # Extract ellipse obstacle data.
 plot_ellipse_softcbf_data = np.load(os.path.join(ellipse_out_folder, f"road_boundary={road_boundary}/CBF/figure/save_data.npy"), allow_pickle=True)
