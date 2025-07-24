@@ -403,8 +403,9 @@ class CarSingle5DEnv(BaseSingleEnv):
             assert cost_type == "constraint"
             cost = self.cost
         v = cost.get_mapped_margin(state, ctrl).reshape(nx, ny)
+        NEGATIVE_CONSTANT = -1.0
         v = jnp.where(v>0, 0.0, v)
-        v = jnp.where(v<0, -10.0, v)
+        v = jnp.where(v<0, NEGATIVE_CONSTANT, v)
         v_np = np.array(v)
         # for xindex in np.arange(1, v.shape[0] - 1):
         #     for yindex in np.arange(1, v.shape[1] - 1):
