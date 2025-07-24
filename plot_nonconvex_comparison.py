@@ -24,7 +24,7 @@ fig = plt.figure(layout='constrained', figsize=(7.0, 3.4))
 colorlist = [(1, 0, 0, 1), (0, 0, 1, 1), (0.5, 0.4, 0.9, 1.0)]
 labellist = ['CBFDDP-HM', 'CBFDDP-SM', 'CBFDDP-HM-Ellipse']
 stylelist = ['solid', 'solid', 'solid']
-legend_fontsize = 7.5
+legend_fontsize = 8.0
 
 # Load the config to get key parameters needed for plot generation.
 config = load_config(config_file)
