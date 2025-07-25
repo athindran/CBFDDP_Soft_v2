@@ -403,7 +403,7 @@ class CarSingle5DEnv(BaseSingleEnv):
             assert cost_type == "constraint"
             cost = self.cost
         v = cost.get_mapped_margin(state, ctrl).reshape(nx, ny)
-        NEGATIVE_CONSTANT = -1.0
+        NEGATIVE_CONSTANT = 1.0
         v = jnp.where(v>0, 0.0, v)
         v = jnp.where(v<0, NEGATIVE_CONSTANT, v)
         v_np = np.array(v)
@@ -416,7 +416,7 @@ class CarSingle5DEnv(BaseSingleEnv):
         #                 v[xindex + 1, yindex + 1] == -10.0)):
         #             v_np[xindex, yindex] = 0.0
         ax.imshow(
-            v_np.T, interpolation='none', extent=[xmin, xmax, ymin, ymax], cmap='gray', label='SoftMargin (with ego radius)'
+            v_np.T, interpolation='none', extent=[xmin, xmax, ymin, ymax], cmap='Greys', label='SoftMargin (with ego radius)'
         )
 
     def _reshape(

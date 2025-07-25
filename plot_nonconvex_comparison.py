@@ -50,7 +50,7 @@ ax = subfigs[0].subplots(1, 1)
 # We render state cost map with soft constraint in order to visualize the difference with hard obstacle boundaries.
 # we set the ego radius to 0.0 in config file for less confusion in visualization.
 env.render_state_cost_map(ax, nx=500, ny=500, vel=0.0, yaw=0.0, delta=0.0)
-env.render_obs(ax=ax, c='#DCDCDC')
+env.render_obs(ax=ax, c='r')
 
 out_folder, plot_tag, config_agent = run_ddp_cbf(config_file, road_boundary, filter_type='SoftCBF', is_task_ilqr=True, line_search='baseline')
 out_folder, plot_tag, config_agent = run_ddp_cbf(config_file, road_boundary, filter_type='CBF', is_task_ilqr=True, line_search='baseline')
