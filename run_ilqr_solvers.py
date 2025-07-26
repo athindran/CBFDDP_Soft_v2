@@ -138,15 +138,17 @@ def main(config_file, road_boundary, filter_type):
         ax.set_xlabel('X position (m)', fontsize=legend_fontsize)
         ax.set_ylabel('Y position (m)', fontsize=legend_fontsize)
         ax.set_xticks(ticks=[0.0, 2.1, 5.5, 8.0], labels=[0.0, 2.1, 5.5, 8.0], fontsize=legend_fontsize)
-        ax.set_yticks(ticks=[-2.5, 0.0, 2.5], 
-                            labels=[-2.5, 0.0, 2.5], 
+        ax.set_yticks(ticks=[-2.5, 2.5], 
+                            labels=[-2.5, 2.5], 
                             fontsize=legend_fontsize)
+        ax.yaxis.set_label_coords(-0.1, 0.5)
         ax.grid(linestyle='--')
         ax_v.set_xticks(ticks=[-1.0, -0.5, 0.0, 0.5, 1.0], labels=[-1.0, -0.5, 0.0, 0.5, 1.0], fontsize=legend_fontsize)
-        ax_v.set_yticks(ticks=[-0.5, 0.0, 2.5], 
-                            labels=[-0.5, 0.0, 2.5], 
+        ax_v.set_yticks(ticks=[0.0, 2.5], 
+                            labels=[0.0, 2.5], 
                             fontsize=legend_fontsize)
-        ax_v.set_ylim([-0.5, 2.5])
+        ax_v.set_ylim([0.0, 2.5])
+        ax_v.yaxis.set_label_coords(-0.04, 0.5)
         #ax.xaxis.set_label_coords(0.5, -0.04)
         ax_v.set_xlabel('Y position (m)', fontsize=legend_fontsize)
         ax_v.set_ylabel('Reach-Avoid margin', fontsize=legend_fontsize)
