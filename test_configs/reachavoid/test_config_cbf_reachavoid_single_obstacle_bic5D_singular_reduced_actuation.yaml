@@ -19,7 +19,7 @@ environment:
     - [-1.5, 1.5]
     - [-0.3, 0.3]
     - [-0.15, 0.15]
-  tag: 'mul_obs_reachavoid_test_cons_bic5d'
+  tag: 'mul_obs_reachavoid_test_act_bic5d'
 
 cost:
   # Task policy tuned weights
@@ -44,8 +44,8 @@ cost:
   USE_YAW: false
   # Velocity constraint is not applicable to the current reach-avoid formulation.
   USE_VEL: false
-  USE_DELTA: true
-  USE_ROAD: true
+  USE_DELTA: false
+  USE_ROAD: false
   COST_TYPE: Reachavoid
   # SAFETY COST PARAM
   W_ACCEL: 0.1
@@ -62,8 +62,8 @@ agent:
   FOOTPRINT: Circle
   EGO_RADIUS: 0.2
   ACTION_RANGE:
-    - [-1.5, 1.5]
-    - [-3.0, 3.0]
+    - [-0.5, 0.5]
+    - [-2.0, 2.0]
   # CAR DYNAMICS
   WHEELBASE: 0.4
   DT: 0.01
@@ -87,7 +87,7 @@ solver:
   CBF_GAMMA: 0.99
   SOFT_CBF_GAMMA: 0.99
   LR_THRESHOLD: 0.0
-  OUT_FOLDER: exps/ilqr/bic5D/reachavoid_experiment_mulobs_cons_config1/
+  OUT_FOLDER: exps/ilqr/bic5D/reachavoid_act_experiment_mulobs_config1/
   DEVICE: cpu
   # options: 'ILQR', 'DDP'.
   ORDER: 'ILQR'

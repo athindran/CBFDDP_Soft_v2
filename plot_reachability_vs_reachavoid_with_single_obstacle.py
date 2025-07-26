@@ -18,9 +18,9 @@ os.environ["CUDA_VISIBLE_DEVICES"] = " "
 jax.config.update('jax_platform_name', 'cpu')
 
 fig = plt.figure(layout='constrained', figsize=(7.0, 3.4))
-colorlist = [(0.0, 0, 1.0, 1), (1.0, 0.0, 0.0, 1.0), (0, 0, 0, 0.8)]
-labellist = ['Reach-avoid (only obstacle)', 'Reachability', 'Reach-avoid']
-stylelist = ['solid', 'solid', 'solid']
+colorlist = [(0.0, 0, 1.0, 1), (1.0, 0.0, 0.0, 1.0), (0, 0, 0, 0.8), (0.6, 0.6, 1.0, 1.0)]
+labellist = ['Reach-avoid (only obs)', 'Reachability', 'Reach-avoid (aux)', 'Reach-avoid (act)']
+stylelist = ['solid', 'dashed', 'dotted', 'dashdot']
 legend_fontsize = 7.2
 
 ########## Reach avoid with only obstacle ############
@@ -100,6 +100,7 @@ config_cost.TRACK_WIDTH_LEFT = road_boundary
 config_env.TRACK_WIDTH_RIGHT = road_boundary
 config_env.TRACK_WIDTH_LEFT = road_boundary
 config_agent.FILTER_TYPE = 'SoftCBF'
+action_space = np.array(config_agent.ACTION_RANGE, dtype=np.float32)
 
 env = CarSingle5DEnv(config_env, config_agent, config_cost)
 env.render_obs(ax=ax, c='k')
@@ -107,6 +108,33 @@ env.render_obs(ax=ax, c='k')
 out_folder, plot_tag, config_agent = run_ddp_cbf(config_file, road_boundary, filter_type='SoftCBF', is_task_ilqr=True, line_search='baseline')
 plot_softcbf_data_reachavoid_constraints = np.load(os.path.join(out_folder, f"road_boundary={road_boundary}/SoftCBF/figure/save_data.npy"), allow_pickle=True)
 plot_softcbf_data_reachavoid_constraints = plot_softcbf_data_reachavoid_constraints.ravel()[0]
+
+########## Reach-avoid with reduced actuation ############
+config_file = './test_configs/reachavoid/test_config_cbf_reachavoid_single_obstacle_bic5D_singular_reduced_actuation.yaml'
+
+# Load the config to get key parameters needed for plot generation.
+config = load_config(config_file)
+config_env = config['environment']
+config_agent = config['agent']
+config_solver = config['solver']
+config_cost = config['cost']
+config_cost.N = config_solver.N
+config_cost.V_MIN = config_agent.V_MIN
+config_cost.DELTA_MIN = config_agent.DELTA_MIN
+config_cost.V_MAX = config_agent.V_MAX
+config_cost.DELTA_MAX = config_agent.DELTA_MAX
+config_cost.TRACK_WIDTH_RIGHT = road_boundary
+config_cost.TRACK_WIDTH_LEFT = road_boundary
+config_env.TRACK_WIDTH_RIGHT = road_boundary
+config_env.TRACK_WIDTH_LEFT = road_boundary
+config_agent.FILTER_TYPE = 'SoftCBF'
+
+env = CarSingle5DEnv(config_env, config_agent, config_cost)
+env.render_obs(ax=ax, c='k')
+
+out_folder, plot_tag, config_agent = run_ddp_cbf(config_file, road_boundary, filter_type='SoftCBF', is_task_ilqr=True, line_search='baseline')
+plot_softcbf_data_reachavoid_actuation = np.load(os.path.join(out_folder, f"road_boundary={road_boundary}/SoftCBF/figure/save_data.npy"), allow_pickle=True)
+plot_softcbf_data_reachavoid_actuation = plot_softcbf_data_reachavoid_actuation.ravel()[0]
 
 # Plot everything for visualizing in report.
 plot_actions_list = []
@@ -132,6 +160,12 @@ plot_obses_list.append( np.array(plot_softcbf_data_reachavoid_constraints['obses
 plot_obses_complete_filter_list.append( np.array(plot_softcbf_data_reachavoid_constraints['complete_indices'] ) )
 plot_obses_barrier_filter_list.append( np.array(plot_softcbf_data_reachavoid_constraints['barrier_indices'] ) )
 plot_values_list.append( np.array(plot_softcbf_data_reachavoid_constraints['values'] ) )
+
+plot_actions_list.append( np.array(plot_softcbf_data_reachavoid_actuation['actions']) )
+plot_obses_list.append( np.array(plot_softcbf_data_reachavoid_actuation['obses'] ) )
+plot_obses_complete_filter_list.append( np.array(plot_softcbf_data_reachavoid_actuation['complete_indices'] ) )
+plot_obses_barrier_filter_list.append( np.array(plot_softcbf_data_reachavoid_actuation['barrier_indices'] ) )
+plot_values_list.append( np.array(plot_softcbf_data_reachavoid_actuation['values'] ) )
 
 for idx, obs_data in enumerate(plot_obses_list):
     sc = ax.plot(
@@ -173,7 +207,6 @@ axes = subfigs[1].subplots(3, 1)
 
 maxsteps = 0
 dt = config_agent.DT
-action_space = np.array(config_agent.ACTION_RANGE, dtype=np.float32)
 for idx, controls_data in enumerate(plot_actions_list):
     nsteps = controls_data.shape[0]
     maxsteps = np.maximum(maxsteps, nsteps)
@@ -186,12 +219,12 @@ for idx, controls_data in enumerate(plot_actions_list):
                     alpha = 1.0, linewidth=1.0, linestyle=stylelist[idx])
     axes[2].plot(x_times, plot_values_list[idx], label=labellist[int(idx)], c=colorlist[int(idx)], 
                     alpha = 1.0, linewidth=1.0, linestyle=stylelist[idx])
-    axes[0].fill_between(x_times, action_space[0, 0], action_space[0, 1], 
-                            where=fillarray[0:nsteps], color=colorlist[int(idx)], alpha=0.15)
-    axes[1].fill_between(x_times, action_space[1, 0], action_space[1, 1], 
-                            where=fillarray[0:nsteps], color=colorlist[int(idx)], alpha=0.15)
-    axes[2].fill_between(x_times, action_space[1, 0], action_space[1, 1], 
-                            where=fillarray[0:nsteps], color=colorlist[int(idx)], alpha=0.15)
+    # axes[0].fill_between(x_times, action_space[0, 0], action_space[0, 1], 
+    #                         where=fillarray[0:nsteps], color=colorlist[int(idx)], alpha=0.15)
+    # axes[1].fill_between(x_times, action_space[1, 0], action_space[1, 1], 
+    #                         where=fillarray[0:nsteps], color=colorlist[int(idx)], alpha=0.15)
+    # axes[2].fill_between(x_times, action_space[1, 0], action_space[1, 1], 
+    #                         where=fillarray[0:nsteps], color=colorlist[int(idx)], alpha=0.15)
 
     #axes[0].set_xlabel('Time index', fontsize=legend_fontsize)
     axes[0].set_ylabel('Acceleration', fontsize=legend_fontsize)
@@ -208,10 +241,14 @@ for idx, controls_data in enumerate(plot_actions_list):
     axes[1].set_ylabel('Steer control', fontsize=legend_fontsize)
     #axes[1].grid(True)
     axes[1].set_xticks(ticks=[], labels=[], fontsize=legend_fontsize)
-    axes[1].set_yticks(ticks=[action_space[1, 0], action_space[1, 1]], 
-                        labels=[action_space[1, 0], action_space[1, 1]], 
+    # axes[1].set_yticks(ticks=[action_space[1, 0], action_space[1, 1]], 
+    #                     labels=[action_space[1, 0], action_space[1, 1]], 
+    #                     fontsize=legend_fontsize)
+    axes[1].set_yticks(ticks=[-2.0, 2.0], 
+                        labels=[-2.0, 2.0], 
                         fontsize=legend_fontsize)
-    axes[1].set_ylim([action_space[1, 0], action_space[1, 1]])
+    #axes[1].set_ylim([action_space[1, 0], action_space[1, 1]])
+    axes[1].set_ylim([-2.0, 2.0])
     #axes[1].legend(fontsize=legend_fontsize)
     axes[1].yaxis.set_label_coords(-0.04, 0.5)
     axes[1].xaxis.set_label_coords(0.5, -0.04)
