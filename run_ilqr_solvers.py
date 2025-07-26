@@ -51,7 +51,7 @@ def main(config_file, road_boundary, filter_type):
     ncols = 2
     subfigs = fig.subfigures(nrows, ncols, wspace=0.05, width_ratios=[1.0, 1.0], height_ratios=[1.0, 1.0, 1.0])
 
-    for velindx, vels in enumerate([1.8, 2.0, 2.2, 2.4, 2.5, 2.7]):
+    for velindx, vels in enumerate([2.0, 2.1, 2.2, 2.3, 2.4, 2.5]):
         row_idx = int(velindx%nrows)
         col_idx = int(velindx/nrows)
         x_cur = np.array([2.1, 0., vels, 0., 0.])
