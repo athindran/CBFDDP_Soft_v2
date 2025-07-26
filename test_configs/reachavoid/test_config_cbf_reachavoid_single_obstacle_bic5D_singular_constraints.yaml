@@ -44,8 +44,8 @@ cost:
   USE_YAW: false
   # Velocity constraint is not applicable to the current reach-avoid formulation.
   USE_VEL: false
-  USE_DELTA: false
-  USE_ROAD: false
+  USE_DELTA: true
+  USE_ROAD: true
   COST_TYPE: Reachavoid
   # SAFETY COST PARAM
   W_ACCEL: 0.1
