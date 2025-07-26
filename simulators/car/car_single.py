@@ -360,18 +360,18 @@ class CarSingle5DEnv(BaseSingleEnv):
                 dimensions = vertices[2:4]
                 obs_rect = plt.Rectangle(
                     [vertices[0] - vertices[3], vertices[1] - vertices[4]], 2*vertices[3], 
-                        2*vertices[4], angle = np.rad2deg(vertices[2]), rotation_point='center', alpha=0.4, color=c)
+                        2*vertices[4], angle = np.rad2deg(vertices[2]), rotation_point='center', alpha=1.0, facecolor=None, edgecolor=c, fill=False)
                 ax.add_patch(obs_rect)
         elif self.cost.constraint.obsc_type == 'circle':
             for vertices in self.obs_vertices_list:
                 obs_circle = plt.Circle(
-                    [vertices[0], vertices[1]], vertices[2], alpha=0.4, color=c)
+                    [vertices[0], vertices[1]], vertices[2], alpha=1.0, facecolor=None, edgecolor=c, fill=False)
                 ax.add_patch(obs_circle)
         elif self.cost.constraint.obsc_type == 'ellipse':
             for vertices in self.obs_vertices_list:
                 obs_ellipse = Ellipse(
                     [vertices[0], vertices[1]], 2*vertices[3], 2*vertices[4], 
-                        angle = np.rad2deg(vertices[2]), alpha=0.4, color=c)
+                        angle = np.rad2deg(vertices[2]), alpha=1.0, facecolor=None, edgecolor=c, fill=False)
                 ax.add_patch(obs_ellipse)
 
     def render_state_cost_map(
@@ -402,10 +402,21 @@ class CarSingle5DEnv(BaseSingleEnv):
         else:
             assert cost_type == "constraint"
             cost = self.cost
-        v = cost.get_stage_margin(state, ctrl).reshape(nx, ny)
+        v = cost.get_mapped_margin(state, ctrl).reshape(nx, ny)
+        NEGATIVE_CONSTANT = 1.0
+        v = jnp.where(v>0, 0.0, v)
+        v = jnp.where(v<0, NEGATIVE_CONSTANT, v)
+        v_np = np.array(v)
+        # for xindex in np.arange(1, v.shape[0] - 1):
+        #     for yindex in np.arange(1, v.shape[1] - 1):
+        #         if (v[xindex, yindex] == -10.0 and 
+        #                (v[xindex - 1, yindex - 1] == -10.0 and  
+        #                 v[xindex + 1, yindex - 1] == -10.0 and
+        #                 v[xindex - 1, yindex + 1] == -10.0 and
+        #                 v[xindex + 1, yindex + 1] == -10.0)):
+        #             v_np[xindex, yindex] = 0.0
         ax.imshow(
-            v.T, interpolation='none', extent=[xmin, xmax, ymin, ymax],
-            origin="lower", cmap=cmap, vmin=vmin, vmax=vmax, zorder=-1, alpha=alpha
+            v_np.T, interpolation='none', extent=[xmin, xmax, ymin, ymax], cmap='Greys', label='SoftMargin (with ego radius)'
         )
 
     def _reshape(
