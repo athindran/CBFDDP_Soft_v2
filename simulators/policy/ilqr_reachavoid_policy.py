@@ -49,10 +49,10 @@ class iLQRReachAvoid(iLQR):
 
         is_inside_target = (target_margins[0] > 0)
         ctrl_costs = self.cost.ctrl_cost.get_mapped_margin(states, controls)
-        critical, reachavoid__margin = self.get_critical_points(
+        critical, reachavoid_margin = self.get_critical_points(
             failure_margins, target_margins)
 
-        J = (reachavoid__margin + jnp.sum(ctrl_costs)).astype(float)
+        J = (reachavoid_margin + jnp.sum(ctrl_costs)).astype(float)
 
         converged = False
         time0 = time.time()
@@ -125,6 +125,8 @@ class iLQRReachAvoid(iLQR):
             states=states, controls=controls, reinit_controls=controls, t_process=t_process,
             status=status, Vopt=J, marginopt=reachavoid_margin,
             grad_x=V_x, grad_xx=V_xx, B0=fu[:, :, 0], critical=critical,
+            curr_target_margin = target_margins[0],
+            curr_failure_margin = failure_margins[0],
             is_inside_target=is_inside_target, K_closed_loop=K_closed_loop, k_open_loop=k_open_loop,
             constant_term=np.float64(constant_term_loop[0])
         )

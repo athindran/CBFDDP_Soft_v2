@@ -51,7 +51,7 @@ def main(config_file, road_boundary, filter_type):
     ncols = 2
     subfigs = fig.subfigures(nrows, ncols, wspace=0.05, width_ratios=[1.0, 1.0], height_ratios=[1.0, 1.0, 1.0])
 
-    for velindx, vels in enumerate([2.0, 2.1, 2.2, 2.3, 2.4, 2.5]):
+    for velindx, vels in enumerate([2.1, 2.2, 2.3, 2.4, 2.5, 2.6]):
         row_idx = int(velindx%nrows)
         col_idx = int(velindx/nrows)
         x_cur = np.array([2.1, 0., vels, 0., 0.])
@@ -100,7 +100,9 @@ def main(config_file, road_boundary, filter_type):
         dim_1_samples = 30
 
         boot_controls = None
-        Vopts = []
+        marginopts = []
+        target_margs = []
+        failure_margs = []
         for x1_idx in np.arange(-dim_1_samples, dim_1_samples + 1):
             x0_frac = 0.0
             x1_frac = x1_idx/float(dim_1_samples)
@@ -114,8 +116,10 @@ def main(config_file, road_boundary, filter_type):
 
             runtimes.append(end_time)
             #boot_controls = solver_info['controls']
-            Vopts.append(solver_info['Vopt'])
-            if solver_info['Vopt'] > 0:
+            marginopts.append(solver_info['marginopt'])
+            target_margs.append(solver_info['curr_target_margin'])
+            failure_margs.append(solver_info['curr_failure_margin'])
+            if solver_info['marginopt'] > 0:
                 ax.plot(solver_info['states'][0], solver_info['states'][1], color='g', alpha=0.8)
                 ax.scatter(solver_info['states'][0, 0], solver_info['states'][1, 0], color='k', s=12, alpha=0.5)
             else:
@@ -123,24 +127,29 @@ def main(config_file, road_boundary, filter_type):
                 ax.scatter(solver_info['states'][0, 0], solver_info['states'][1, 0], color='k', s=12, alpha=0.5)
 
         xvals = np.arange(-dim_1_samples, dim_1_samples + 1)/float(dim_1_samples)
-        ax_v.plot(xvals, Vopts)
+        ax_v.plot(xvals, marginopts, label='$V$')
+        ax_v.plot(xvals, target_margs, label='$\ell$')
+        ax_v.plot(xvals, failure_margs, label='$c$')
+        if velindx==5:
+            ax_v.legend(fontsize=legend_fontsize, ncol=2)
         ax_v.plot(xvals, np.zeros_like(xvals), 'k--', linewidth=1.2)
         ax.set_title(f'Velocity (m/s): {vels}', fontsize=legend_fontsize)
         ax_v.set_title(f'Velocity (m/s): {vels}', fontsize=legend_fontsize)
         ax.set_xlabel('X position (m)', fontsize=legend_fontsize)
         ax.set_ylabel('Y position (m)', fontsize=legend_fontsize)
-        ax.set_xticks(ticks=[0.0, 8.0], labels=[0.0, 8.0], fontsize=legend_fontsize)
+        ax.set_xticks(ticks=[0.0, 2.1, 5.5, 8.0], labels=[0.0, 2.1, 5.5, 8.0], fontsize=legend_fontsize)
         ax.set_yticks(ticks=[-2.5, 0.0, 2.5], 
                             labels=[-2.5, 0.0, 2.5], 
                             fontsize=legend_fontsize)
+        ax.grid(linestyle='--')
         ax_v.set_xticks(ticks=[-1.0, -0.5, 0.0, 0.5, 1.0], labels=[-1.0, -0.5, 0.0, 0.5, 1.0], fontsize=legend_fontsize)
-        ax_v.set_yticks(ticks=[-1.0, 0.0, 1.5], 
-                            labels=[-1.0, 0.0, 1.5], 
+        ax_v.set_yticks(ticks=[-0.5, 0.0, 2.5], 
+                            labels=[-0.5, 0.0, 2.5], 
                             fontsize=legend_fontsize)
-        ax_v.set_ylim([-1.0, 1.5])
-        ax.xaxis.set_label_coords(0.5, -0.04)
+        ax_v.set_ylim([-0.5, 2.5])
+        #ax.xaxis.set_label_coords(0.5, -0.04)
         ax_v.set_xlabel('Y position (m)', fontsize=legend_fontsize)
-        ax_v.set_ylabel('Reach-Avoid value', fontsize=legend_fontsize)
+        ax_v.set_ylabel('Reach-Avoid margin', fontsize=legend_fontsize)
         ax_v.grid(linestyle='--')
 
         runtimes = np.array(runtimes)
