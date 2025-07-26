@@ -44,81 +44,111 @@ def main(config_file, road_boundary, filter_type):
     plot_tag = config_env.tag + '-' + str(filter_type)
 
     env = CarSingle5DEnv(config_env, config_agent, config_cost)
-    x_cur = np.array([2.1, 0., 2.4, 0., 0.])
-    env.reset(x_cur)
 
-    # region: Constructs placeholder and initializes iLQR
-    config_ilqr_cost = copy.deepcopy(config_cost)
+    fig = plt.figure(layout='constrained', figsize=(7.5, 5.8))
+    legend_fontsize = 7.0
+    nrows = 3
+    ncols = 2
+    subfigs = fig.subfigures(nrows, ncols, wspace=0.05, width_ratios=[1.0, 1.0], height_ratios=[1.0, 1.0, 1.0])
 
-    policy_type = None
-    cost = None
-    config_solver.COST_TYPE = config_cost.COST_TYPE
-    if config_cost.COST_TYPE == "Reachavoid":
-        policy_type = "iLQRReachAvoid"
-        cost = BicycleReachAvoid5DMargin(
-            config_ilqr_cost, copy.deepcopy(env.agent.dyn), filter_type)
-        env.cost = cost  # ! hacky
-    # Not supported
-    elif config_cost.COST_TYPE == "Reachability":
-        policy_type = "iLQRReachability"
-        cost = BicycleReachAvoid5DMargin(
-            config_ilqr_cost, copy.deepcopy(env.agent.dyn), filter_type)
-        env.cost = cost  # ! hacky
+    for velindx, vels in enumerate([1.8, 2.0, 2.2, 2.4, 2.5, 2.7]):
+        row_idx = int(velindx%nrows)
+        col_idx = int(velindx/nrows)
+        x_cur = np.array([2.1, 0., vels, 0., 0.])
+        env.reset(x_cur)
 
-    env.agent.init_policy(
-        policy_type=policy_type,
-        config=config_solver,
-        cost=cost,
-        task_cost=None)
-    max_iter_receding = config_solver.MAX_ITER_RECEDING
+        # region: Constructs placeholder and initializes iLQR
+        config_ilqr_cost = copy.deepcopy(config_cost)
 
-    # region: Runs iLQR
-    # Warms up jit
-    env.agent.get_action(obs=x_cur, state=x_cur, warmup=True)
-    env.report()
+        policy_type = None
+        cost = None
+        config_solver.COST_TYPE = config_cost.COST_TYPE
+        if config_cost.COST_TYPE == "Reachavoid":
+            policy_type = "iLQRReachAvoid"
+            cost = BicycleReachAvoid5DMargin(
+                config_ilqr_cost, copy.deepcopy(env.agent.dyn), filter_type)
+            env.cost = cost  # ! hacky
+        # Not supported
+        elif config_cost.COST_TYPE == "Reachability":
+            policy_type = "iLQRReachability"
+            cost = BicycleReachAvoid5DMargin(
+                config_ilqr_cost, copy.deepcopy(env.agent.dyn), filter_type)
+            env.cost = cost  # ! hacky
 
-    fig, axes = plt.subplots(1, 2, figsize=(6.5, 2.5))
-    ax = axes[0]
-    ax_v = axes[1]
-    ax.axis(env.visual_extent)
-    #ax.set_aspect('equal')
-    env.render_obs(ax=ax, c='k')
+        env.agent.init_policy(
+            policy_type=policy_type,
+            config=config_solver,
+            cost=cost,
+            task_cost=None)
+        max_iter_receding = config_solver.MAX_ITER_RECEDING
 
-    runtimes = []
+        # region: Runs iLQR
+        # Warms up jit
+        env.agent.get_action(obs=x_cur, state=x_cur, warmup=True)
+        env.report()
 
-    dim_0_samples = 30
-    dim_1_samples = 30
+        axes = subfigs[row_idx][col_idx].subplots(1, 2)
+        ax = axes[0]
+        ax_v = axes[1]
+        ax.axis(env.visual_extent)
+        #ax.set_aspect('equal')
+        env.render_obs(ax=ax, c='k')
 
-    boot_controls = None
-    Vopts = []
-    for x1_idx in np.arange(-dim_1_samples, dim_1_samples + 1):
-        x0_frac = 0.0
-        x1_frac = x1_idx/float(dim_1_samples)
-        delta = np.array([x0_frac*config_env.TRACK_LEN, x1_frac*1.0])
-        x_upd = np.array(x_cur)
-        x_upd[0] += delta[0]
-        x_upd[1] += delta[1]
-        start_time = time.time()
-        _, solver_info = env.agent.get_action(obs=x_upd, state=x_upd, controls=boot_controls)
-        end_time = time.time() - start_time
+        runtimes = []
 
-        runtimes.append(end_time)
-        #boot_controls = solver_info['controls']
-        Vopts.append(solver_info['Vopt'])
-        if solver_info['Vopt'] > 0:
-            ax.plot(solver_info['states'][0], solver_info['states'][1], color='g', alpha=0.8)
-            ax.scatter(solver_info['states'][0, 0], solver_info['states'][1, 0], color='k', s=12, alpha=0.5)
-        else:
-            ax.plot(solver_info['states'][0], solver_info['states'][1], color='r', alpha=0.8)
-            ax.scatter(solver_info['states'][0, 0], solver_info['states'][1, 0], color='k', s=12, alpha=0.5)
+        dim_0_samples = 30
+        dim_1_samples = 30
 
-    ax_v.plot(np.arange(-dim_1_samples, dim_1_samples + 1)/float(dim_1_samples), Vopts)
+        boot_controls = None
+        Vopts = []
+        for x1_idx in np.arange(-dim_1_samples, dim_1_samples + 1):
+            x0_frac = 0.0
+            x1_frac = x1_idx/float(dim_1_samples)
+            delta = np.array([x0_frac*config_env.TRACK_LEN, x1_frac*1.0])
+            x_upd = np.array(x_cur)
+            x_upd[0] += delta[0]
+            x_upd[1] += delta[1]
+            start_time = time.time()
+            _, solver_info = env.agent.get_action(obs=x_upd, state=x_upd, controls=boot_controls)
+            end_time = time.time() - start_time
+
+            runtimes.append(end_time)
+            #boot_controls = solver_info['controls']
+            Vopts.append(solver_info['Vopt'])
+            if solver_info['Vopt'] > 0:
+                ax.plot(solver_info['states'][0], solver_info['states'][1], color='g', alpha=0.8)
+                ax.scatter(solver_info['states'][0, 0], solver_info['states'][1, 0], color='k', s=12, alpha=0.5)
+            else:
+                ax.plot(solver_info['states'][0], solver_info['states'][1], color='r', alpha=0.8)
+                ax.scatter(solver_info['states'][0, 0], solver_info['states'][1, 0], color='k', s=12, alpha=0.5)
+
+        xvals = np.arange(-dim_1_samples, dim_1_samples + 1)/float(dim_1_samples)
+        ax_v.plot(xvals, Vopts)
+        ax_v.plot(xvals, np.zeros_like(xvals), 'k--', linewidth=1.2)
+        ax.set_title(f'Velocity (m/s): {vels}', fontsize=legend_fontsize)
+        ax_v.set_title(f'Velocity (m/s): {vels}', fontsize=legend_fontsize)
+        ax.set_xlabel('X position (m)', fontsize=legend_fontsize)
+        ax.set_ylabel('Y position (m)', fontsize=legend_fontsize)
+        ax.set_xticks(ticks=[0.0, 8.0], labels=[0.0, 8.0], fontsize=legend_fontsize)
+        ax.set_yticks(ticks=[-2.5, 0.0, 2.5], 
+                            labels=[-2.5, 0.0, 2.5], 
+                            fontsize=legend_fontsize)
+        ax_v.set_xticks(ticks=[-1.0, -0.5, 0.0, 0.5, 1.0], labels=[-1.0, -0.5, 0.0, 0.5, 1.0], fontsize=legend_fontsize)
+        ax_v.set_yticks(ticks=[-1.0, 0.0, 1.5], 
+                            labels=[-1.0, 0.0, 1.5], 
+                            fontsize=legend_fontsize)
+        ax_v.set_ylim([-1.0, 1.5])
+        ax.xaxis.set_label_coords(0.5, -0.04)
+        ax_v.set_xlabel('Y position (m)', fontsize=legend_fontsize)
+        ax_v.set_ylabel('Reach-Avoid value', fontsize=legend_fontsize)
+        ax_v.grid(linestyle='--')
+
+        runtimes = np.array(runtimes)
+        print(f"Mean solver time: {np.mean(runtimes)}")
+        print(f"Max solver time: {np.max(runtimes)}")
+        print(f"Min solver time: {np.min(runtimes)}")
+
     plt.savefig(os.path.join('./contour_plots', plot_tag+'.png'), bbox_inches='tight', dpi=300)
-
-    runtimes = np.array(runtimes)
-    print(f"Mean solver time: {np.mean(runtimes)}")
-    print(f"Max solver time: {np.max(runtimes)}")
-    print(f"Min solver time: {np.min(runtimes)}")
 
 
 if __name__ == "__main__":
