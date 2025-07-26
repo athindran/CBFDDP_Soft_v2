@@ -18,7 +18,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = " "
 jax.config.update('jax_platform_name', 'cpu')
 
 fig = plt.figure(layout='constrained', figsize=(7.0, 3.4))
-colorlist = [(0, 0, 1.0, 1), (1.0, 0.0, 0.0, 0.5), (0, 0, 0, 1)]
+colorlist = [(0.0, 0, 1.0, 1), (1.0, 0.0, 0.0, 1.0), (0, 0, 0, 0.8)]
 labellist = ['Reach-avoid (only obstacle)', 'Reachability', 'Reach-avoid']
 stylelist = ['solid', 'solid', 'solid']
 legend_fontsize = 7.2
@@ -136,7 +136,7 @@ plot_values_list.append( np.array(plot_softcbf_data_reachavoid_constraints['valu
 for idx, obs_data in enumerate(plot_obses_list):
     sc = ax.plot(
         obs_data[:, 0], obs_data[:, 1], color=colorlist[int(idx)], alpha = 1.0, 
-        label=labellist[int(idx)], linewidth=1.5, linestyle=stylelist[int(idx)]
+        label=labellist[int(idx)], linewidth=1.0, linestyle=stylelist[int(idx)],
     )
     env.render_footprint(ax, obs=obs_data[-1], c='b', lw=0.5)
     complete_filter_indices = plot_obses_complete_filter_list[idx]
@@ -154,7 +154,7 @@ for idx, obs_data in enumerate(plot_obses_list):
 
 ax.legend(framealpha=0, fontsize=legend_fontsize, loc='upper left', 
             ncol=2, bbox_to_anchor=(-0.05, 1.35), fancybox=False, shadow=False)
-ax.set_title('Trajectories with zero radius for ego vehicle', fontsize=8)
+ax.set_title(f'Trajectories with {config_agent.EGO_RADIUS} radius for ego vehicle', fontsize=8)
 # ax.text(0.79, 0.79, f'Soft constraint with zero ego radius', color='black', ha='center', va='center', fontsize=5, fontweight='bold')
 ax.set_xticks(ticks=[0, env.visual_extent[1]], labels=[0, env.visual_extent[1]], 
                 fontsize=legend_fontsize)
@@ -181,11 +181,11 @@ for idx, controls_data in enumerate(plot_actions_list):
     fillarray = np.zeros(maxsteps)
     fillarray[np.array(plot_obses_barrier_filter_list[idx], dtype=np.int64)] = 1
     axes[0].plot(x_times, controls_data[:, 0], label=labellist[int(idx)], c=colorlist[int(idx)], 
-                    alpha = 1.0, linewidth=1.5, linestyle=stylelist[idx])
+                    alpha = 1.0, linewidth=1.0, linestyle=stylelist[idx])
     axes[1].plot(x_times, controls_data[:, 1], label=labellist[int(idx)], c=colorlist[int(idx)], 
-                    alpha = 1.0, linewidth=1.5, linestyle=stylelist[idx])
+                    alpha = 1.0, linewidth=1.0, linestyle=stylelist[idx])
     axes[2].plot(x_times, plot_values_list[idx], label=labellist[int(idx)], c=colorlist[int(idx)], 
-                    alpha = 1.0, linewidth=1.5, linestyle=stylelist[idx])
+                    alpha = 1.0, linewidth=1.0, linestyle=stylelist[idx])
     axes[0].fill_between(x_times, action_space[0, 0], action_space[0, 1], 
                             where=fillarray[0:nsteps], color=colorlist[int(idx)], alpha=0.15)
     axes[1].fill_between(x_times, action_space[1, 0], action_space[1, 1], 
@@ -217,7 +217,7 @@ for idx, controls_data in enumerate(plot_actions_list):
     axes[1].xaxis.set_label_coords(0.5, -0.04)
 
     axes[2].set_xlabel('Time (s)', fontsize=legend_fontsize)
-    axes[2].set_ylabel('$V$', fontsize=legend_fontsize)
+    axes[2].set_ylabel('Value function', fontsize=legend_fontsize)
     #axes[1].grid(True)
     axes[2].set_xticks(ticks=[0, round(dt*maxsteps, 2)], labels=[0, round(dt*maxsteps, 2)], fontsize=legend_fontsize)
     axes[2].set_yticks(ticks=[0.0, 3.0], 

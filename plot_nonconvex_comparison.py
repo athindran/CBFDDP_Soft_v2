@@ -111,7 +111,7 @@ plot_obses_barrier_filter_list.append( np.array(plot_ellipse_softcbf_data['barri
 for idx, obs_data in enumerate(plot_obses_list):
     sc = ax.plot(
         obs_data[:, 0], obs_data[:, 1], color=colorlist[int(idx)], alpha = 1.0, 
-        label=labellist[int(idx)], linewidth=1.5, linestyle=stylelist[int(idx)]
+        label=labellist[int(idx)], linewidth=1.0, linestyle=stylelist[int(idx)]
     )
     env.render_footprint(ax, obs=obs_data[-1], c='b', lw=0.5)
     complete_filter_indices = plot_obses_complete_filter_list[idx]
@@ -156,9 +156,9 @@ for idx, controls_data in enumerate(plot_actions_list):
     fillarray = np.zeros(maxsteps)
     fillarray[np.array(plot_obses_barrier_filter_list[idx], dtype=np.int64)] = 1
     axes[0].plot(x_times, controls_data[:, 0], label=labellist[int(idx)], c=colorlist[int(idx)], 
-                    alpha = 1.0, linewidth=1.5, linestyle=stylelist[idx])
+                    alpha = 1.0, linewidth=1.0, linestyle=stylelist[idx])
     axes[1].plot(x_times, controls_data[:, 1], label=labellist[int(idx)], c=colorlist[int(idx)], 
-                    alpha = 1.0, linewidth=1.5, linestyle=stylelist[idx])
+                    alpha = 1.0, linewidth=1.0, linestyle=stylelist[idx])
     axes[0].fill_between(x_times, action_space[0, 0], action_space[0, 1], 
                             where=fillarray[0:nsteps], color=colorlist[int(idx)], alpha=0.15)
     axes[1].fill_between(x_times, action_space[1, 0], action_space[1, 1], 

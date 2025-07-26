@@ -406,17 +406,9 @@ class CarSingle5DEnv(BaseSingleEnv):
         NEGATIVE_CONSTANT = 1.0
         v = jnp.where(v>0, 0.0, v)
         v = jnp.where(v<0, NEGATIVE_CONSTANT, v)
-        v_np = np.array(v)
-        # for xindex in np.arange(1, v.shape[0] - 1):
-        #     for yindex in np.arange(1, v.shape[1] - 1):
-        #         if (v[xindex, yindex] == -10.0 and 
-        #                (v[xindex - 1, yindex - 1] == -10.0 and  
-        #                 v[xindex + 1, yindex - 1] == -10.0 and
-        #                 v[xindex - 1, yindex + 1] == -10.0 and
-        #                 v[xindex + 1, yindex + 1] == -10.0)):
-        #             v_np[xindex, yindex] = 0.0
         ax.imshow(
-            v_np.T, interpolation='none', extent=[xmin, xmax, ymin, ymax], cmap='Greys', label='SoftMargin (with ego radius)'
+            v.T, interpolation='none', extent=[xmin, xmax, ymin, ymax], cmap='Greys',
+                norm = matplotlib.colors.Normalize(vmin=0, vmax=2.5), label='SoftMargin (with ego radius)'
         )
 
     def _reshape(
