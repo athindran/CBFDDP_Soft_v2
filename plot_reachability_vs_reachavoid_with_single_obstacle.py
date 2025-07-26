@@ -18,10 +18,10 @@ os.environ["CUDA_VISIBLE_DEVICES"] = " "
 jax.config.update('jax_platform_name', 'cpu')
 
 fig = plt.figure(layout='constrained', figsize=(7.0, 3.4))
-colorlist = [(0.0, 0, 1.0, 1), (1.0, 0.0, 0.0, 1.0), (0, 0, 0, 0.8), (0.6, 0.6, 1.0, 1.0)]
-labellist = ['Reach-avoid (only obs)', 'Reachability', 'Reach-avoid (aux)', 'Reach-avoid (act)']
+colorlist = [(0.0, 0, 1.0, 1), (1.0, 0.0, 0.0, 1.0), (0, 0, 0, 0.8), (0.45, 0.0, 1.0, 1.0)]
+labellist = ['Reach-avoid (only obs)', 'Reachability (only obs)', 'Reach-avoid (aux)', 'Reach-avoid (act)']
 stylelist = ['solid', 'dashed', 'dotted', 'dashdot']
-legend_fontsize = 7.2
+legend_fontsize = 7.5
 
 ########## Reach avoid with only obstacle ############
 config_file = './test_configs/reachavoid/test_config_cbf_reachavoid_single_obstacle_bic5D_singular.yaml'
@@ -219,12 +219,13 @@ for idx, controls_data in enumerate(plot_actions_list):
                     alpha = 1.0, linewidth=1.0, linestyle=stylelist[idx])
     axes[2].plot(x_times, plot_values_list[idx], label=labellist[int(idx)], c=colorlist[int(idx)], 
                     alpha = 1.0, linewidth=1.0, linestyle=stylelist[idx])
-    # axes[0].fill_between(x_times, action_space[0, 0], action_space[0, 1], 
-    #                         where=fillarray[0:nsteps], color=colorlist[int(idx)], alpha=0.15)
-    # axes[1].fill_between(x_times, action_space[1, 0], action_space[1, 1], 
-    #                         where=fillarray[0:nsteps], color=colorlist[int(idx)], alpha=0.15)
-    # axes[2].fill_between(x_times, action_space[1, 0], action_space[1, 1], 
-    #                         where=fillarray[0:nsteps], color=colorlist[int(idx)], alpha=0.15)
+    if idx==3:
+        axes[0].fill_between(x_times, action_space[0, 0], action_space[0, 1], 
+                                where=fillarray[0:nsteps], color=colorlist[int(idx)], alpha=0.15)
+        axes[1].fill_between(x_times, action_space[1, 0], action_space[1, 1], 
+                                where=fillarray[0:nsteps], color=colorlist[int(idx)], alpha=0.15)
+        axes[2].fill_between(x_times, action_space[1, 0], action_space[1, 1], 
+                                where=fillarray[0:nsteps], color=colorlist[int(idx)], alpha=0.15)
 
     #axes[0].set_xlabel('Time index', fontsize=legend_fontsize)
     axes[0].set_ylabel('Acceleration', fontsize=legend_fontsize)
@@ -244,11 +245,11 @@ for idx, controls_data in enumerate(plot_actions_list):
     # axes[1].set_yticks(ticks=[action_space[1, 0], action_space[1, 1]], 
     #                     labels=[action_space[1, 0], action_space[1, 1]], 
     #                     fontsize=legend_fontsize)
-    axes[1].set_yticks(ticks=[-2.0, 2.0], 
-                        labels=[-2.0, 2.0], 
+    axes[1].set_yticks(ticks=[-1.0, 1.0], 
+                        labels=[-1.0, 1.0], 
                         fontsize=legend_fontsize)
     #axes[1].set_ylim([action_space[1, 0], action_space[1, 1]])
-    axes[1].set_ylim([-2.0, 2.0])
+    axes[1].set_ylim([-1.0, 1.0])
     #axes[1].legend(fontsize=legend_fontsize)
     axes[1].yaxis.set_label_coords(-0.04, 0.5)
     axes[1].xaxis.set_label_coords(0.5, -0.04)
