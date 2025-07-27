@@ -21,7 +21,7 @@ jax.config.update('jax_platform_name', 'cpu')
 dim_0_samples = 30
 dim_1_samples = 30
 
-def plot_action_from_agent(ax, ax_v, config_env, x_cur, env, range_vals, runtimes):
+def plot_action_from_agent(ax, ax_v, config_env, x_cur, env, range_vals, runtimes, initializer_type):
     boot_controls = None
     marginopts = []
     target_margs = []
@@ -39,7 +39,10 @@ def plot_action_from_agent(ax, ax_v, config_env, x_cur, env, range_vals, runtime
         end_time = time.time() - start_time
 
         runtimes.append(end_time)
-        boot_controls = solver_info['controls']
+
+        if initializer_type == 'bootstrap':
+            boot_controls = solver_info['controls']
+
         marginopts.append(solver_info['marginopt'])
         target_margs.append(solver_info['curr_target_margin'])
         failure_margs.append(solver_info['curr_failure_margin'])
@@ -54,7 +57,7 @@ def plot_action_from_agent(ax, ax_v, config_env, x_cur, env, range_vals, runtime
 
     return xvals, marginopts, target_margs, failure_margs
 
-def main(config_file, road_boundary, filter_type):
+def main(config_file, road_boundary, filter_type, initializer_type):
     ## ------------------------------------- Warmup fields ------------------------------------------ ##
     config = load_config(config_file)
     config_env = config['environment']
@@ -131,18 +134,18 @@ def main(config_file, road_boundary, filter_type):
 
         runtimes = []
         range_vals = np.arange(-dim_1_samples, 0)
-        xvals_1, marginopts_1, target_margs_1, failure_margs_1 = plot_action_from_agent(ax, ax_v, config_env, x_cur, env, range_vals, runtimes)
+        xvals_1, marginopts_1, target_margs_1, failure_margs_1 = plot_action_from_agent(ax, ax_v, config_env, x_cur, env, range_vals, runtimes, initializer_type)
         range_vals = np.arange(dim_1_samples, 0, -1)
-        xvals_2, marginopts_2, target_margs_2, failure_margs_2 = plot_action_from_agent(ax, ax_v, config_env, x_cur, env, range_vals, runtimes)
+        xvals_2, marginopts_2, target_margs_2, failure_margs_2 = plot_action_from_agent(ax, ax_v, config_env, x_cur, env, range_vals, runtimes, initializer_type)
 
         xvals = np.concatenate((xvals_1, np.flip(xvals_2, axis=-1)), axis=-1)
         marginopts = np.concatenate((marginopts_1, np.flip(marginopts_2, axis=-1)), axis=-1)
         target_margs = np.concatenate((target_margs_1, np.flip(target_margs_2, axis=-1)), axis=-1)
         failure_margs = np.concatenate((failure_margs_1, np.flip(failure_margs_2, axis=-1)), axis=-1)
 
-        ax_v.plot(xvals, marginopts, label='$V$')
-        ax_v.plot(xvals, target_margs, label='$\ell$')
-        ax_v.plot(xvals, failure_margs, label='$c$')
+        ax_v.plot(xvals, marginopts, linestyle='solid', label='$V$')
+        ax_v.plot(xvals, target_margs, linestyle='dashed', label='$\ell$')
+        ax_v.plot(xvals, failure_margs, linestyle='dashed', label='$c$')
 
         if velindx==5:
             ax_v.legend(fontsize=legend_fontsize, ncol=2)
@@ -158,7 +161,7 @@ def main(config_file, road_boundary, filter_type):
         ax.set_ylim([-4.0, 4.0])
         ax.yaxis.set_label_coords(-0.1, 0.5)
         ax.grid(linestyle='--')
-        ax_v.set_xticks(ticks=[-1.0, -0.5, 0.0, 0.5, 1.0], labels=[-1.0, -0.5, 0.0, 0.5, 1.0], fontsize=legend_fontsize)
+        ax_v.set_xticks(ticks=[-1.0, 0.0, 1.0], labels=[-1.0, 0.0, 1.0], fontsize=legend_fontsize)
         ax_v.set_yticks(ticks=[0.0, 3.5], 
                             labels=[0.0, 3.5], 
                             fontsize=legend_fontsize)
@@ -174,7 +177,7 @@ def main(config_file, road_boundary, filter_type):
         print(f"Max solver time: {np.max(runtimes)}")
         print(f"Min solver time: {np.min(runtimes)}")
 
-    plt.savefig(os.path.join('./contour_plots', plot_tag+'.png'), bbox_inches='tight', dpi=300)
+    plt.savefig(os.path.join('./contour_plots', plot_tag + '_' + initializer_type + '.png'), bbox_inches='tight', dpi=300)
 
 
 if __name__ == "__main__":
@@ -203,8 +206,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     filters=['SoftCBF']
-    
+    initializer_type = 'bootstrap'
     out_folder, plot_tag, config_agent = None, None, None
     for filter_type in filters:
-        main(args.config_file, args.road_boundary, filter_type=filter_type)
+        main(args.config_file, args.road_boundary, initializer_type=initializer_type, filter_type=filter_type)
 
