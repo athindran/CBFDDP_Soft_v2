@@ -18,6 +18,41 @@ os.environ["CUDA_VISIBLE_DEVICES"] = " "
 
 jax.config.update('jax_platform_name', 'cpu')
 
+dim_0_samples = 30
+dim_1_samples = 30
+
+def plot_action_from_agent(ax, ax_v, config_env, x_cur, env, range_vals, runtimes):
+    boot_controls = None
+    marginopts = []
+    target_margs = []
+    failure_margs = []
+
+    for x1_idx in range_vals:
+        x0_frac = 0.0
+        x1_frac = x1_idx/float(dim_1_samples)
+        delta = np.array([x0_frac*config_env.TRACK_LEN, x1_frac*2.0])
+        x_upd = np.array(x_cur)
+        x_upd[0] += delta[0]
+        x_upd[1] += delta[1]
+        start_time = time.time()
+        _, solver_info = env.agent.get_action(obs=x_upd, state=x_upd, controls=boot_controls)
+        end_time = time.time() - start_time
+
+        runtimes.append(end_time)
+        boot_controls = solver_info['controls']
+        marginopts.append(solver_info['marginopt'])
+        target_margs.append(solver_info['curr_target_margin'])
+        failure_margs.append(solver_info['curr_failure_margin'])
+        if solver_info['marginopt'] > 0:
+            ax.plot(solver_info['states'][0], solver_info['states'][1], color='g', alpha=0.8)
+            ax.scatter(solver_info['states'][0, 0], solver_info['states'][1, 0], color='k', s=12, alpha=0.5)
+        else:
+            ax.plot(solver_info['states'][0], solver_info['states'][1], color='r', alpha=0.8)
+            ax.scatter(solver_info['states'][0, 0], solver_info['states'][1, 0], color='k', s=12, alpha=0.5)
+
+    xvals = range_vals/float(dim_1_samples)
+
+    return xvals, marginopts, target_margs, failure_margs
 
 def main(config_file, road_boundary, filter_type):
     ## ------------------------------------- Warmup fields ------------------------------------------ ##
@@ -91,63 +126,43 @@ def main(config_file, road_boundary, filter_type):
         ax = axes[0]
         ax_v = axes[1]
         ax.axis(env.visual_extent)
-        #ax.set_aspect('equal')
+        ax.set_aspect('equal')
         env.render_obs(ax=ax, c='k')
 
         runtimes = []
+        range_vals = np.arange(-dim_1_samples, 0)
+        xvals_1, marginopts_1, target_margs_1, failure_margs_1 = plot_action_from_agent(ax, ax_v, config_env, x_cur, env, range_vals, runtimes)
+        range_vals = np.arange(dim_1_samples, 0, -1)
+        xvals_2, marginopts_2, target_margs_2, failure_margs_2 = plot_action_from_agent(ax, ax_v, config_env, x_cur, env, range_vals, runtimes)
 
-        dim_0_samples = 30
-        dim_1_samples = 30
+        xvals = np.concatenate((xvals_1, np.flip(xvals_2, axis=-1)), axis=-1)
+        marginopts = np.concatenate((marginopts_1, np.flip(marginopts_2, axis=-1)), axis=-1)
+        target_margs = np.concatenate((target_margs_1, np.flip(target_margs_2, axis=-1)), axis=-1)
+        failure_margs = np.concatenate((failure_margs_1, np.flip(failure_margs_2, axis=-1)), axis=-1)
 
-        boot_controls = None
-        marginopts = []
-        target_margs = []
-        failure_margs = []
-        for x1_idx in np.arange(-dim_1_samples, dim_1_samples + 1):
-            x0_frac = 0.0
-            x1_frac = x1_idx/float(dim_1_samples)
-            delta = np.array([x0_frac*config_env.TRACK_LEN, x1_frac*1.0])
-            x_upd = np.array(x_cur)
-            x_upd[0] += delta[0]
-            x_upd[1] += delta[1]
-            start_time = time.time()
-            _, solver_info = env.agent.get_action(obs=x_upd, state=x_upd, controls=boot_controls)
-            end_time = time.time() - start_time
-
-            runtimes.append(end_time)
-            #boot_controls = solver_info['controls']
-            marginopts.append(solver_info['marginopt'])
-            target_margs.append(solver_info['curr_target_margin'])
-            failure_margs.append(solver_info['curr_failure_margin'])
-            if solver_info['marginopt'] > 0:
-                ax.plot(solver_info['states'][0], solver_info['states'][1], color='g', alpha=0.8)
-                ax.scatter(solver_info['states'][0, 0], solver_info['states'][1, 0], color='k', s=12, alpha=0.5)
-            else:
-                ax.plot(solver_info['states'][0], solver_info['states'][1], color='r', alpha=0.8)
-                ax.scatter(solver_info['states'][0, 0], solver_info['states'][1, 0], color='k', s=12, alpha=0.5)
-
-        xvals = np.arange(-dim_1_samples, dim_1_samples + 1)/float(dim_1_samples)
         ax_v.plot(xvals, marginopts, label='$V$')
         ax_v.plot(xvals, target_margs, label='$\ell$')
         ax_v.plot(xvals, failure_margs, label='$c$')
+
         if velindx==5:
             ax_v.legend(fontsize=legend_fontsize, ncol=2)
-        ax_v.plot(xvals, np.zeros_like(xvals), 'k--', linewidth=1.2)
+        #ax_v.plot(xvals, np.zeros_like(xvals), 'k--', linewidth=1.2)
         ax.set_title(f'Velocity (m/s): {vels}', fontsize=legend_fontsize)
         ax_v.set_title(f'Velocity (m/s): {vels}', fontsize=legend_fontsize)
         ax.set_xlabel('X position (m)', fontsize=legend_fontsize)
         ax.set_ylabel('Y position (m)', fontsize=legend_fontsize)
         ax.set_xticks(ticks=[0.0, 2.1, 5.5, 8.0], labels=[0.0, 2.1, 5.5, 8.0], fontsize=legend_fontsize)
-        ax.set_yticks(ticks=[-2.5, 2.5], 
-                            labels=[-2.5, 2.5], 
+        ax.set_yticks(ticks=[-4.0, 4.0], 
+                            labels=[-4.0, 4.0], 
                             fontsize=legend_fontsize)
+        ax.set_ylim([-4.0, 4.0])
         ax.yaxis.set_label_coords(-0.1, 0.5)
         ax.grid(linestyle='--')
         ax_v.set_xticks(ticks=[-1.0, -0.5, 0.0, 0.5, 1.0], labels=[-1.0, -0.5, 0.0, 0.5, 1.0], fontsize=legend_fontsize)
-        ax_v.set_yticks(ticks=[0.0, 2.5], 
-                            labels=[0.0, 2.5], 
+        ax_v.set_yticks(ticks=[0.0, 3.5], 
+                            labels=[0.0, 3.5], 
                             fontsize=legend_fontsize)
-        ax_v.set_ylim([0.0, 2.5])
+        ax_v.set_ylim([0.0, 3.5])
         ax_v.yaxis.set_label_coords(-0.04, 0.5)
         #ax.xaxis.set_label_coords(0.5, -0.04)
         ax_v.set_xlabel('Y position (m)', fontsize=legend_fontsize)
