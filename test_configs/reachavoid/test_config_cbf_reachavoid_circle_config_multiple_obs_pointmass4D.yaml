@@ -10,31 +10,31 @@ environment:
   G_X_FAIL: 0.0
   OBSC_TYPE: circle
   OBS_SPEC:
-    - [4.1, 0.0, 0.5]
-    - [9.1, 2.0, 0.4]
-    - [9.1, 1.7, 0.4]
-    - [9.5, 2.3, 0.4]
-    - [9.1, -2.0, 0.4]
-    - [9.1, -1.7, 0.4]
-    - [9.5, -2.3, 0.4]
-    - [14.5, 1.6, 0.6]
-    - [14.5, -1.6, 0.6]
+    - [5.1, 0.0, 0.7]
+    - [9.1, 2.0, 0.3]
+    - [9.1, 1.5, 0.3]
+    - [9.5, 2.3, 0.3]
+    - [9.1, -2.0, 0.3]
+    - [9.1, -1.5, 0.3]
+    - [9.5, -2.3, 0.3]
+    - [14.5, 1.2, 0.3]
+    - [14.5, -1.2, 0.3]
   RESET_SPACE:
     - [0., 8.0]
     - [-0.4, 0.4]
     - [0.5, 1.5]
     - [-0.3, 0.3]
-  tag: 'mul_obs_reachability_config1_pointmass4d'
+  tag: 'mul_obs_reachavoid_config_pointmass4d'
 
 cost:
   # Task policy tuned weights
-  WT_ACCEL: 0.05
-  WT_OMEGA: 0.05
+  WT_ACCEL: 0.01
+  WT_OMEGA: 0.01
   W_TRACK: 0.01
   W_VEL: 0.01
   YAWT_MIN: -1.1
   YAWT_MAX: 1.1
-  V_REF: 2.5
+  V_REF: 2.0
   VT_MIN: 0.0
   VT_MAX: 10.0
   Q1_V: 0.1
@@ -51,13 +51,13 @@ cost:
   USE_VEL: false
   USE_DELTA: false
   USE_ROAD: true
-  COST_TYPE: Reachability
+  COST_TYPE: Reachavoid
   # SAFETY COST PARAM
-  W_ACCEL: 0.05
-  W_OMEGA: 0.05
+  W_ACCEL: 0.1
+  W_OMEGA: 0.1
   YAW_MIN: -1.57
   YAW_MAX: 1.57
-  SMOOTHING_TEMP: 2.0
+  SMOOTHING_TEMP: 2.5
 
 agent:
   AGENT_ID: ego
@@ -65,8 +65,8 @@ agent:
   FOOTPRINT: Circle
   EGO_RADIUS: 0.4
   ACTION_RANGE:
-    - [-2.0, 2.0]
-    - [-2.0, 2.0]
+    - [-2.5, 2.5]
+    - [-2.5, 2.5]
   # CAR DYNAMICS
   WHEELBASE: None
   DT: 0.01
@@ -77,22 +77,22 @@ agent:
   DELTA_MAX: None
 
 solver:
-  INIT_STATE: [-0.4, 0.0, 2.0, 0.05]
+  INIT_STATE: [-0.3, 0.0, 2.0, 0.1]
   N: 50
   MAX_ITER: 20
-  MAX_ITER_RECEDING: 1900
+  MAX_ITER_RECEDING: 2000
   # Line search options: 'baseline'.
   # Baseline seems to be good enough for most cases.
   LINE_SEARCH: 'baseline'
   # Filter options: 'none', 'LR', 'CBF'
   FILTER_TYPE: 'CBF'
   CONSTRAINT_TYPE: 'quadratic'
-  CBF_GAMMA: 0.98
-  SOFT_CBF_GAMMA: 0.99
+  CBF_GAMMA: 0.99
+  SOFT_CBF_GAMMA: 0.995
   LR_THRESHOLD: 0.0
-  OUT_FOLDER: exps/ilqr/pointmass4D/reachability_experiment_mulobs_config1/
+  OUT_FOLDER: exps/ilqr/pointmass4D/reachavoid_experiment_mulobs_config1/
   DEVICE: cpu
   # options: 'ILQR', 'DDP'.
-  ORDER: 'ILQR'
+  ORDER: 'DDP'
   FIG_SIZE_X: 6.0
   FIG_SIZE_Y: 5.0
