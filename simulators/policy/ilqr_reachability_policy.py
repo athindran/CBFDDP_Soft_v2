@@ -109,6 +109,7 @@ class iLQRReachability(iLQR):
         controls = np.asarray(controls)
         solver_info = dict(
             states=states, controls=controls, reinit_controls=controls, t_process=t_process, status=status, Vopt=J, marginopt=reachable_margin,
+            curr_failure_margin = failure_margins[0],
             grad_x=V_x, grad_xx=V_xx, B0=fu[:, :, 0], is_inside_target=False,  K_closed_loop=K_closed_loop, k_open_loop=k_open_loop, num_ddp_iters=i + 1,
         )
 
