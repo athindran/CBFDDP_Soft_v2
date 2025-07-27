@@ -187,7 +187,7 @@ for idx, obs_data in enumerate(plot_obses_list):
                 label=labellist[int(idx)] + ' filter')
 
 ax.legend(framealpha=0, fontsize=legend_fontsize, loc='upper left', 
-            ncol=2, bbox_to_anchor=(-0.05, 1.35), fancybox=False, shadow=False)
+            ncol=2, bbox_to_anchor=(-0.05, 1.4), fancybox=False, shadow=False)
 ax.set_title(f'Trajectories with {config_agent.EGO_RADIUS} radius for ego vehicle', fontsize=8)
 # ax.text(0.79, 0.79, f'Soft constraint with zero ego radius', color='black', ha='center', va='center', fontsize=5, fontweight='bold')
 ax.set_xticks(ticks=[0, env.visual_extent[1]], labels=[0, env.visual_extent[1]], 
