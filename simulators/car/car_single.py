@@ -408,6 +408,7 @@ class CarSingle5DEnv(BaseSingleEnv):
         v = jnp.where(v<0, NEGATIVE_CONSTANT, v)
         ax.imshow(
             v.T, interpolation='none', extent=[xmin, xmax, ymin, ymax], cmap='Greys',
+                origin='lower',
                 norm = matplotlib.colors.Normalize(vmin=0, vmax=2.5), label='SoftMargin (with ego radius)'
         )
 
