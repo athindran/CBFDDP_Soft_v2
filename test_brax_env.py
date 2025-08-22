@@ -32,7 +32,7 @@ def get_neural_policy(env_name, backend):
     brax_env = get_brax_env(env_name, backend)
     make_inference_fn, params, _ = train_fn(environment=brax_env.env)
     params = model.load_params(f'./brax_utils/trained_models/{env_name}_params')
-    inference_fn = make_inference_fn(params)
+    inference_fn = make_inference_fn(params, deterministic=True)
     jit_inference_fn = jax.jit(inference_fn)
     return jit_inference_fn
 
@@ -189,7 +189,7 @@ def main(seed: int, env_name='reacher', policy_type="neural"):
 
         # Run safety filter to get value function
         _, solver_dict = safe_policy.get_action(state, controls=controls_init)
-        values_sys[idx] = solver_dict['marginopt']
+        values_sys[idx] = solver_dict['Vopt']
         controls_init = jnp.asarray(solver_dict['reinit_controls'])
       elif policy_type=="ilqr":
         time0 = time.time()
@@ -209,7 +209,7 @@ def main(seed: int, env_name='reacher', policy_type="neural"):
         prev_sol = copy.deepcopy(solver_dict)
         controls_init = jnp.asarray(solver_dict['reinit_controls'])
         # act_rng, rng = jax.random.split(rng)
-        values_sys[idx] = solver_dict['marginopt']
+        values_sys[idx] = solver_dict['Vopt']
         filter_active[idx] = solver_dict['mark_barrier_filter']
         filter_failed[idx] = solver_dict['mark_complete_filter']
       elif policy_type=="ilqr_filter_with_ilqr_policy":
@@ -221,7 +221,7 @@ def main(seed: int, env_name='reacher', policy_type="neural"):
         # act_rng, rng = jax.random.split(rng)
         control_cycle_times[idx] = time.time() - time0
         controls_init = jnp.asarray(solver_dict['reinit_controls'])
-        values_sys[idx] = solver_dict['marginopt']  
+        values_sys[idx] = solver_dict['Vopt']  
         filter_active[idx] = solver_dict['mark_barrier_filter']
         filter_failed[idx] = solver_dict['mark_complete_filter']
         #print(f"value: {solver_dict['marginopt']}")
@@ -258,9 +258,9 @@ def main(seed: int, env_name='reacher', policy_type="neural"):
     np.save(os.path.join(save_folder, f'{policy_type}_save_data.npy'), save_dict)
 
 if __name__ == "__main__":
-    for seed in range(5):
+    for seed in range(1):
       for policy_type in ["neural", "ilqr_filter_with_neural_policy"]:
         print(seed, policy_type)
-        env_name = 'reacher'
+        env_name = 'ant'
         main(seed, env_name=env_name, policy_type=policy_type)
 
