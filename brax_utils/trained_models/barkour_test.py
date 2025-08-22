@@ -470,7 +470,7 @@ make_inference_fn, _, _ = train_fn(environment=eval_env)
 
 model_path = './mjx_brax_quadruped_policy'
 params = model.load_params(model_path)
-inference_fn = make_inference_fn(params, deterministic=True)
+inference_fn = make_inference_fn(params, deterministic=False)
 jit_inference_fn = jax.jit(inference_fn)
 
 jit_reset = jax.jit(eval_env.reset)
