@@ -118,7 +118,7 @@ class BarkourEnv(PipelineEnv):
         self.reward_config.rewards.scales[k[:-6]] = v
 
     self._torso_idx = mujoco.mj_name2id(
-        sys.mj_model, mujoco.mjtObj.mjOBJ_BODY.value, 'chassis'
+        sys.mj_model, mujoco.mjtObj.mjOBJ_BODY.value, 'torso'
     )
     self._action_scale = action_scale
     self._obs_noise = obs_noise
@@ -470,7 +470,7 @@ make_inference_fn, _, _ = train_fn(environment=eval_env)
 
 model_path = './mjx_brax_quadruped_policy'
 params = model.load_params(model_path)
-inference_fn = make_inference_fn(params, deterministic=False)
+inference_fn = make_inference_fn(params, deterministic=True)
 jit_inference_fn = jax.jit(inference_fn)
 
 jit_reset = jax.jit(eval_env.reset)
