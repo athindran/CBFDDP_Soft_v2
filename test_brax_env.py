@@ -271,7 +271,7 @@ def main(seed: int, env_name='reacher', policy_type="neural"):
 
     # Log results for inspection.
     render_every = 2
-    camera = 'default' if env_name in ['barkour', 'reacher'] else 'track'
+    camera = 'default' if env_name in ['barkour'] else None
     media.write_video(os.path.join(save_folder, f'{policy_type}_policy.mp4'),
         brax_env.env.render(rollout[::render_every], camera=camera),
         fps=1.0 / brax_env.env.dt / render_every)
