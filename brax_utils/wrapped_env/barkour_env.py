@@ -81,7 +81,7 @@ class BarkourEnv(PipelineEnv):
         obs_noise: float = 0.01,
         action_scale: float = 0.3,
         kick_vel: float = 0.05,
-        testing: bool = False,
+        testing: bool = True,
         **kwargs,
     ):
         if testing:

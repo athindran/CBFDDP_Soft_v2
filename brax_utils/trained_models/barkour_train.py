@@ -1,17 +1,18 @@
 #@title Import MuJoCo, MJX, and Brax
+import mediapy as media
+import jax
+import functools
 
 from datetime import datetime
-import functools
 from flax.training import orbax_utils
 from typing import Any, Dict, Sequence, Tuple, Union, List
 from flax import struct
 from matplotlib import pyplot as plt
-import mediapy as media
-import jax
 from orbax import checkpoint as ocp
 from brax.training.agents.ppo import train as ppo
 from brax.training.agents.ppo import networks as ppo_networks
 from brax.mjx.base import State as MjxState
+from brax.io import html, mjcf, model
 from brax import envs
 from brax_utils import BarkourEnv
 from etils import epath
