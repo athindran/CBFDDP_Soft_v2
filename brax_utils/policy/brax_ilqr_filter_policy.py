@@ -113,7 +113,7 @@ class iLQRBraxSafetyFilter(BasePolicy):
 
         # Setting tolerance to zero does not cause big improvements at the
         # cost of more unnecessary looping
-        cbf_tol = -1e-2
+        cbf_tol = -1e-3
         # Conditioning parameter out of abundance of caution
         eps_reg = 1e-8
 
@@ -127,7 +127,7 @@ class iLQRBraxSafetyFilter(BasePolicy):
         # Exit loop once CBF constraint satisfied or maximum iterations
         # violated
         control_bias_term = np.zeros((self.dim_u,))
-        while((constraint_violation < cbf_tol or warmup) and num_iters < 2):
+        while((constraint_violation < cbf_tol or warmup) and num_iters < 4):
             num_iters = num_iters + 1
 
             # Extract information from solver for enforcing constraint
@@ -160,7 +160,7 @@ class iLQRBraxSafetyFilter(BasePolicy):
 
             control_bias_term = control_bias_term + control_correction
             control_cbf_cand_jnp = control_cbf_cand_jnp + control_correction
-            control_cbf_cand_jnp = jnp.clip(control_cbf_cand_jnp, self.brax_env.action_limits[0], self.brax_env.action_limits[1])
+            # control_cbf_cand_jnp = jnp.clip(control_cbf_cand_jnp, self.brax_env.action_limits[0], self.brax_env.action_limits[1])
 
             # Restart from current point and run again
             solver_initial = (prev_ctrl - control_cbf_cand)
