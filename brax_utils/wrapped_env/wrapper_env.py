@@ -168,7 +168,7 @@ class WrappedBraxEnv(ABC):
 
         nrows = rowdict[self.env_name]
         ncols = math.ceil(self.dim_qd_states/nrows)
-        figsize = {'ant': (35, 16), 'barkour': (35, 16), 'reacher': (9, 4)}
+        figsize = {'ant': (35, 16), 'barkour': (45, 16), 'reacher': (9, 4)}
         fig, axes = plt.subplots(nrows, ncols, figsize=figsize[self.env_name], sharex=True)
         axes = axes.ravel()
         for idx in range(self.dim_qd_states):
@@ -191,7 +191,7 @@ class WrappedBraxEnv(ABC):
         plt.close()
 
         rowdict = {'ant': 2, 'barkour': 3, 'reacher': 1}
-        figsize = {'ant': (35, 9), 'barkour': (35, 9), 'reacher': (9, 4)}
+        figsize = {'ant': (35, 9), 'barkour': (45, 14), 'reacher': (9, 4)}
         nrows = rowdict[self.env_name]
         ncols = math.ceil(self.dim_u/nrows)
 
