@@ -56,7 +56,7 @@ state.info['command'] = the_command
 rollout = [state.pipeline_state]
 
 # grab a trajectory
-n_steps = 2000
+n_steps = 600
 render_every = 2
 
 ctrls = np.zeros((12, n_steps))
@@ -82,6 +82,6 @@ for idx in range(12):
 
 fig.savefig('barkour_test.png', bbox_inches='tight', dpi=300)
 media.write_video(f'./brax_utils/videos/{env_name}.mp4',
-    eval_env.render(rollout[::render_every], camera='track'),
+    eval_env.render(rollout[::render_every], camera='default'),
     fps=1.0 / eval_env.dt / render_every)
      

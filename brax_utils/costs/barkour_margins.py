@@ -4,6 +4,7 @@ from brax_utils import WrappedBraxEnv
 from jax import Array
 from simulators import BaseMargin, CircleObsMargin, QuadraticControlCost
 
+import numpy as np
 import jax.numpy as jnp
 import jax
 
@@ -14,10 +15,10 @@ class BarkourObstacleAvoidanceConstraintCost(BaseMargin):
         self.dim_u = env.dim_u
         self.dim_q_states = env.dim_q_states
         self.dim_qd_states = env.dim_qd_states
-        self.obstacles = [[1.5, 1.5, 0.5], [-1.5, 1.5, 0.5], [1.5, -1.5, 0.5], [-1.5, -1.5, 0.5]]
+        self.obstacles = [[2.0, 2.0, 0.5], [-2.0, 2.0, 0.5], [2.0, -2.0, 0.5], [-2.0, -2.0, 0.5]]
         self.obs_margins = []
         for obs_idx in range(4):
-            self.obs_margins.append(CircleObsMargin(circle_spec = np.asarray(self.obstacles[obs_idx])))
+            self.obs_margins.append(CircleObsMargin(circle_spec = np.asarray(self.obstacles[obs_idx]), buffer=0.0))
 
     @partial(jax.jit, static_argnames='self')
     def get_stage_margin(
@@ -34,7 +35,7 @@ class BarkourObstacleAvoidanceConstraintCost(BaseMargin):
         cost = jnp.inf
 
         for idx in range(4):
-            cost = jnp.minimum(cost, self.obs_margins.get_stage_margin(state, ctrl))
+            cost = jnp.minimum(cost, self.obs_margins[idx].get_stage_margin(state, ctrl)**2 - 0.25)
 
         return cost
 
