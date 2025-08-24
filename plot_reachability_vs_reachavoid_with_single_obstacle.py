@@ -19,7 +19,7 @@ jax.config.update('jax_platform_name', 'cpu')
 
 fig = plt.figure(layout='constrained', figsize=(7.0, 3.4))
 colorlist = [(0.0, 0, 1.0, 1), (1.0, 0.0, 0.0, 1.0), (0, 0, 0, 0.8), (0.45, 0.0, 1.0, 1.0)]
-labellist = ['Reach-avoid (only obs)', 'Reachability (only obs)', 'Reach-avoid (aux)', 'Reach-avoid (act)']
+labellist = ['Reach-avoid (only obs)', 'Reachability (only obs)', 'Reach-avoid (aux)', 'Reach-avoid (vel)']
 stylelist = ['solid', 'dashed', 'dotted', 'dashdot']
 legend_fontsize = 7.5
 
@@ -110,7 +110,7 @@ plot_softcbf_data_reachavoid_constraints = np.load(os.path.join(out_folder, f"ro
 plot_softcbf_data_reachavoid_constraints = plot_softcbf_data_reachavoid_constraints.ravel()[0]
 
 ########## Reach-avoid with reduced actuation ############
-config_file = './test_configs/reachavoid/test_config_cbf_reachavoid_single_obstacle_bic5D_singular_reduced_actuation.yaml'
+config_file = './test_configs/reachavoid/test_config_cbf_reachavoid_single_obstacle_bic5D_singular_reduced_velocity.yaml'
 
 # Load the config to get key parameters needed for plot generation.
 config = load_config(config_file)
