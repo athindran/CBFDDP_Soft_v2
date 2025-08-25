@@ -45,13 +45,28 @@ class iLQRBraxReachability(iLQRBrax):
           gc_states, controls
       )
       fx, fu = self.brax_env.get_batched_generalized_coordinates_grad(pipeline_states, controls)
-      V_x, V_xx, k_open_loop, K_closed_loop, _, _ = self.backward_pass(
+      V_x, V_xx, k_open_loop, K_closed_loop, _, _, Q_u = self.backward_pass(
           c_x=c_x, c_u=c_u, c_xx=c_xx, c_uu=c_uu, c_ux=c_ux, fx=fx, fu=fu,
           critical=critical, failure_margins=failure_margins
       )
       
       # Choose the best alpha scaling using appropriate line search methods
-      alpha_chosen = self.baseline_line_search(state, gc_states, controls, K_closed_loop, k_open_loop, J)
+      alpha_chosen = 1.0
+      # Choose the best alpha scaling using appropriate line search methods
+      if self.line_search == 'baseline':
+          alpha_chosen = self.baseline_line_search(state, gc_states, controls, K_closed_loop, k_open_loop, J)
+      elif self.line_search == 'armijo':
+          alpha_chosen = self.armijo_line_search( state=state, gc_states=gc_states, controls=controls, Ks1=K_closed_loop, ks1=k_open_loop, 
+                                                  critical=critical, J=J, Q_u=Q_u)
+      elif self.line_search == 'trust_region_constant_margin':
+          alpha_chosen = self.trust_region_search_constant_margin( state=state, gc_states=gc_states, controls=controls, Ks1=K_closed_loop,
+                                                                   ks1=k_open_loop, critical=critical, J=J, Q_u=Q_u)
+      elif self.line_search == 'trust_region_tune_margin':
+          alpha_chosen = self.trust_region_search_tune_margin(state=state, gc_states=gc_states, controls=controls, Ks1=K_closed_loop, 
+                                                              ks1=k_open_loop, critical=critical, J=J,  
+                                                              c_x=c_x, c_xx=c_xx, Q_u=Q_u) 
+      else:
+          raise Exception(f'{self.line_search} does not match any implemented line search')
       
       gc_states, controls, pipeline_states, J_new, critical, failure_margins, reachable_margin = self.forward_pass(state, gc_states, controls, K_closed_loop, k_open_loop, alpha_chosen) 
       if (np.abs((J-J_new) / J) < self.tol):  # Small improvement.
@@ -98,6 +113,169 @@ class iLQRBraxReachability(iLQRBrax):
       return jnp.logical_and( alpha>self.min_alpha, J_new<J )
     
     alpha, J, J_new = jax.lax.while_loop(check_terminated, run_forward_pass, (alpha, J, J_new))
+
+    return alpha
+
+  @partial(jax.jit, static_argnames='self')
+  def armijo_line_search(self, state, gc_states, controls, Ks1,
+                          ks1, critical, J, Q_u, alpha_init=1.0, beta=0.8):
+    @jax.jit
+    def run_forward_pass(args):
+      state, gc_states, controls, Ks1, ks1, J, _, _, _, Q_u, alpha = args
+      alpha = beta * alpha
+      X, U, _, J_new, critical_new, _, _ = self.forward_pass(state, gc_states, controls, Ks1, ks1, alpha)
+      # critical point
+      t_star = jnp.argwhere(critical_new != 0, size=self.N - 1)[0][0]
+
+      # Calculate gradient for armijo decrease condition
+      grad_u = Ks1[:, :, t_star] @ (X[:, t_star] - gc_states[:, t_star]) + ks1[:, t_star]
+
+      # update gradient along alpha
+      grad_alpha = Q_u @ grad_u
+
+      return state, gc_states, controls, Ks1, ks1, J, J_new, t_star, grad_alpha, Q_u, alpha
+
+    @jax.jit
+    def check_continue(args):
+      _, _, _, _, _, J, J_new, _, grad_alpha, _, alpha = args
+      armijo_check = ( J_new < J + 0.5 * grad_alpha * alpha )
+      return jnp.logical_and(alpha > self.min_alpha, armijo_check)
+
+    alpha = alpha_init
+    J_new = -jnp.inf
+    grad_alpha = 0
+    t_star = jnp.argwhere(critical != 0, size=self.N - 1)[0][0]
+
+    state, gc_states, controls, Ks1, ks1, J, J_new, _, _, _, alpha = jax.lax.while_loop(check_continue, run_forward_pass, (state, gc_states, controls,
+                                                                                                                        Ks1, ks1, J, J_new, t_star, grad_alpha, 
+                                                                                                                          Q_u, alpha))
+
+    return alpha
+
+  @partial(jax.jit, static_argnames='self')
+  def trust_region_search_constant_margin(self, state, gc_states, controls, Ks1, ks1, critical, J, Q_u, alpha_init=1.0, beta=0.8):
+    @jax.jit
+    def run_forward_pass(args):
+      state, gc_states, controls, Ks1, ks1, J, _, _, _, _, Q_u, alpha = args
+      alpha = beta * alpha
+      X, U, _, J_new, critical_new, _, _ = self.forward_pass(state, gc_states, controls, Ks1, ks1, alpha)
+
+      # critical point
+      t_star = jnp.argwhere(critical_new != 0, size=self.N - 1)[0][0]
+      traj_diff = jnp.max(jnp.array([jnp.linalg.norm(x_new - x_old)
+                          for x_new, x_old in zip(X[:2, :], gc_states[:2, :])]))
+
+      # Calculate gradient for armijo decrease condition
+      grad_u = Ks1[:, :, t_star] @ (X[:, t_star] - gc_states[:, t_star]) + ks1[:, t_star]
+
+      # update returns
+      grad_alpha = Q_u @ grad_u
+
+      return state, gc_states, controls, Ks1, ks1, J, J_new, t_star, grad_alpha, traj_diff, Q_u, alpha
+
+    @jax.jit
+    def check_continue(args):
+      _, _, _, _, _, J, J_new, _, grad_alpha, traj_diff, _, alpha = args
+      armijo_violation = ( J_new < J + 0.5 * grad_alpha * alpha )
+      trust_region_violation = (traj_diff > self.margin)
+      return jnp.logical_and(alpha > self.min_alpha, jnp.logical_or(armijo_violation, trust_region_violation))
+
+    alpha = alpha_init
+    J_new = -jnp.inf
+    grad_alpha = 0
+    t_star = jnp.argwhere(critical != 0, size=self.N - 1)[0][0]
+    self.margin = 2.0
+    traj_diff = 0.0
+
+    _, gc_states, controls, Ks1, ks1, J, J_new, _, _, _, _, alpha = jax.lax.while_loop(check_continue, run_forward_pass, (state, gc_states, controls,
+                                                                                                                        Ks1, ks1, J, J_new, t_star, grad_alpha, 
+                                                                                                                        traj_diff, Q_u, alpha))
+
+    return alpha
+
+  @partial(jax.jit, static_argnames='self')
+  def trust_region_search_tune_margin(self, state, gc_states, controls, Ks1,
+                          ks1, critical, J, c_x, c_xx, Q_u, alpha_init=1.0, beta=0.8):
+    @jax.jit
+    def decrease_margin(args):
+      traj_diff, rho, margin = args
+      margin = 0.85 * margin
+      return traj_diff, rho, margin
+
+    @jax.jit
+    def increase_margin(args):
+      traj_diff, rho, margin = args
+      margin = 1.3 * margin
+      return traj_diff, rho, margin
+
+    @jax.jit
+    def fix_margin(args):
+      return args
+
+    @jax.jit
+    def increase_or_fix_margin(args):
+      traj_diff, rho, margin = args
+      traj_diff, rho, margin = jax.lax.cond(jnp.logical_and(jnp.abs(traj_diff - margin) < 0.1, rho > 0.75), increase_margin,
+                          fix_margin, (traj_diff, rho, margin))
+      return traj_diff, rho, margin
+
+    @jax.jit
+    def run_forward_pass(args):
+      state, gc_states, controls, Ks1, ks1, alpha, J, _, _, _, _, _, margin = args
+      alpha = beta * alpha
+      X, U, _, J_new, critical_new, _, _ = self.forward_pass(state, gc_states, controls, Ks1, ks1, alpha)
+      t_star = jnp.argwhere(critical_new != 0, size=self.N - 1)[0][0]
+
+      # Calculate gradient for armijo decrease condition
+      grad_u = Ks1[:, :, t_star] @ (X[:, t_star] - gc_states[:, t_star]) + ks1[:, t_star]
+      # update gradient along alpha
+      grad_alpha = Q_u @ grad_u
+
+      # find margin
+      traj_diff = jnp.max(jnp.array([jnp.linalg.norm(x_new - x_old)
+                          for x_new, x_old in zip(X[:2, :], gc_states[:2, :])]))
+
+      # use the quality of approximation to increase or decrease margin
+      x_diff = X[:, t_star] - gc_states[:, t_star]
+      delta_cost_quadratic_approx = 0.5 * \
+          (x_diff @ c_xx[:, :, t_star] + 2 * c_x[:, t_star]) @ x_diff
+      delta_cost_actual = J_new - J
+      # old_cost_error = jnp.abs(cost_error)
+      # cost_error = jnp.abs(
+      #     delta_cost_quadratic_approx -
+      #     delta_cost_actual)
+      rho = jnp.abs(delta_cost_actual / delta_cost_quadratic_approx)
+
+      return state, gc_states, controls, Ks1, ks1, alpha, J, t_star, J_new, traj_diff, rho, grad_alpha, margin
+
+    @jax.jit
+    def check_continue(args):
+      _, _, _, _, _, alpha, J, _, J_new, traj_diff, rho, grad_alpha, margin = args
+      # Check trust region constraint.
+      trust_region_violation = (traj_diff > margin)
+      # Check armijo constraint.
+      armijo_violation = ( J_new < J + 0.5 * grad_alpha * alpha )
+      # update margin.
+      traj_diff, rho, margin = jax.lax.cond(rho <= 0.15, decrease_margin,
+                                                                increase_or_fix_margin, (traj_diff, rho, margin))
+      return jnp.logical_and(alpha > self.min_alpha, jnp.logical_or(
+          trust_region_violation, armijo_violation))
+
+    alpha = alpha_init
+    J_new = -jnp.inf
+    t_star = jnp.where(critical != 0, size=self.N - 1)[0][0]
+    grad_alpha = 0.0
+    traj_diff = 0.0
+
+    # set these to not cause change in margin after first iteration.
+    margin = 2.5
+    traj_diff = 0.2
+    rho = 0.5
+
+    _, _, _, _, _, alpha, _, _, _, _, _, _, _ = (
+        jax.lax.while_loop(check_continue, run_forward_pass, (state, gc_states, controls,
+                                                              Ks1, ks1, alpha, J, t_star, J_new,
+                                                              traj_diff, rho, grad_alpha, margin)))
 
     return alpha
 
@@ -178,7 +356,7 @@ class iLQRBraxReachability(iLQRBrax):
 
     @jax.jit
     def true_func(args):
-      idx, V_x, V_xx, ks, Ks, _, _ = args
+      idx, V_x, V_xx, ks, Ks, _, _, _ = args
 
       #! Q_x, Q_xx are not used if this time step is critical.
       # Q_x = c_x[:, idx] + fx[:, :, idx].T @ V_x
@@ -190,12 +368,12 @@ class iLQRBraxReachability(iLQRBrax):
       Q_uu_inv = jnp.linalg.inv(Q_uu + reg_mat)
       Ks = Ks.at[:, :, idx].set(-Q_uu_inv @ Q_ux)
       ks = ks.at[:, idx].set(-Q_uu_inv @ Q_u)
- 
-      return c_x[:, idx], c_xx[:, :, idx], ks, Ks, c_x[:, idx], c_xx[:, :, idx]
+
+      return c_x[:, idx], c_xx[:, :, idx], ks, Ks, c_x[:, idx], c_xx[:, :, idx], Q_u
 
     @jax.jit
     def false_func(args):
-      idx, V_x, V_xx, ks, Ks, V_x_critical, V_xx_critical = args
+      idx, V_x, V_xx, ks, Ks, V_x_critical, V_xx_critical, _ = args
 
       Q_x = fx[:, :, idx].T @ V_x
       Q_xx = fx[:, :, idx].T @ V_xx @ fx[:, :, idx]
@@ -207,22 +385,27 @@ class iLQRBraxReachability(iLQRBrax):
       Ks = Ks.at[:, :, idx].set(-Q_uu_inv @ Q_ux)
       ks = ks.at[:, idx].set(-Q_uu_inv @ Q_u)
 
+      # The terms will cancel out but for the regularization added. 
+      # See https://studywolf.wordpress.com/2016/02/03/the-iterative-linear-quadratic-regulator-method/ and references therein.
+      # V_x = Q_x + Q_ux.T @ ks[:, idx]
+      # V_xx = Q_xx + Q_ux.T @ Ks[:, :, idx]
+
       V_x = Q_x + Ks[:, :, idx].T @ Q_u + Q_ux.T @ ks[:, idx] + Ks[:, :, idx].T @ Q_uu @ ks[:, idx]
       V_xx = (Q_xx + Ks[:, :, idx].T @ Q_ux + Q_ux.T @ Ks[:, :, idx]
             + Ks[:, :, idx].T @ Q_uu @ Ks[:, :, idx])
 
-      return V_x, V_xx, ks, Ks, V_x_critical, V_xx_critical
+      return V_x, V_xx, ks, Ks, V_x_critical, V_xx_critical, Q_u
 
     @jax.jit
     def backward_pass_looper(i, _carry):
-      V_x, V_xx, ks, Ks, critical, V_x_critical, V_xx_critical = _carry
+      V_x, V_xx, ks, Ks, critical, V_x_critical, V_xx_critical, Q_u = _carry
       idx = self.N - 2 - i
 
-      V_x, V_xx, ks, Ks, V_x_critical, V_xx_critical = jax.lax.cond(
-          critical[idx], true_func, false_func, (idx, V_x, V_xx, ks, Ks, V_x_critical, V_xx_critical)
+      V_x, V_xx, ks, Ks, V_x_critical, V_xx_critical, Q_u = jax.lax.cond(
+          critical[idx], true_func, false_func, (idx, V_x, V_xx, ks, Ks, V_x_critical, V_xx_critical, Q_u)
       )
 
-      return V_x, V_xx, ks, Ks, critical, V_x_critical, V_xx_critical
+      return V_x, V_xx, ks, Ks, critical, V_x_critical, V_xx_critical, Q_u
 
     # Initializes.
     Ks = jnp.zeros((self.dim_u, self.dim_x, self.N - 1))
@@ -236,7 +419,8 @@ class iLQRBraxReachability(iLQRBrax):
     
     reg_mat = self.eps * jnp.eye(self.dim_u)
 
-    V_x, V_xx, ks, Ks, critical, V_x_critical, V_xx_critical = jax.lax.fori_loop(
-        0, self.N - 1, backward_pass_looper, (V_x, V_xx, ks, Ks, critical, V_x_critical, V_xx_critical)
+    V_x, V_xx, ks, Ks, critical, V_x_critical, V_xx_critical, Q_u = jax.lax.fori_loop(
+        0, self.N - 1, backward_pass_looper, (V_x, V_xx, ks, Ks, critical, V_x_critical, V_xx_critical, c_u[:, self.N - 1])
     )
-    return V_x, V_xx, ks, Ks, V_x_critical, V_xx_critical
+    return V_x, V_xx, ks, Ks, V_x_critical, V_xx_critical, Q_u
+
