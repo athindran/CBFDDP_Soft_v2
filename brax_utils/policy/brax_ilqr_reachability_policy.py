@@ -47,7 +47,7 @@ class iLQRBraxReachability(iLQRBrax):
       fx, fu = self.brax_env.get_batched_generalized_coordinates_grad(pipeline_states, controls)
       V_x, V_xx, k_open_loop, K_closed_loop, _, _, Q_u = self.backward_pass(
           c_x=c_x, c_u=c_u, c_xx=c_xx, c_uu=c_uu, c_ux=c_ux, fx=fx, fu=fu,
-          critical=critical, failure_margins=failure_margins
+          critical=critical
       )
       
       # Choose the best alpha scaling using appropriate line search methods
@@ -335,7 +335,7 @@ class iLQRBraxReachability(iLQRBrax):
   def backward_pass(
       self, c_x: DeviceArray, c_u: DeviceArray, c_xx: DeviceArray,
       c_uu: DeviceArray, c_ux: DeviceArray, fx: DeviceArray, fu: DeviceArray,
-      critical: DeviceArray, failure_margins:DeviceArray
+      critical: DeviceArray
   ) -> Tuple[DeviceArray, DeviceArray, DeviceArray, DeviceArray, DeviceArray,DeviceArray, DeviceArray]:
     """
     Jitted backward pass looped computation.
