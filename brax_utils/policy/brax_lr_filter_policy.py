@@ -21,19 +21,9 @@ class LRBraxSafetyFilter(BasePolicy):
         self.config = config
 
         self.filter_type = config.FILTER_TYPE
-        self.constraint_type = config.CONSTRAINT_TYPE
-        self.cbf_tol = config.CBF_DDP_TOLERANCE
-        if self.filter_type == 'CBF':
-            self.gamma = config.CBF_GAMMA
-        elif self.filter_type == 'SoftCBF':
-            self.gamma = config.SOFT_CBF_GAMMA
-        else:
-            self.gamma = None
-
-        self.lr_threshold = config.LR_THRESHOLD
+        self.lr_threshold = 0.0
 
         self.filter_steps = 0
-        self.barrier_filter_steps = 0
 
         self.brax_env = brax_envs[0]
         self.cost = copy.deepcopy(cost)
