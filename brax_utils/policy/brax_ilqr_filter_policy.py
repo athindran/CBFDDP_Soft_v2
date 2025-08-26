@@ -8,6 +8,7 @@ import copy
 import numpy as np
 
 from .brax_ilqr_reachability_policy import iLQRBraxReachability
+from .brax_ilqr_reachavoid_policy import iLQRBraxReachAvoid
 from simulators import BasePolicy
 from simulators import barrier_filter_linear, barrier_filter_quadratic_two, barrier_filter_quadratic_eight
 from brax_utils import WrappedBraxEnv
@@ -42,12 +43,20 @@ class iLQRBraxSafetyFilter(BasePolicy):
         self.N = config.N
 
         # Two ILQR solvers
-        self.solver_0 = iLQRBraxReachability(
-            self.id, self.config, brax_envs[1], self.cost)
-        self.solver_1 = iLQRBraxReachability(
-            self.id, self.config, brax_envs[2], self.cost)
-        self.solver_2 = iLQRBraxReachability(
-            self.id, self.config, brax_envs[3], self.cost)
+        if self.config.COST_TYPE == "Reachavoid":
+            self.solver_0 = iLQRBraxReachAvoid(
+                self.id, self.config, brax_envs[1], self.cost)
+            self.solver_1 = iLQRBraxReachAvoid(
+                self.id, self.config, brax_envs[2], self.cost)
+            self.solver_2 = iLQRBraxReachAvoid(
+                self.id, self.config, brax_envs[3], self.cost)
+        elif self.config.COST_TYPE == "Reachability":
+            self.solver_0 = iLQRBraxReachability(
+                self.id, self.config, brax_envs[1], self.cost)
+            self.solver_1 = iLQRBraxReachability(
+                self.id, self.config, brax_envs[2], self.cost)
+            self.solver_2 = iLQRBraxReachability(
+                self.id, self.config, brax_envs[3], self.cost)
 
     def get_action(
         self, obs: np.ndarray, state:np.ndarray, 
