@@ -102,6 +102,9 @@ class BarkourHardConstraintCost(BaseMargin):
         """
         # Slow down to a small squared velocity of 0.5 while staying up.
         cost = jnp.inf
+
+        for idx in range(4):
+            cost = jnp.minimum(cost, self.obs_margins[idx].get_stage_margin(state, ctrl)**2 - 0.25)
         cost = jnp.minimum(cost, 0.5 - state[18]**2 - state[19]**2)
         cost = jnp.minimum(cost, jnp.floor(100*(state[2] - 0.05)))
 
