@@ -267,6 +267,6 @@ for idx, controls_data in enumerate(plot_actions_list):
     axes[2].xaxis.set_label_coords(0.5, -0.04)
 
 fig.savefig(
-        "./plots_summary/reachability_vs_reachavoid_comparison_bic5d.png", dpi=200, 
+        "./plots_summary/reachability_vs_reachavoid_comparison_bic5d.pdf", dpi=400, 
         bbox_inches='tight'
     )

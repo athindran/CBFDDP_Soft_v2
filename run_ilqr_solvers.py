@@ -177,7 +177,7 @@ def main(config_file, road_boundary, filter_type, initializer_type):
         print(f"Max solver time: {np.max(runtimes)}")
         print(f"Min solver time: {np.min(runtimes)}")
 
-    plt.savefig(os.path.join('./contour_plots', plot_tag + '_' + initializer_type + '.png'), bbox_inches='tight', dpi=300)
+    plt.savefig(os.path.join('./contour_plots', plot_tag + '_' + initializer_type + '.pdf'), bbox_inches='tight', dpi=300)
 
 
 if __name__ == "__main__":
@@ -206,7 +206,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     filters=['SoftCBF']
-    initializer_type = 'bootstrap'
+    initializer_type = 'scratch'
     out_folder, plot_tag, config_agent = None, None, None
     for filter_type in filters:
         main(args.config_file, args.road_boundary, initializer_type=initializer_type, filter_type=filter_type)

@@ -188,6 +188,6 @@ for idx, controls_data in enumerate(plot_actions_list):
     axes[1].xaxis.set_label_coords(0.5, -0.04)
 
 fig.savefig(
-        "./plots_summary/nonconvex_comparison_bic5d.png", dpi=200, 
+        "./plots_summary/nonconvex_comparison_bic5d.pdf", dpi=400, 
         bbox_inches='tight'
     )
