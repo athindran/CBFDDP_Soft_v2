@@ -1,7 +1,6 @@
 from typing import Tuple, Optional, Dict
 import time
 import copy
-import numpy as np
 import jax
 from jax import numpy as jp
 from jax import Array as DeviceArray
@@ -31,12 +30,12 @@ class iLQRBrax(BasePolicy):
         self.eps = getattr(config, "EPS", 1e-6)
         self.line_search = config.LINE_SEARCH
         # Stepsize scheduler.
-        self.alphas = 0.5**(np.arange(30))
+        self.alphas = 0.5**(jp.arange(30))
 
     def get_action(
-        self, initial_state, controls: Optional[np.ndarray] = None,
+        self, initial_state, controls: Optional[DeviceArray] = None,
          **kwargs
-    ) -> np.ndarray:
+    ) -> DeviceArray:
         status = 0
 
         # `controls` include control input at timestep N-1, which is a dummy
@@ -74,7 +73,7 @@ class iLQRBrax(BasePolicy):
 
                 if J_new <= J:  # Improved!
                     # Small improvement.
-                    if np.abs((J - J_new) / J) < self.tol:
+                    if jp.abs((J - J_new) / J) < self.tol:
                         converged = True
 
                     # Updates nominal trajectory and best cost.
@@ -98,10 +97,10 @@ class iLQRBrax(BasePolicy):
                 break
         t_process = time.time() - time0
 
-        gc_states = np.asarray(gc_states)
-        controls = np.asarray(controls)
-        K_closed_loop = np.asarray(K_closed_loop)
-        k_open_loop = np.asarray(k_open_loop)
+        gc_states = jp.array(gc_states)
+        controls = jp.array(controls)
+        K_closed_loop = jp.array(K_closed_loop)
+        k_open_loop = jp.array(k_open_loop)
         solver_info = dict(
             gc_states=gc_states, controls=controls, K_closed_loop=K_closed_loop,
             k_open_loop=k_open_loop, t_process=t_process, status=status, J=J

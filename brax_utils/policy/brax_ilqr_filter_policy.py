@@ -2,6 +2,7 @@ from typing import Optional, Dict
 import time
 
 from jax import numpy as jp
+from jax import Array as DeviceArray
 from typing import List
 
 import copy
@@ -59,14 +60,15 @@ class iLQRBraxSafetyFilter(BasePolicy):
                 self.id, self.config, brax_envs[3], self.cost)
 
     def get_action(
-        self, obs, state, 
-        task_ctrl,
+        self, 
+        obs: DeviceArray, 
+        state: DeviceArray, 
+        task_ctrl: DeviceArray,
         prev_sol: Optional[Dict] = None, 
         prev_ctrl = None, 
         warmup=False,
     ):
 
-        # Linear feedback policy
         task_ctrl_jp = jp.array(task_ctrl)
 
         # Find safe policy from step 0

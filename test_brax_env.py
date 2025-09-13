@@ -252,7 +252,7 @@ def main(seed: int, env_name='reacher', policy_type="neural"):
         # act_rng, rng = jax.random.split(rng)
         time0 = time.time()
         act, _ = policy(state.obs, act_rng)
-        control_cycle_times[idx] = time.time() - time0
+        control_cycle_times = control_cycle_times.at[idx].set(time.time() - time0)
 
         # Run safety filter to get value function
         _, solver_dict = safe_policy.get_action(obs=state, state=state, controls=controls_init)
@@ -331,7 +331,7 @@ def main(seed: int, env_name='reacher', policy_type="neural"):
 
 if __name__ == "__main__":
     for seed in range(1):
-      for policy_type in ["ilqr_filter_with_neural_policy"]:
+      for policy_type in ["ilqr_filter_with_neural_policy", "lr_filter_with_neural_policy", "neural"]:
         print(seed, policy_type)
         env_name = 'reacher'
         device = jax.devices()[0]
