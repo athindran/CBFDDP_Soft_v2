@@ -70,6 +70,8 @@ class iLQRBraxSafetyFilter(BasePolicy):
     ):
 
         task_ctrl_jp = jp.array(task_ctrl)
+        obs = jp.array(obs)
+        state = jp.array(state)
 
         # Find safe policy from step 0
         if prev_sol is not None:

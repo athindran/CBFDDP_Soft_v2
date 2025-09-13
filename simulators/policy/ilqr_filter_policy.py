@@ -3,6 +3,7 @@ import time
 
 from jax import numpy as jp
 from jax import Array as DeviceArray
+import numpy as np
 
 import copy
 
@@ -62,10 +63,10 @@ class iLQRSafetyFilter(BasePolicy):
                 self.id, self.config, self.rollout_dyn_1, self.cost)
 
     def get_action(
-        self, obs: DeviceArray, state:DeviceArray, 
-        task_ctrl: DeviceArray = jp.array([0.0, 0.0]),
+        self, obs: np.ndarray, state:np.ndarray, 
+        task_ctrl: np.ndarray = np.array([0.0, 0.0]),
         prev_sol: Optional[Dict] = None, 
-        prev_ctrl: DeviceArray = jp.array([0.0, 0.0]), 
+        prev_ctrl: np.ndarray = np.array([0.0, 0.0]), 
         warmup=False,
     ) -> DeviceArray:
 
@@ -74,6 +75,7 @@ class iLQRSafetyFilter(BasePolicy):
         initial_state = jp.array(state)
         stopping_ctrl = jp.array([self.dyn.ctrl_space[0, 0], 0])
         task_ctrl = jp.array(task_ctrl)
+        prev_ctrl = jp.array(prev_ctrl)
 
         # Find safe policy from step 0
         if prev_sol is not None:
