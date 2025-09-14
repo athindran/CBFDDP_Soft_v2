@@ -24,10 +24,9 @@ class iLQRReachAvoid(iLQR):
             controls = jp.zeros((self.dim_u, self.N))
             # NOTE: Comment the environment specific branching for profiling.
             if self.dyn.id == "PVTOL6D":
-                controls[1, :] = self.dyn.mass * self.dyn.g
+              controls = controls.at[1, :].set(self.dyn.mass * self.dyn.g)
             elif self.dyn.id == "Bicycle4D" or self.dyn.id == "Bicycle5D" or self.dyn.id=="PointMass4D":
-                controls[0, :] = self.dyn.ctrl_space[0, 0]
-            controls = jp.array(controls)
+              controls = controls.at[0, :].set(self.dyn.ctrl_space[0, 0])
         else:
             assert controls.shape[1] == self.N
             controls = jp.array(controls)
@@ -130,7 +129,7 @@ class iLQRReachAvoid(iLQR):
             constant_term=constant_term_loop[0]
         )
 
-        return controls[:, 0], solver_info
+        return jp.array(controls[:, 0]), solver_info
 
     @partial(jax.jit, static_argnames='self')
     def baseline_line_search(self, states, controls,

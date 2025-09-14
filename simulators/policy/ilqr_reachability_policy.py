@@ -112,7 +112,7 @@ class iLQRReachability(iLQR):
             grad_x=V_x, grad_xx=V_xx, B0=fu[:, :, 0], is_inside_target=False,  K_closed_loop=K_closed_loop, k_open_loop=k_open_loop, num_ddp_iters=i + 1,
         )
 
-        return controls[:, 0], solver_info
+        return jp.array(controls[:, 0]), solver_info
 
     @partial(jax.jit, static_argnames='self')
     def baseline_line_search(self, states, controls, K_closed_loop, k_open_loop, J, beta=0.7, alpha_initial=1.0):

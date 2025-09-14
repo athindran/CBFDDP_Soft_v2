@@ -68,11 +68,10 @@ class iLQRSafetyFilter(BasePolicy):
         prev_sol: Optional[Dict] = None, 
         prev_ctrl: np.ndarray = np.array([0.0, 0.0]), 
         warmup=False,
-    ) -> DeviceArray:
+    ) -> np.ndarray:
 
         # Task feedback policy
         start_time = time.time()
-        initial_state = jp.array(state)
         stopping_ctrl = jp.array([self.dyn.ctrl_space[0, 0], 0])
         task_ctrl = jp.array(task_ctrl)
         prev_ctrl = jp.array(prev_ctrl)
