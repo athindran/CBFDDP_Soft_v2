@@ -40,7 +40,7 @@ class iLQR(BasePolicy):
     ) -> DeviceArray:
         status = 0
 
-        # `controls` include control ijput at timestep N-1, which is a dummy
+        # `controls` include control input at timestep N-1, which is a dummy
         # control of zeros.
         if controls is None:
             controls = jp.zeros((self.dim_u, self.N))
