@@ -75,6 +75,7 @@ class iLQRSafetyFilter(BasePolicy):
         stopping_ctrl = jp.array([self.dyn.ctrl_space[0, 0], 0])
         task_ctrl = jp.array(task_ctrl)
         prev_ctrl = jp.array(prev_ctrl)
+        initial_state = jp.array(state)
 
         # Find safe policy from step 0
         if prev_sol is not None:
