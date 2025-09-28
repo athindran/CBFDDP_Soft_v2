@@ -57,7 +57,7 @@ class BaseDynamics(ABC):
             np.ndarray: clipped control.
         """
         state_nxt, ctrl_clip = self.integrate_forward_jax_with_noise(
-            jnp.array(state), jnp.array(control)
+            jnp.array(state), jnp.array(control), seed=kwargs['seed'],
         )
         return np.array(state_nxt), np.array(ctrl_clip)
 
@@ -69,7 +69,7 @@ class BaseDynamics(ABC):
 
     @abstractmethod
     def integrate_forward_jax_with_noise(
-        self, state: DeviceArray, control: DeviceArray
+        self, state: DeviceArray, control: DeviceArray, seed: int
     ) -> Tuple[DeviceArray, DeviceArray]:
         raise NotImplementedError
 

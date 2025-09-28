@@ -70,6 +70,7 @@ class Agent:
         self.agents_order = None
         self.is_task_ilqr = getattr(config, 'is_task_ilqr', False)
         self.compute_evaluation_margin = True
+        self.ticks = 357
 
     def integrate_forward(
         self, state: np.ndarray, control: np.ndarray = None
@@ -112,9 +113,9 @@ class Agent:
         assert control is not None, (
             "You need to pass in a control!"
         )
-
+        self.ticks = self.ticks + 1
         return self.dyn.integrate_forward_with_noise(
-            state=state, control=control
+            state=state, control=control, seed = self.ticks
         )
 
     def get_dyn_jacobian(

@@ -93,7 +93,7 @@ class Bicycle4D(BaseDynamics):
 
     @partial(jax.jit, static_argnames='self')
     def integrate_forward_jax_with_noise(
-        self, state: DeviceArray, control: DeviceArray
+        self, state: DeviceArray, control: DeviceArray, seed: int
     ) -> Tuple[DeviceArray, DeviceArray]:
         """Clips the control and computes one-step time evolution of the system.
         Args:
@@ -108,7 +108,7 @@ class Bicycle4D(BaseDynamics):
         ctrl_clip = jnp.clip(
             control, self.ctrl_space[:, 0], self.ctrl_space[:, 1])
 
-        state_nxt = self._integrate_forward(state, ctrl_clip, add_disturbance=True, key=jax.random.PRNGKey(43))
+        state_nxt = self._integrate_forward(state, ctrl_clip, add_disturbance=True, key=jax.random.PRNGKey(seed))
 
         return state_nxt, ctrl_clip
 
