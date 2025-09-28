@@ -30,6 +30,7 @@ class Bicycle5D(BaseDynamics):
         self.v_min = 0
         self.v_max = config.V_MAX
         self.rear_wheel_offset = 0.4 * self.wheelbase
+        self.noise_var = jnp.array([0.05, 0.05, 0.01, 0.01, 0.01])
 
     @partial(jax.jit, static_argnames='self')
     def apply_rear_offset_correction(self, state: DeviceArray):
@@ -88,25 +89,58 @@ class Bicycle5D(BaseDynamics):
         ctrl_clip = jnp.clip(
             control, self.ctrl_space[:, 0], self.ctrl_space[:, 1])
 
-        state_nxt = self._integrate_forward(state, ctrl_clip)
+        state_nxt = self._integrate_forward(state, ctrl_clip, add_noise=False, key=jax.random.PRNGKey(43))
+
+        return state_nxt, ctrl_clip
+
+    @partial(jax.jit, static_argnames='self')
+    def integrate_forward_jax_with_noise(
+        self, state: DeviceArray, control: DeviceArray
+    ) -> Tuple[DeviceArray, DeviceArray]:
+        """Clips the control and computes one-step time evolution of the system.
+        Args:
+            state (DeviceArray): [x, y, v, psi, delta].
+            control (DeviceArray): [accel, omega].
+        Returns:
+            DeviceArray: next state.
+            DeviceArray: clipped control.
+        """
+        # Clips the controller values between min and max accel and steer
+        # values.
+        ctrl_clip = jnp.clip(
+            control, self.ctrl_space[:, 0], self.ctrl_space[:, 1])
+
+        state_nxt = self._integrate_forward(state, ctrl_clip, add_noise=True, key=jax.random.PRNGKey(43))
 
         return state_nxt, ctrl_clip
 
     @partial(jax.jit, static_argnames='self')
     def disc_deriv(
-        self, state: DeviceArray, control: DeviceArray
+        self, state: DeviceArray, control: DeviceArray, add_noise: bool, key: DeviceArray
     ) -> DeviceArray:
+        @jax.jit
+        def true_fn(args):
+            deriv_out = args[0]
+            noise = jax.random.uniform(key, shape=(self.dim_x, ))
+            noise = noise * self.noise_var
+            return deriv_out + noise, noise
+
+        @jax.jit
+        def false_fn(args):
+            return args
+
         deriv = jnp.zeros((self.dim_x,))
         deriv = deriv.at[0].set(state[2] * jnp.cos(state[3]))
         deriv = deriv.at[1].set(state[2] * jnp.sin(state[3]))
         deriv = deriv.at[2].set(control[0])
         deriv = deriv.at[3].set(state[2] * jnp.tan(state[4]) / self.wheelbase)
         deriv = deriv.at[4].set(control[1])
-        return deriv
+        deriv_out, noise = jax.lax.cond(add_noise, true_fn, false_fn, (deriv, jnp.zeros(self.dim_x)))
+        return deriv_out
 
     @partial(jax.jit, static_argnames='self')
     def _integrate_forward(
-        self, state: DeviceArray, control: DeviceArray
+        self, state: DeviceArray, control: DeviceArray, add_noise: bool = False, key: DeviceArray = jax.random.PRNGKey(43),
     ) -> DeviceArray:
         """ Computes one-step time evolution of the system: x_+ = f(x, u).
         The discrete-time dynamics is as below:
@@ -121,16 +155,16 @@ class Bicycle5D(BaseDynamics):
         Returns:
             DeviceArray: next state.
         """
-        return self._integrate_forward_dt(state, control, self.dt)
+        return self._integrate_forward_dt(state, control, self.dt, add_noise, key)
 
     @partial(jax.jit, static_argnames='self')
     def _integrate_forward_dt(
-        self, state: DeviceArray, ctrl_clip: DeviceArray, dt: float
+        self, state: DeviceArray, ctrl_clip: DeviceArray, dt: float, add_noise: bool, key: DeviceArray,
     ) -> DeviceArray:
-        k1 = self.disc_deriv(state, ctrl_clip)
-        k2 = self.disc_deriv(state + k1 * dt / 2, ctrl_clip)
-        k3 = self.disc_deriv(state + k2 * dt / 2, ctrl_clip)
-        k4 = self.disc_deriv(state + k3 * dt, ctrl_clip)
+        k1 = self.disc_deriv(state, ctrl_clip, add_noise, key)
+        k2 = self.disc_deriv(state + k1 * dt / 2, ctrl_clip, add_noise, key)
+        k3 = self.disc_deriv(state + k2 * dt / 2, ctrl_clip, add_noise, key)
+        k4 = self.disc_deriv(state + k3 * dt, ctrl_clip, add_noise, key)
 
         state_nxt = state + (k1 + 2 * k2 + 2 * k3 + k4) * dt / 6
         # state_nxt = state_nxt.at[2].set(

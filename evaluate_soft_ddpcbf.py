@@ -333,6 +333,7 @@ if __name__ == "__main__":
     
     out_folder, plot_tag, config_agent = None, None, None
     for filter_type in filters:
+        jax.clear_caches()
         out_folder, plot_tag, config_agent, config_solver = main(args.config_file, args.road_boundary, filter_type=filter_type, is_task_ilqr=(not args.naive_task),         
                                                     line_search=args.line_search)
 

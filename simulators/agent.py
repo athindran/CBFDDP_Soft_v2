@@ -94,6 +94,29 @@ class Agent:
             state=state, control=control
         )
 
+    def integrate_forward_with_noise(
+        self, state: np.ndarray, control: np.ndarray = None
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Finds the next state of the vehicle given the current state and
+        control input.
+
+        Args:
+            state (np.ndarray): (dyn.dim_x, ) array.
+            control (np.ndarray): (dyn.dim_u, ) array.
+
+        Returns:
+            np.ndarray: next state.
+            np.ndarray: clipped control.
+        """
+        assert control is not None, (
+            "You need to pass in a control!"
+        )
+
+        return self.dyn.integrate_forward_with_noise(
+            state=state, control=control
+        )
+
     def get_dyn_jacobian(
         self, nominal_states: np.ndarray, nominal_controls: np.ndarray
     ) -> Tuple[np.ndarray, np.ndarray]:
