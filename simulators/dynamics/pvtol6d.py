@@ -52,6 +52,27 @@ class Pvtol6D(BaseDynamics):
 
     @partial(jax.jit, static_argnames='self')
     def integrate_forward_jax_with_noise(
+        self, state: DeviceArray, control: DeviceArray, seed: int
+    ) -> Tuple[DeviceArray, DeviceArray]:
+        """Clips the control and computes one-step time evolution of the system.
+        Args:
+            state (DeviceArray): [x, y, v, psi, delta].
+            control (DeviceArray): [accel, omega].
+        Returns:
+            DeviceArray: next state.
+            DeviceArray: clipped control.
+        """
+        # Clips the controller values between min and max accel and steer
+        # values.
+        ctrl_clip = jnp.clip(
+            control, self.ctrl_space[:, 0], self.ctrl_space[:, 1])
+
+        state_nxt = self._integrate_forward(state, ctrl_clip, add_disturbance=True, key=jax.random.PRNGKey(seed))
+
+        return state_nxt, ctrl_clip
+
+    @partial(jax.jit, static_argnames='self')
+    def integrate_forward_jax(
         self, state: DeviceArray, control: DeviceArray
     ) -> Tuple[DeviceArray, DeviceArray]:
         """Clips the control and computes one-step time evolution of the system.
@@ -67,7 +88,7 @@ class Pvtol6D(BaseDynamics):
         ctrl_clip = jnp.clip(
             control, self.ctrl_space[:, 0], self.ctrl_space[:, 1])
 
-        state_nxt = self._integrate_forward(state, ctrl_clip, add_disturbance=True, key=jax.random.PRNGKey(43))
+        state_nxt = self._integrate_forward(state, ctrl_clip, add_disturbance=False, key=jax.random.PRNGKey(43))
 
         return state_nxt, ctrl_clip
 

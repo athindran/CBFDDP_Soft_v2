@@ -25,7 +25,7 @@ class PointMass4D(BaseDynamics):
         # load parameters
         self.v_min = 0
         self.v_max = config.V_MAX
-        self.noise_var = jnp.array([0.01, 0.01, 0.001, 0.001])
+        self.noise_var = jnp.array([0.001, 0.001, 0.001, 0.001])
 
     @partial(jax.jit, static_argnames='self')
     def apply_rear_offset_correction(self, state: DeviceArray):
