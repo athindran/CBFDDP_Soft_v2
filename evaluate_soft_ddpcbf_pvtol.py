@@ -298,7 +298,7 @@ if __name__ == "__main__":
 
     make_pvtol_comparison_report(
         out_folder,
-        plot_folder='./plots_summary/',
+        plot_folder='./plots_summary_baseline/',
         tag=plot_tag,
         dt=config_agent.DT,
         cbf_gamma=config_solver.CBF_GAMMA,

@@ -54,7 +54,7 @@ class BaseSingleEnv(BaseEnv):
         """
 
         self.cnt += 1
-        state_nxt = self.agent.integrate_forward(
+        state_nxt = self.agent.integrate_forward_with_noise(
             state=self.state, control=action, **self.integrate_kwargs
         )[0]
         state_cur = self.state.copy()
