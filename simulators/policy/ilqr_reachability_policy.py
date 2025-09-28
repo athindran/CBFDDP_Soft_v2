@@ -16,7 +16,7 @@ class iLQRReachability(iLQR):
         agents_action: Optional[Dict] = None, recede_horizon=False, **kwargs
     ) -> np.ndarray:
         status = 0
-        self.tol = 1e-5
+        self.tol = 1e-4
         self.min_alpha = 1e-12
         line_search = self.line_search
 
