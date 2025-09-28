@@ -67,13 +67,13 @@ class Pvtol6D(BaseDynamics):
         ctrl_clip = jnp.clip(
             control, self.ctrl_space[:, 0], self.ctrl_space[:, 1])
 
-        state_nxt = self._integrate_forward(state, ctrl_clip, add_noise=True, key=jax.random.PRNGKey(43))
+        state_nxt = self._integrate_forward(state, ctrl_clip, add_disturbance=True, key=jax.random.PRNGKey(43))
 
         return state_nxt, ctrl_clip
 
     @partial(jax.jit, static_argnames='self')
     def disc_deriv(
-        self, state: DeviceArray, control: DeviceArray, add_noise: bool, key: DeviceArray
+        self, state: DeviceArray, control: DeviceArray, add_disturbance: bool, key: DeviceArray
     ) -> DeviceArray:
         @jax.jit
         def true_fn(args):
@@ -93,12 +93,12 @@ class Pvtol6D(BaseDynamics):
         deriv = deriv.at[3].set((-1*state[3]*self.damping/self.mass) + (control[0] * jnp.cos(state[2])/self.mass) - (control[1] * jnp.sin(state[2])/self.mass))
         deriv = deriv.at[4].set((-1*self.g - 1*state[4]*self.damping/self.mass) + (control[1] * jnp.cos(state[2])/self.mass) + (control[0] * jnp.sin(state[2])/self.mass))
         deriv = deriv.at[5].set(control[0] * self.thrust_offset/self.sys_inertia)
-        deriv_out, noise = jax.lax.cond(add_noise, true_fn, false_fn, (deriv, jnp.zeros(self.dim_x)))
+        deriv_out, noise = jax.lax.cond(add_disturbance, true_fn, false_fn, (deriv, jnp.zeros(self.dim_x)))
         return deriv_out
 
     @partial(jax.jit, static_argnames='self')
     def _integrate_forward(
-        self, state: DeviceArray, control: DeviceArray, add_noise: bool = False, key: DeviceArray = jax.random.PRNGKey(43),
+        self, state: DeviceArray, control: DeviceArray, add_disturbance: bool = False, key: DeviceArray = jax.random.PRNGKey(43),
     ) -> DeviceArray:
         """ Computes one-step time evolution of the system: x_+ = f(x, u).
         The discrete-time dynamics is as below:
@@ -113,16 +113,16 @@ class Pvtol6D(BaseDynamics):
         Returns:
             DeviceArray: next state.
         """
-        return self._integrate_forward_dt(state, control, self.dt, add_noise, key)
+        return self._integrate_forward_dt(state, control, self.dt, add_disturbance, key)
 
     @partial(jax.jit, static_argnames='self')
     def _integrate_forward_dt(
-        self, state: DeviceArray, ctrl_clip: DeviceArray, dt: float, add_noise: bool, key: DeviceArray
+        self, state: DeviceArray, ctrl_clip: DeviceArray, dt: float, add_disturbance: bool, key: DeviceArray
     ) -> DeviceArray:
-        k1 = self.disc_deriv(state, ctrl_clip, add_noise, key)
-        k2 = self.disc_deriv(state + k1 * dt / 2, ctrl_clip, add_noise, key)
-        k3 = self.disc_deriv(state + k2 * dt / 2, ctrl_clip, add_noise, key)
-        k4 = self.disc_deriv(state + k3 * dt, ctrl_clip, add_noise, key)
+        k1 = self.disc_deriv(state, ctrl_clip, add_disturbance, key)
+        k2 = self.disc_deriv(state + k1 * dt / 2, ctrl_clip, add_disturbance, key)
+        k3 = self.disc_deriv(state + k2 * dt / 2, ctrl_clip, add_disturbance, key)
+        k4 = self.disc_deriv(state + k3 * dt, ctrl_clip, add_disturbance, key)
 
         state_nxt = state + (k1 + 2 * k2 + 2 * k3 + k4) * dt / 6
 
