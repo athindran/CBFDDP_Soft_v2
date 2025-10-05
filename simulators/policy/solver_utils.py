@@ -11,8 +11,9 @@ from jax import numpy as jnp
 
 @jax.jit
 def barrier_filter_linear(grad_x, B0, c):
+    eps = 1e-6
     p = grad_x.T @ B0
-    return -c * p / (jnp.dot(p, p))
+    return -c * p / (jnp.dot(p, p) + eps)
 
 
 def barrier_filter_quadratic_two(P, p, c, initialize, control_bias_term=np.zeros((2,))):

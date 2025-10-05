@@ -2,10 +2,14 @@ from typing import Optional, Dict
 import time
 
 from jax import numpy as jnp
+from jax import Array as DeviceArray
+from jax import block_until_ready
 
 import copy
 import numpy as np
+import jax
 
+from functools import partial
 from .ilqr_reachavoid_policy import iLQRReachAvoid
 from .ilqr_reachability_policy import iLQRReachability
 from .base_policy import BasePolicy
@@ -61,6 +65,115 @@ class iLQRSafetyFilter(BasePolicy):
             self.solver_2 = iLQRReachability(
                 self.id, self.config, self.rollout_dyn_1, self.cost)
 
+    def run_ddpcbf_iteration(self, args):
+        state, control_cbf_cand, grad_x, reinit_controls, _, scaled_c, num_iters, scaling_factor, cutoff, _, _, _, warmup = args
+        num_iters = num_iters + 1
+        # Extract information from solver for enforcing constraint
+        _, B0 = self.dyn.get_jacobian(
+            state[:, jnp.newaxis], control_cbf_cand[:, jnp.newaxis])
+        control_correction = barrier_filter_linear(
+            grad_x, B0[:, :, 0], scaled_c)
+
+        control_cbf_cand_next = control_cbf_cand + control_correction
+        state_imaginary, control_cbf_cand_next = self.dyn.integrate_forward_jax(
+            state, control_cbf_cand_next
+        )
+        _, controls_next, statesopt_next, marginopt_next, Vopt_next, is_inside_target_next, V_x_next = self.solver_2.get_action_jitted(obs=state_imaginary,
+                                                    controls=jnp.array(reinit_controls),
+                                                    state=state_imaginary, 
+                                                    warmup=warmup)
+        # CBF constraint violation
+        constraint_violation_next = jnp.minimum(Vopt_next - cutoff, 0.0)
+        scaled_c_next = scaling_factor * constraint_violation_next
+
+        return (state, control_cbf_cand_next, V_x_next, controls_next, statesopt_next, scaled_c_next, 
+                num_iters, scaling_factor, cutoff,
+                Vopt_next, marginopt_next, is_inside_target_next, warmup)
+
+    def get_action_jitted(
+        self, 
+        obs: DeviceArray, 
+        state: DeviceArray, 
+        task_ctrl: DeviceArray,
+        reinit_controls: DeviceArray,
+        warmup=False,
+    ):
+        start_time = time.time()
+        task_ctrl = task_ctrl.ravel()
+        control_0, controlsopt_0, statesopt_0, marginopt_0, Vopt_0, is_inside_target_0, _ = self.solver_0.get_action_jitted(
+            obs=obs, controls=reinit_controls, state=state, warmup=warmup)
+        # Find safe policy from step 1
+        state_imaginary, task_ctrl = self.dyn.integrate_forward_jax(
+            state, task_ctrl
+        )
+        boot_controls = jnp.array(controlsopt_0)
+        _,  controlsopt_next, statesopt_next, marginopt_next, Vopt_next, is_inside_target_next, V_x_next = self.solver_1.get_action_jitted(
+            obs=state_imaginary, controls=boot_controls, state=state_imaginary, warmup=warmup)
+
+        # Iterations
+        cutoff = self.gamma * Vopt_0
+        # # Define initial state and initial performance policy
+        control_cbf_cand = jnp.array(task_ctrl)
+        # # Checking CBF constraint violation
+        scaling_factor = 0.8
+        mark_barrier_filter = (Vopt_next - cutoff < 0.0)
+        constraint_violation = jnp.minimum(Vopt_next - cutoff, 0.0)
+        scaled_c = constraint_violation
+
+        # # unroll two iterations
+        num_iters = 0
+        args = (state, control_cbf_cand, V_x_next, controlsopt_next, statesopt_next, scaled_c, num_iters, scaling_factor, 
+                                                    cutoff, Vopt_next, marginopt_next, is_inside_target_next, warmup) 
+        (state, control_cbf_cand, grad_x, reinit_controls, statesopt_next,  
+            scaled_c, num_iters, 
+                scaling_factor, cutoff, Vopt_next, marginopt_next, is_inside_target_next, warmup) = self.run_ddpcbf_iteration(args)
+
+        # run_ddpcbf_iteration = lambda args: self.run_ddpcbf_iteration(args)
+        # args = (state, control_cbf_cand, V_x_next, controlsopt_next, scaled_c, num_iters, constraint_violation, scaling_factor, 
+        #                                                  cutoff, Vopt_next, marginopt_next, is_inside_target_next, warmup)
+        # args = jax.lax.cond(jnp.logical_or(constraint_violation<self.cbf_tol, warmup), run_ddpcbf_iteration, identity_fn, args)
+        # (state, control_cbf_cand, grad_x, reinit_controls, 
+        #     scaled_c, num_iters, constraint_violation, 
+        #         scaling_factor, cutoff, Vopt_next, marginopt_next, is_inside_target_next, warmup) = args
+        # args = jax.lax.cond(jnp.logical_or(constraint_violation<self.cbf_tol, warmup), run_ddpcbf_iteration, identity_fn, args)
+        # (state, control_cbf_cand, grad_x, reinit_controls, 
+        #     scaled_c, num_iters, constraint_violation, 
+        #         scaling_factor, cutoff, Vopt_next, marginopt_next, is_inside_target_next, warmup) = args
+
+        # Exit loop once CBF constraint satisfied or maximum iterations
+        # violated
+        # check_ddpcbf_iteration_continue = lambda args: self.check_ddpcbf_iteration_continue(args)
+        # run_ddpcbf_iteration = lambda args: self.run_ddpcbf_iteration(args)
+        # args = (state, control_cbf_cand, V_x_next, controlsopt_next, scaled_c, num_iters, constraint_violation, scaling_factor, 
+        #                                                  cutoff, Vopt_next, marginopt_next, is_inside_target_next, warmup) 
+        # (state, control_cbf_cand, grad_x, reinit_controls, 
+        #     scaled_c, num_iters, constraint_violation, 
+        #         scaling_factor, cutoff, Vopt_next, marginopt_next, is_inside_target_next, warmup) = jax.lax.while_loop(check_ddpcbf_iteration_continue, 
+        #                         run_ddpcbf_iteration, args)
+        control_cbf_cand = jax.block_until_ready(control_cbf_cand)
+        self.barrier_filter_steps += mark_barrier_filter
+        solver_info = {
+            'states': statesopt_next,
+            'controls': reinit_controls,
+            'reinit_controls': reinit_controls,
+            'Vopt': Vopt_0,
+            'marginopt': marginopt_0,
+            'num_iters': num_iters,
+            'Vopt_next': Vopt_next,
+            'marginopt_next': marginopt_next,
+            'is_inside_target_next': is_inside_target_next,
+            'safe_opt_ctrl': control_0,
+            'task_ctrl': task_ctrl,
+            'mark_barrier_filter': mark_barrier_filter,
+            'mark_complete_filter': False,
+            'grad_x': V_x_next,
+            'process_time': time.time() - start_time,
+            'resolve': False,
+            'barrier_filter_steps': self.barrier_filter_steps,
+            'filter_steps': 0,
+        }
+        return control_cbf_cand.ravel(), solver_info
+
     def get_action(
         self, obs: np.ndarray, state:np.ndarray, 
         task_ctrl: np.ndarray = np.array([0.0, 0.0]),
@@ -79,10 +192,12 @@ class iLQRSafetyFilter(BasePolicy):
         if prev_sol is not None:
             controls_initialize = prev_sol['reinit_controls']
         else:
-            controls_initialize = None
+            controls_initialize = np.zeros((self.dim_u, self.N))
+            controls_initialize[0, :] = self.dyn.ctrl_space[0, 0]
+            controls_initialize = jnp.array(controls_initialize)
 
         if prev_sol is None or prev_sol['resolve']:
-            control_0, solver_info_0 = self.solver_0.get_action(
+            control_0, solver_info_0 = self.solver_0.get_action_jitted(
                 obs=obs, controls=controls_initialize, state=state)
         else:
             # Potential source of acceleration. We don't need to resolve both ILQs as we can reuse
@@ -108,7 +223,7 @@ class iLQRSafetyFilter(BasePolicy):
         )
         boot_controls = jnp.array(solver_info_0['controls'])
 
-        _, solver_info_1 = self.solver_1.get_action(
+        _, solver_info_1 = self.solver_1.get_action_jitted(
             obs=state_imaginary, controls=boot_controls, state=state_imaginary)
 
         solver_info_0['Vopt_next'] = solver_info_1['Vopt']
@@ -224,7 +339,7 @@ class iLQRSafetyFilter(BasePolicy):
                 state_imaginary, control_cbf_cand = self.dyn.integrate_forward(
                     state=initial_state, control=control_cbf_cand
                 )
-                _, solver_info_1 = self.solver_2.get_action(obs=state_imaginary,
+                _, solver_info_1 = self.solver_2.get_action_jitted(obs=state_imaginary,
                                                             controls=jnp.array(
                                                                 solver_info_1['controls']),
                                                             state=state_imaginary)

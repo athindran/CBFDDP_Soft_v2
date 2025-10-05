@@ -3,6 +3,7 @@ from typing import Any, Tuple, Optional, Callable, List, Dict, Union
 import numpy as np
 from gym import spaces
 from tqdm import tqdm
+from jax import numpy as jnp
 
 from .agent import Agent
 from .base_env import BaseEnv
@@ -241,7 +242,7 @@ class BaseSingleEnv(BaseEnv):
             step_history.append(step_info)
             process_time_history.append(solver_info['process_time'])
             solver_iters_history.append(solver_info['num_iters'])
-            deviation_history.append(solver_info['deviation'])
+            # deviation_history.append(solver_info['deviation'])
             safe_opt_history.append(solver_info['safe_opt_ctrl'])
             task_ctrl_history.append(solver_info['task_ctrl'])
 

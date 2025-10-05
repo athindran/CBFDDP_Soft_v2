@@ -1,4 +1,5 @@
 from typing import Optional, Tuple, Dict, List
+from jax import numpy as jnp
 import copy
 import numpy as np
 import time
@@ -173,10 +174,21 @@ class Agent:
             else:
                 task_ctrl = self.task_policy(obs)
             # Filter to safe control
-            _action, _solver_info = self.safety_policy.get_action(  # Proposed action.
+            if prev_sol==None:
+                reinit_controls = np.zeros((self.safety_policy.dim_u, self.safety_policy.N))
+                reinit_controls[0, :] = self.dyn.ctrl_space[0, 0]
+                reinit_controls = jnp.array(reinit_controls)
+            else:
+                reinit_controls = jnp.array(prev_sol['reinit_controls'])
+
+            _action, _solver_info = self.safety_policy.get_action_jitted(  # Proposed action.
                 state=kwargs['state'], obs=obs, task_ctrl=task_ctrl, warmup=warmup, 
-                prev_sol=prev_sol, prev_ctrl=prev_ctrl, 
+                reinit_controls=reinit_controls,
             )
+            # _action, _solver_info = self.safety_policy.get_action(  # Proposed action.
+            #     state=kwargs['state'], obs=obs, task_ctrl=task_ctrl, warmup=warmup, 
+            #     prev_sol=prev_sol, prev_ctrl=prev_ctrl, 
+            # )
         else:
             _action, _solver_info = self.policy.get_action(  # Proposed action.
                 obs=obs, agents_action=agents_action, **kwargs
