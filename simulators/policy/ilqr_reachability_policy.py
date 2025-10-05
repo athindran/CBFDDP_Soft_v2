@@ -45,7 +45,7 @@ class iLQRReachability(iLQR):
         cvg_tolerance = jnp.abs((J - J_new) / J)
         status = 0
         status = jax.lax.cond((cvg_tolerance<1e-4) & (J_new>0), lambda: 1, lambda: status)
-        status = jax.lax.cond((status!=1) & (alpha_chosen<1e-12), lambda: 2, lambda: status)
+        status = jax.lax.cond((status!=1) & (alpha_chosen<self.min_alpha), lambda: 2, lambda: status)
 
         num_iters += 1
         return (states, controls, J_new, critical, failure_margins, reachable_margin, 

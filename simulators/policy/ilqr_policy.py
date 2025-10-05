@@ -35,6 +35,60 @@ class iLQR(BasePolicy):
         # Stepsize scheduler.
         self.alphas = 0.5**(np.arange(30))
 
+    @partial(jax.jit, static_argnames='self')
+    def run_ddp_iteration(self, args):
+        states, controls, J, _, _, _, num_iters, warmup = args
+        # We need cost derivatives from 0 to N-1, but we only need dynamics
+        # jacobian from 0 to N-2.
+        c_x, c_u, c_xx, c_uu, c_ux = self.cost.get_derivatives(
+            states, controls)
+        fx, fu = self.dyn.get_jacobian(states[:, :-1], controls[:, :-1])
+        K_closed_loop, k_open_loop = self.backward_pass(
+            c_x=c_x, c_u=c_u, c_xx=c_xx, c_uu=c_uu, c_ux=c_ux, fx=fx, fu=fu
+        )
+        # Choose the best alpha scaling using appropriate line search methods
+        alpha_chosen = 1.0
+        alpha_chosen = self.baseline_line_search(states, controls, K_closed_loop, k_open_loop, J)
+
+        states, controls, J_new = self.forward_pass(states, controls, K_closed_loop, k_open_loop, alpha_chosen)
+        cvg_tolerance = jnp.abs((J - J_new) / J)
+        status = 0
+        status = jax.lax.cond((cvg_tolerance<self.tol) & (J_new<=J), lambda: 1, lambda: status)
+        status = jax.lax.cond((status!=1) & (alpha_chosen<self.min_alpha), lambda: 2, lambda: status)
+
+        num_iters += 1
+        return (states, controls, J_new,
+                alpha_chosen, cvg_tolerance, status, num_iters, warmup)
+
+    @partial(jax.jit, static_argnames='self')
+    def check_ddp_iteration_continue(self, args):
+        _,  _,  J_new,  _,  _, status, num_iters, warmup = args
+        return jnp.logical_and(jnp.logical_or(status==0, warmup), num_iters<self.max_iter)
+
+    @partial(jax.jit, static_argnames='self')
+    def get_action_jitted(
+        self, obs: DeviceArray, state: DeviceArray, controls: DeviceArray, warmup: bool = False
+    ):
+        status = 0
+        self.min_alpha = 9e-10
+        states, controls = self.rollout_nominal(
+            state, jnp.array(controls)
+        )
+        J = self.cost.get_traj_cost(states, controls)
+
+        run_ddp_iteration = lambda args: self.run_ddp_iteration(args)
+        check_ddp_iteration_continue = lambda args: self.check_ddp_iteration_continue(args)
+
+        num_iters = 0
+        (states, controls, J, alpha_chosen, 
+                cvg_tolerance, status, num_iters, warmup) = jax.lax.while_loop(check_ddp_iteration_continue, run_ddp_iteration, 
+                                            (states, controls, J, 1.0, 1.0, 0, num_iters, warmup))
+
+        solver_info = dict(
+            states=states, controls=controls, t_process=0.0, status=status, J=J
+        )
+        return controls[:, 0], solver_info
+
     def get_action(
         self, obs: np.ndarray, controls: Optional[np.ndarray] = None,
         agents_action: Optional[Dict] = None, **kwargs
@@ -107,6 +161,27 @@ class iLQR(BasePolicy):
             k_open_loop=k_open_loop, t_process=t_process, status=status, J=J
         )
         return controls[:, 0], solver_info
+
+    @partial(jax.jit, static_argnames='self')
+    def baseline_line_search(self, states, controls, K_closed_loop, k_open_loop, J, beta=0.5, alpha_initial=1.0):
+        alpha = alpha_initial
+        J_new = -jnp.inf
+
+        @jax.jit
+        def run_forward_pass(args):
+            states, controls, K_closed_loop, k_open_loop, alpha, J, J_new = args
+            alpha = beta*alpha
+            _, _, J_new = self.forward_pass(states, controls, K_closed_loop, k_open_loop, alpha)
+            return states, controls, K_closed_loop, k_open_loop, alpha, J, J_new
+
+        @jax.jit
+        def check_terminated(args):
+            _, _, _, _, alpha, J, J_new = args
+            return jnp.logical_and( alpha>self.min_alpha, J_new>J )
+        
+        states, controls, K_closed_loop, k_open_loop, alpha, J, J_new = jax.lax.while_loop(check_terminated, run_forward_pass, (states, controls, K_closed_loop, k_open_loop, alpha, J, J_new))
+
+        return alpha
 
     @partial(jax.jit, static_argnames='self')
     def forward_pass(

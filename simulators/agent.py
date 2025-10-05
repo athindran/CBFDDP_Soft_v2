@@ -168,7 +168,7 @@ class Agent:
         if self.policy_type == "iLQRSafetyFilter":
             # Execute task control
             if self.is_task_ilqr:
-                task_ctrl, _ = self.task_policy.get_action(obs=obs, controls=None, state=kwargs['state'], warmup=warmup)
+                task_ctrl, _ = self.task_policy.get_action_jitted(obs=obs, controls=jnp.zeros((self.safety_policy.dim_u, self.safety_policy.N)), state=kwargs['state'], warmup=warmup)
             elif self.dyn.id ==  "PVTOL6D":
                 task_ctrl = self.task_policy(obs, self.dyn)
             else:

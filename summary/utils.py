@@ -789,7 +789,7 @@ def make_bicycle_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", 
     if 'reachability' in tag:
         max_value = 0.01
     else:
-        max_value = 0.8
+        max_value = 0.5
 
     for idx, process_times_data in enumerate(plot_times_list):
         x_times = dt*np.arange(process_times_data.size)
@@ -1202,7 +1202,7 @@ def make_pvtol_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", pl
     if 'reachability' in tag:
         max_value = 0.05
     else:
-        max_value = 1.0
+        max_value = 0.5
 
     for idx, process_times_data in enumerate(plot_times_list):
         x_times = dt*np.arange(process_times_data.size)
