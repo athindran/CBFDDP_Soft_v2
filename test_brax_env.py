@@ -53,16 +53,17 @@ def warmup_jit_with_task_policy_rollout(rng, state, brax_env, task_policy, safet
     """
     act_rng, rng = jax.random.split(rng)
     task_ctrl, _ = task_policy(state.obs, act_rng)
-    safety_filter.get_action_jitted(obs=state, state=state, task_ctrl=task_ctrl, 
-                                 reinit_controls=jp.zeros((brax_env.dim_u, rollout_length)), warmup=True)
+    safety_filter.get_action_jitted(obs=state, state=state, task_ctrl=task_ctrl,
+                                        reinit_controls=jp.zeros((brax_env.dim_u, rollout_length)), warmup=False)
     #safety_filter.get_action(obs=state, state=state, task_ctrl=task_ctrl, prev_ctrl = jp.zeros((brax_env.dim_u, )), warmup=True)
 
     # Substitute for rejection sampling
     for _ in range(15):
       task_ctrl, _ = task_policy(state.obs, act_rng)
       #safety_filter.get_action(obs=state, state=state, task_ctrl=task_ctrl, prev_ctrl = jp.zeros((brax_env.dim_u, )), warmup=True)
-      safety_filter.get_action_jitted(obs=state, state=state, task_ctrl=task_ctrl, 
-                              reinit_controls=jp.zeros((brax_env.dim_u, rollout_length)), warmup=True)
+      act, _ = safety_filter.get_action_jitted(obs=state, state=state, task_ctrl=task_ctrl, 
+                                        reinit_controls=jp.zeros((brax_env.dim_u, rollout_length)), warmup=False)
+      act = jax.block_until_ready(act)
       state = brax_env.step(state, task_ctrl)
 
 def get_brax_env(env_name, backend):
@@ -181,13 +182,9 @@ def main(seed: int, env_name='reacher', policy_type="neural"):
       # Warmup
       warmup_jit_with_task_policy_rollout(rng, state, brax_env, task_policy, safety_filter, config_solver.N)
       act_rng, rng = jax.random.split(rng)
-      task_ctrl, _ = task_policy(state.obs, act_rng)
-      #safety_filter.get_action(obs=state, state=state, task_ctrl=task_ctrl, prev_ctrl = jp.zeros((brax_env.dim_u, )), warmup=True)
-      safety_filter.get_action_jitted(obs=state, state=state, task_ctrl=task_ctrl,
-                                    reinit_controls=jp.zeros((brax_env.dim_u, config_cost.N)),
-                                    warmup=True)
-      prev_sol = {'reinit_controls': jp.zeros((brax_env.dim_u, config_cost.N))}
-      prev_ctrl = jp.zeros((brax_env.dim_u, ))
+      # task_ctrl, _ = task_policy(state.obs, act_rng)
+      # #safety_filter.get_action(obs=state, state=state, task_ctrl=task_ctrl, prev_ctrl = jp.zeros((brax_env.dim_u, )), warmup=True)
+      # safety_filter.get_action_jitted(obs=state, state=state, task_ctrl=task_ctrl, reinit_controls=jp.zeros((brax_env.dim_u, config_solver.N)), warmup=True)
       T = config_solver.MAX_ITER_RECEDING
     elif policy_type=="lr_filter_with_neural_policy":
       config = load_config(f'./brax_utils/configs/{env_name}.yaml')
@@ -216,10 +213,7 @@ def main(seed: int, env_name='reacher', policy_type="neural"):
       act_rng, rng = jax.random.split(rng)
       task_ctrl, _ = task_policy(state.obs, act_rng)
       #safety_filter.get_action(obs=state, state=state, task_ctrl=task_ctrl, prev_ctrl = jp.zeros((brax_env.dim_u, )), warmup=True)
-      safety_filter.get_action_jitted(obs=state, state=state, task_ctrl=task_ctrl,
-                                    reinit_controls=jp.zeros((brax_env.dim_u, config_cost.N)),
-                                    warmup=True)
-      prev_sol = {'reinit_controls': jp.zeros((brax_env.dim_u, config_cost.N))}
+      safety_filter.get_action_jitted(obs=state, state=state, task_ctrl=task_ctrl, reinit_controls=jp.zeros((brax_env.dim_u, config_solver.N)), warmup=True)
       prev_ctrl = jp.zeros((brax_env.dim_u, ))
       T = config_solver.MAX_ITER_RECEDING
     elif policy_type=="ilqr_filter_with_ilqr_policy":
@@ -238,14 +232,12 @@ def main(seed: int, env_name='reacher', policy_type="neural"):
       # Warmup
       act_rng, rng = jax.random.split(rng)
       task_ctrl, _ = task_policy.get_action(state, controls=None)
-      safety_filter.get_action(obs=state, state=state, task_ctrl=task_ctrl, prev_ctrl = jp.zeros((brax_env.dim_u, )), warmup=True)
-      prev_sol = None
+      safety_filter.get_action_jitted(obs=state, state=state, task_ctrl=task_ctrl, reinit_controls=jp.zeros((brax_env.dim_u, config_solver.N)), warmup=True)
       prev_ctrl = jp.zeros((brax_env.dim_u, ))
       T = config_solver.MAX_ITER_RECEDING
 
-
     rollout = []
-    controls_init = None   
+    controls_init = jp.zeros((brax_env.dim_u, config_solver.N))  
     controls_init_task = None 
     actions_to_sys = jp.zeros((T, brax_env.dim_u))
     gc_states_sys = jp.zeros((T, brax_env.dim_x))
@@ -282,12 +274,12 @@ def main(seed: int, env_name='reacher', policy_type="neural"):
         control_cycle_times = control_cycle_times.at[idx].set(time.time() - time0)
         controls_init = jp.array(solver_dict['reinit_controls'])
       elif policy_type=="ilqr_filter_with_neural_policy" or policy_type=="lr_filter_with_neural_policy":
-        prev_ctrl = jp.array(prev_ctrl)
         time0 = time.time()
         task_ctrl, _ = task_policy(state.obs, act_rng)
-        #act, solver_dict = safety_filter.get_action(obs=state, state=state, task_ctrl=task_ctrl, prev_sol=prev_sol, prev_ctrl=prev_ctrl)
-        act, solver_dict = safety_filter.get_action_jitted(obs=state, state=state, task_ctrl=task_ctrl,
-                    reinit_controls=jp.array(prev_sol['reinit_controls']))
+        act, solver_dict = safety_filter.get_action_jitted(obs=state, state=state, task_ctrl=task_ctrl, 
+                reinit_controls=controls_init)
+        # act, solver_dict = safety_filter.get_action_jitted(obs=state, state=state, task_ctrl=task_ctrl,
+        #             reinit_controls=jp.array(prev_sol['reinit_controls']))
         act = jax.block_until_ready(act)
         control_cycle_times = control_cycle_times.at[idx].set(time.time() - time0)
         prev_sol = copy.deepcopy(solver_dict)

@@ -27,24 +27,24 @@ class iLQRBraxReachability(iLQRBrax):
     # Choose the best alpha scaling using appropriate line search methods
     alpha_chosen = 1.0
     # Choose the best alpha scaling using appropriate line search methods
-    if self.line_search == 'baseline':
-        alpha_chosen = self.baseline_line_search(state, gc_states, controls, K_closed_loop, k_open_loop, J)
-    elif self.line_search == 'armijo':
-        alpha_chosen = self.armijo_line_search( state=state, gc_states=gc_states, controls=controls, Ks1=K_closed_loop, ks1=k_open_loop, 
-                                                critical=critical, J=J, Q_u=Q_u)
-    elif self.line_search == 'trust_region_constant_margin':
-        alpha_chosen = self.trust_region_search_constant_margin( state=state, gc_states=gc_states, controls=controls, Ks1=K_closed_loop,
-                                                                ks1=k_open_loop, critical=critical, J=J, Q_u=Q_u)
-    elif self.line_search == 'trust_region_tune_margin':
-        alpha_chosen = self.trust_region_search_tune_margin(state=state, gc_states=gc_states, controls=controls, Ks1=K_closed_loop, 
-                                                            ks1=k_open_loop, critical=critical, J=J,  
-                                                            c_x=c_x, c_xx=c_xx, Q_u=Q_u)
+    #if self.line_search == 'baseline':
+    alpha_chosen = self.baseline_line_search(state, gc_states, controls, K_closed_loop, k_open_loop, J)
+    # elif self.line_search == 'armijo':
+    #     alpha_chosen = self.armijo_line_search( state=state, gc_states=gc_states, controls=controls, Ks1=K_closed_loop, ks1=k_open_loop, 
+    #                                             critical=critical, J=J, Q_u=Q_u)
+    # elif self.line_search == 'trust_region_constant_margin':
+    #     alpha_chosen = self.trust_region_search_constant_margin( state=state, gc_states=gc_states, controls=controls, Ks1=K_closed_loop,
+    #                                                             ks1=k_open_loop, critical=critical, J=J, Q_u=Q_u)
+    # elif self.line_search == 'trust_region_tune_margin':
+    #     alpha_chosen = self.trust_region_search_tune_margin(state=state, gc_states=gc_states, controls=controls, Ks1=K_closed_loop, 
+    #                                                         ks1=k_open_loop, critical=critical, J=J,  
+    #                                                         c_x=c_x, c_xx=c_xx, Q_u=Q_u)
 
     (gc_states, controls, pipeline_states, 
         J_new, critical, failure_margins, reachable_margin) = self.forward_pass(state, gc_states, controls, K_closed_loop, k_open_loop, alpha_chosen) 
     cvg_tolerance = jp.abs((J - J_new) / J)
     status = 0
-    status = jax.lax.cond((cvg_tolerance<self.tol), lambda: 1, lambda: status)
+    status = jax.lax.cond((cvg_tolerance<self.tol) & (J_new>0), lambda: 1, lambda: status)
     status = jax.lax.cond((status!=1) & (alpha_chosen<self.min_alpha), lambda: 2, lambda: status)
 
     num_iters += 1
@@ -90,7 +90,7 @@ class iLQRBraxReachability(iLQRBrax):
                                         (state, pipeline_states, gc_states, controls, J, critical, failure_margins, reachable_margin,
                                       alpha_chosen, 1.0, 0, c_x[:, 0], c_xx[:, :, 0], fu, k_open_loop, K_closed_loop, num_iters, warmup))
 
-    return jp.array(controls[:, 0]), jp.array(controls), reachable_margin, J, False, jp.array(V_x)
+    return controls[:, 0], controls, reachable_margin, J, False, V_x
 
   def get_action(
       self, obs, state, controls = None, **kwargs
@@ -177,12 +177,12 @@ class iLQRBraxReachability(iLQRBrax):
 
     t_process = time.time() - time0
     #print(f"Reachability solver took {t_process} seconds with status {status}")
-    solver_info = dict(
-        gc_states=gc_states, controls=controls, reinit_controls=controls, t_process=t_process, status=status, Vopt=J, marginopt=reachable_margin,
-        grad_x=V_x, grad_xx=V_xx, B0=fu[:, :, 0], is_inside_target=False,  K_closed_loop=K_closed_loop, k_open_loop=k_open_loop, num_ddp_iters=i + 1,
-    )
+    # solver_info = dict(
+    #     gc_states=gc_states, controls=controls, reinit_controls=controls, t_process=t_process, status=status, Vopt=J, marginopt=reachable_margin,
+    #     grad_x=V_x, grad_xx=V_xx, B0=fu[:, :, 0], is_inside_target=False,  K_closed_loop=K_closed_loop, k_open_loop=k_open_loop, num_ddp_iters=i + 1,
+    # )
 
-    return controls[:, 0], solver_info
+    return controls[:, 0], controls, reachable_margin, J, False, V_x
 
   @partial(jax.jit, static_argnames='self')
   def baseline_line_search(self, state, gc_states, controls, K_closed_loop, k_open_loop, J, beta=0.7, alpha_initial=1.0):

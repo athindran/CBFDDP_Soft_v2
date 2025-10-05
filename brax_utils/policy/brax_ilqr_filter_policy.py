@@ -49,9 +49,8 @@ class iLQRBraxSafetyFilter(BasePolicy):
             # self.solver_2 = iLQRBraxReachability(
             #     self.id, self.config, brax_envs[3], self.cost)
 
-    @partial(jax.jit, static_argnames='self')
     def run_ddpcbf_iteration(self, args):
-        state, control_cbf_cand, grad_x, reinit_controls, scaled_c, num_iters, constraint_violation, scaling_factor, cutoff, _, _, _, warmup = args
+        state, control_cbf_cand, grad_x, reinit_controls, scaled_c, num_iters, scaling_factor, cutoff, _, _, _, warmup = args
         num_iters = num_iters + 1
         # Extract information from solver for enforcing constraint
         _, B0u = self.brax_env.get_generalized_coordinates_grad(
@@ -59,26 +58,21 @@ class iLQRBraxSafetyFilter(BasePolicy):
         control_correction = barrier_filter_linear(
             grad_x, B0u, scaled_c)
 
-        control_cbf_cand_new = control_cbf_cand + control_correction
+        control_cbf_cand_next = control_cbf_cand + control_correction
         state_imaginary = self.brax_env.step(
-            state, control_cbf_cand_new
+            state, control_cbf_cand_next
         )
-        _, controls_new, marginopt_new, Vopt_new, is_inside_target_new, V_x_new = self.solver_0.get_action_jitted(obs=state_imaginary,
+        _, controls_next, marginopt_next, Vopt_next, is_inside_target_next, V_x_next = self.solver_0.get_action_jitted(obs=state_imaginary,
                                                     controls=jp.array(reinit_controls),
                                                     state=state_imaginary, 
                                                     warmup=warmup)
         # CBF constraint violation
-        constraint_violation_new = Vopt_new - cutoff
-        scaled_c_new = scaling_factor * constraint_violation_new
+        constraint_violation_next = jp.minimum(Vopt_next - cutoff, 0.0)
+        scaled_c_next = scaling_factor * constraint_violation_next
 
-        return (state, control_cbf_cand_new, V_x_new, controls_new, scaled_c_new, 
-                num_iters, constraint_violation_new, scaling_factor, cutoff,
-                Vopt_new, marginopt_new, is_inside_target_new, warmup)
-
-    @partial(jax.jit, static_argnames='self')
-    def check_ddpcbf_iteration_continue(self, args):
-        _, _, _, _, _, num_iters, constraint_violation, _, _, _, _, _, warmup = args
-        return jp.logical_and(jp.logical_or(constraint_violation<self.cbf_tol, warmup), num_iters<2)
+        return (state, control_cbf_cand_next, V_x_next, controls_next, scaled_c_next, 
+                num_iters, scaling_factor, cutoff,
+                Vopt_next, marginopt_next, is_inside_target_next, warmup)
 
     def get_action_jitted(
         self, 
@@ -86,20 +80,13 @@ class iLQRBraxSafetyFilter(BasePolicy):
         state: DeviceArray, 
         task_ctrl: DeviceArray,
         reinit_controls: DeviceArray,
-        warmup: bool = False,
+        warmup=False,
     ):
-        @jax.jit
-        def identity_fn(args):
-            return args
-
-        task_ctrl_jp = jp.array(task_ctrl)
-        controls_initialize = jp.array(reinit_controls)
-        control_0, controlsopt_0, marginopt_0, Vopt_0, is_inside_target_0, V_x_0 = self.solver_0.get_action_jitted(
-                obs=obs, controls=controls_initialize, state=state, warmup=warmup)
-
+        control_0, controlsopt_0, marginopt_0, Vopt_0, is_inside_target_0, _ = self.solver_0.get_action_jitted(
+            obs=obs, controls=reinit_controls, state=state, warmup=warmup)
         # Find safe policy from step 1
         state_imaginary = self.brax_env.step(
-            state, task_ctrl_jp
+            state, task_ctrl
         )
         boot_controls = jp.array(controlsopt_0)
         _,  controlsopt_next, marginopt_next, Vopt_next, is_inside_target_next, V_x_next = self.solver_0.get_action_jitted(
@@ -107,31 +94,23 @@ class iLQRBraxSafetyFilter(BasePolicy):
 
         # Iterations
         cutoff = self.gamma * Vopt_0
-
         # # Define initial state and initial performance policy
         control_cbf_cand = jp.array(task_ctrl)
-        num_iters = 0
         # Checking CBF constraint violation
-        constraint_violation = Vopt_next - cutoff
-        scaled_c = constraint_violation
-        # Scaling parameter
         scaling_factor = 1.2
+        mark_barrier_filter = (Vopt_next - cutoff < 0.0)
+        constraint_violation = jp.minimum(Vopt_next - cutoff, 0.0)
+        scaled_c = constraint_violation
 
         # unroll two iterations
         num_iters = 0
-        if constraint_violation<self.cbf_tol or warmup:
-            args = (state, control_cbf_cand, V_x_next, controlsopt_next, scaled_c, num_iters, constraint_violation, scaling_factor, 
-                                                        cutoff, Vopt_next, marginopt_next, is_inside_target_next, warmup) 
-            (state, control_cbf_cand, grad_x, reinit_controls,
-                scaled_c, num_iters, constraint_violation, 
-                    scaling_factor, cutoff, Vopt_next, marginopt_next, is_inside_target_next, warmup) = self.run_ddpcbf_iteration(args)
-
-        if constraint_violation<self.cbf_tol or warmup:
-            args = (state, control_cbf_cand, grad_x, reinit_controls, scaled_c, num_iters, constraint_violation, scaling_factor, 
-                                                        cutoff, Vopt_next, marginopt_next, is_inside_target_next, warmup)
-            (state, control_cbf_cand, grad_x, reinit_controls, 
-                scaled_c, num_iters, constraint_violation, 
-                    scaling_factor, cutoff, Vopt_next, marginopt_next, is_inside_target_next, warmup) = self.run_ddpcbf_iteration(args)
+        args = (state, control_cbf_cand, V_x_next, controlsopt_next, scaled_c, num_iters, scaling_factor, 
+                                                    cutoff, Vopt_next, marginopt_next, is_inside_target_next, warmup) 
+        args = self.run_ddpcbf_iteration(args)
+        args = self.run_ddpcbf_iteration(args)
+        (state, control_cbf_cand, grad_x, reinit_controls, 
+            scaled_c, num_iters, 
+                scaling_factor, cutoff, Vopt_next, marginopt_next, is_inside_target_next, warmup) = self.run_ddpcbf_iteration(args)
 
         # run_ddpcbf_iteration = lambda args: self.run_ddpcbf_iteration(args)
         # args = (state, control_cbf_cand, V_x_next, controlsopt_next, scaled_c, num_iters, constraint_violation, scaling_factor, 
@@ -161,14 +140,15 @@ class iLQRBraxSafetyFilter(BasePolicy):
             'reinit_controls': reinit_controls,
             'Vopt': Vopt_0,
             'marginopt': marginopt_0,
-            'is_inside_target': is_inside_target_0,
             'num_iters': num_iters,
             'Vopt_next': Vopt_next,
             'marginopt_next': marginopt_next,
             'is_inside_target_next': is_inside_target_next,
             'safe_opt_control': jp.array(control_0),
-            'mark_barrier_filter': num_iters>0,
+            'mark_barrier_filter': mark_barrier_filter,
             'mark_complete_filter': False,
+            'grad_x': grad_x,
+            'resolve': False,
         }
 
         return control_cbf_cand.ravel(), solver_info     
