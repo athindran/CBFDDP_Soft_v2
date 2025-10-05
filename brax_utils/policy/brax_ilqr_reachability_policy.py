@@ -10,6 +10,88 @@ from .brax_ilqr_policy import iLQRBrax
 
 class iLQRBraxReachability(iLQRBrax):
 
+  @partial(jax.jit, static_argnames='self')
+  def run_ddp_iteration(self, args):
+    state, pipeline_states, gc_states, controls, J, critical, failure_margins, _, _, _, _, _, _, _, _, _, num_iters, warmup = args
+    # We need cost derivatives from 0 to N-1, but we only need dynamics
+    # jacobian from 0 to N-2.
+    c_x, c_u, c_xx, c_uu, c_ux = self.cost.get_derivatives(
+        gc_states, controls
+    )
+    fx, fu = self.brax_env.get_batched_generalized_coordinates_grad(pipeline_states, controls)
+    V_x, V_xx, k_open_loop, K_closed_loop, _, _, Q_u = self.backward_pass(
+        c_x=c_x, c_u=c_u, c_xx=c_xx, c_uu=c_uu, c_ux=c_ux, fx=fx, fu=fu,
+        critical=critical
+    )
+
+    # Choose the best alpha scaling using appropriate line search methods
+    alpha_chosen = 1.0
+    # Choose the best alpha scaling using appropriate line search methods
+    if self.line_search == 'baseline':
+        alpha_chosen = self.baseline_line_search(state, gc_states, controls, K_closed_loop, k_open_loop, J)
+    elif self.line_search == 'armijo':
+        alpha_chosen = self.armijo_line_search( state=state, gc_states=gc_states, controls=controls, Ks1=K_closed_loop, ks1=k_open_loop, 
+                                                critical=critical, J=J, Q_u=Q_u)
+    elif self.line_search == 'trust_region_constant_margin':
+        alpha_chosen = self.trust_region_search_constant_margin( state=state, gc_states=gc_states, controls=controls, Ks1=K_closed_loop,
+                                                                ks1=k_open_loop, critical=critical, J=J, Q_u=Q_u)
+    elif self.line_search == 'trust_region_tune_margin':
+        alpha_chosen = self.trust_region_search_tune_margin(state=state, gc_states=gc_states, controls=controls, Ks1=K_closed_loop, 
+                                                            ks1=k_open_loop, critical=critical, J=J,  
+                                                            c_x=c_x, c_xx=c_xx, Q_u=Q_u)
+
+    (gc_states, controls, pipeline_states, 
+        J_new, critical, failure_margins, reachable_margin) = self.forward_pass(state, gc_states, controls, K_closed_loop, k_open_loop, alpha_chosen) 
+    cvg_tolerance = jp.abs((J - J_new) / J)
+    status = 0
+    status = jax.lax.cond((cvg_tolerance<self.tol), lambda: 1, lambda: status)
+    status = jax.lax.cond((status!=1) & (alpha_chosen<self.min_alpha), lambda: 2, lambda: status)
+
+    num_iters += 1
+    return state, pipeline_states, gc_states, controls, J_new, critical, failure_margins, reachable_margin, alpha_chosen, cvg_tolerance, status, V_x, V_xx, fu, k_open_loop, K_closed_loop, num_iters, warmup
+
+  @partial(jax.jit, static_argnames='self')
+  def check_ddp_iteration_continue(self, args):
+    _, _, _,  _,  J_new,  _,  _,  _,  _,  _, status, _, _, _, _, _, num_iters, warmup = args
+    return jp.logical_and(jp.logical_or(status==0, warmup), num_iters<self.max_iter)
+
+  @partial(jax.jit, static_argnames='self')
+  def get_action_jitted(
+      self, obs: DeviceArray, state: DeviceArray, controls: DeviceArray, warmup: bool = False
+  ):
+    status = 0
+    self.min_alpha = 1e-12
+    gc_states, controls, pipeline_states = self.rollout_nominal(
+        state, jp.array(controls)
+    )
+    failure_margins = self.cost.constraint.get_mapped_margin(
+        gc_states, controls
+    )
+    ctrl_costs = self.cost.ctrl_cost.get_mapped_margin(gc_states, controls)
+    critical, reachable_margin = self.get_critical_points(failure_margins)
+    J = (reachable_margin + jp.sum(ctrl_costs)).astype(float)
+
+    converged = False
+    alpha_chosen = 1.0
+
+    run_ddp_iteration = lambda args: self.run_ddp_iteration(args)
+    check_ddp_iteration_continue = lambda args: self.check_ddp_iteration_continue(args)
+
+    c_x, c_u, c_xx, c_uu, c_ux = self.cost.get_derivatives(
+        gc_states, controls
+    )
+    fx, fu = self.brax_env.get_batched_generalized_coordinates_grad(pipeline_states, controls)
+    k_open_loop = jp.zeros((controls.shape[0], controls.shape[1] - 1))
+    K_closed_loop = jp.zeros((controls.shape[0], gc_states.shape[0], gc_states.shape[1] - 1))
+
+    num_iters = 0
+    (state, pipeline_states, gc_states, controls, J_new, critical, failure_margins, reachable_margin, alpha_chosen, 
+            cvg_tolerance, status, V_x, V_xx, fu, k_open_loop, K_closed_loop, num_iters, warmup) = jax.lax.while_loop(check_ddp_iteration_continue, run_ddp_iteration, 
+                                        (state, pipeline_states, gc_states, controls, J, critical, failure_margins, reachable_margin,
+                                      alpha_chosen, 1.0, 0, c_x[:, 0], c_xx[:, :, 0], fu, k_open_loop, K_closed_loop, num_iters, warmup))
+
+    return jp.array(controls[:, 0]), jp.array(controls), reachable_margin, J, False, jp.array(V_x)
+
   def get_action(
       self, obs, state, controls = None, **kwargs
   ):
