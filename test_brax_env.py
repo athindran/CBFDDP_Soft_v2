@@ -252,6 +252,7 @@ def main(seed: int, env_name='reacher', policy_type="neural"):
         # act_rng, rng = jax.random.split(rng)
         time0 = time.time()
         act, _ = policy(state.obs, act_rng)
+        act = jax.block_until_ready(act)
         control_cycle_times = control_cycle_times.at[idx].set(time.time() - time0)
 
         # Run safety filter to get value function
@@ -261,11 +262,13 @@ def main(seed: int, env_name='reacher', policy_type="neural"):
       elif policy_type=="ilqr":
         time0 = time.time()
         act, solver_dict = policy.get_action(state, controls=controls_init)
+        act = jax.block_until_ready(act)
         control_cycle_times = control_cycle_times.at[idx].set(time.time() - time0)
         controls_init = jp.array(solver_dict['controls'])
       elif policy_type=="ilqr_reachability":
         time0 = time.time()
         act, solver_dict = policy.get_action(obs=state, state=state, controls=controls_init)
+        act = jax.block_until_ready(act)
         control_cycle_times = control_cycle_times.at[idx].set(time.time() - time0)
         controls_init = jp.array(solver_dict['reinit_controls'])
       elif policy_type=="ilqr_filter_with_neural_policy" or policy_type=="lr_filter_with_neural_policy":
@@ -273,6 +276,7 @@ def main(seed: int, env_name='reacher', policy_type="neural"):
         time0 = time.time()
         task_ctrl, _ = task_policy(state.obs, act_rng)
         act, solver_dict = safety_filter.get_action(obs=state, state=state, task_ctrl=task_ctrl, prev_sol=prev_sol, prev_ctrl=prev_ctrl)
+        act = jax.block_until_ready(act)
         control_cycle_times = control_cycle_times.at[idx].set(time.time() - time0)
         prev_sol = copy.deepcopy(solver_dict)
         controls_init = jp.array(solver_dict['reinit_controls'])
@@ -286,9 +290,10 @@ def main(seed: int, env_name='reacher', policy_type="neural"):
         task_ctrl, solver_dict_task = task_policy.get_action(state, controls=controls_init_task)
         controls_init_task = jp.array(solver_dict_task['controls'])
         act, solver_dict = safety_filter.get_action(obs=state, state=state, task_ctrl=task_ctrl, prev_sol=prev_sol, prev_ctrl=prev_ctrl)
+        act = jax.block_until_ready(act)
         prev_sol = copy.deepcopy(solver_dict)
         # act_rng, rng = jax.random.split(rng)
-        ccontrol_cycle_times = control_cycle_times.at[idx].set(time.time() - time0)
+        control_cycle_times = control_cycle_times.at[idx].set(time.time() - time0)
         controls_init = jp.array(solver_dict['reinit_controls'])
         values_sys = values_sys.at[idx].set(solver_dict['Vopt'])  
         filter_active = filter_active.at[idx].set(solver_dict['mark_barrier_filter'])
