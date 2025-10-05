@@ -85,7 +85,7 @@ class iLQRBraxReachability(iLQRBrax):
     K_closed_loop = jp.zeros((controls.shape[0], gc_states.shape[0], gc_states.shape[1] - 1))
 
     num_iters = 0
-    (state, pipeline_states, gc_states, controls, J_new, critical, failure_margins, reachable_margin, alpha_chosen, 
+    (state, pipeline_states, gc_states, controls, J, critical, failure_margins, reachable_margin, alpha_chosen, 
             cvg_tolerance, status, V_x, V_xx, fu, k_open_loop, K_closed_loop, num_iters, warmup) = jax.lax.while_loop(check_ddp_iteration_continue, run_ddp_iteration, 
                                         (state, pipeline_states, gc_states, controls, J, critical, failure_margins, reachable_margin,
                                       alpha_chosen, 1.0, 0, c_x[:, 0], c_xx[:, :, 0], fu, k_open_loop, K_closed_loop, num_iters, warmup))
