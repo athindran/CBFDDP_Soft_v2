@@ -787,7 +787,7 @@ def make_bicycle_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", 
     ax_st = subfigs_col2[2]
 
     if 'reachability' in tag:
-        max_value = 0.01
+        max_value = 0.02
     else:
         max_value = 0.5
 
@@ -1200,7 +1200,7 @@ def make_pvtol_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", pl
 
     ax_st = subfigs_col2[2]
     if 'reachability' in tag:
-        max_value = 0.05
+        max_value = 0.02
     else:
         max_value = 0.5
 
