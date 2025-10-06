@@ -1,6 +1,5 @@
 from typing import Tuple, Optional, Dict
 import time
-import copy
 import jax
 from jax import numpy as jp
 from jax import Array as DeviceArray

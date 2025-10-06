@@ -1,6 +1,3 @@
-import jax
-import copy
-
 from jax import numpy as jp
 from jax import Array as DeviceArray
 from functools import partial
@@ -107,7 +104,7 @@ class iLQRBraxSafetyFilter(BasePolicy):
         args = (state, control_cbf_cand, V_x_next, controlsopt_next, scaled_c, num_iters, scaling_factor, 
                                                     cutoff, Vopt_next, marginopt_next, is_inside_target_next, warmup) 
         args = self.run_ddpcbf_iteration(args)
-        args = self.run_ddpcbf_iteration(args)
+        # args = self.run_ddpcbf_iteration(args)
         (state, control_cbf_cand, grad_x, reinit_controls, 
             scaled_c, num_iters, 
                 scaling_factor, cutoff, Vopt_next, marginopt_next, is_inside_target_next, warmup) = self.run_ddpcbf_iteration(args)

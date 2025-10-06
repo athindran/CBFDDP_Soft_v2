@@ -1,12 +1,7 @@
 from typing import Optional, Dict
-import time
-
 from jax import numpy as jp
 from jax import Array as DeviceArray
 from typing import List
-
-import copy
-
 from .brax_ilqr_reachability_policy import iLQRBraxReachability
 from .brax_ilqr_reachavoid_policy import iLQRBraxReachAvoid
 from simulators import BasePolicy
@@ -26,7 +21,7 @@ class LRBraxSafetyFilter(BasePolicy):
         self.filter_steps = 0
 
         self.brax_env = brax_envs[0]
-        self.cost = copy.deepcopy(cost)
+        self.cost = cost
 
         self.dim_x = self.brax_env.dim_x
         self.dim_u = self.brax_env.dim_u
