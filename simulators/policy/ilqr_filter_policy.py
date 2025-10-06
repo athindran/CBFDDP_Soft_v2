@@ -215,8 +215,11 @@ class iLQRSafetyFilter(BasePolicy):
                         grad_x, B0[:, :, 0], scaled_c)
 
                 control_bias_term = control_bias_term + control_correction
+                # control_cbf_cand is already collapsed to numpy in the hybrid implementation.
                 control_cbf_cand = control_cbf_cand + \
                     np.array(control_correction)
+                # is_numpy = isinstance(control_cbf_cand, np.ndarray)
+                # print(f"is_numpy : {is_numpy}")
 
                 # Restart from current point and run again
                 solver_initial = (prev_ctrl - control_cbf_cand)
