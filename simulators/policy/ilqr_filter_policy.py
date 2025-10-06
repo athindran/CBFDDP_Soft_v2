@@ -167,7 +167,7 @@ class iLQRSafetyFilter(BasePolicy):
             'task_ctrl': task_ctrl,
             'mark_barrier_filter': mark_barrier_filter,
             'mark_complete_filter': False,
-            'grad_x': V_x_next,
+            'grad_x': grad_x,
             'process_time': time.time() - start_time,
             'resolve': False,
             'barrier_filter_steps': self.barrier_filter_steps,

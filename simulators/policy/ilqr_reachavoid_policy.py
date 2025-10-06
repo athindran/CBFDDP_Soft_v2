@@ -49,7 +49,7 @@ class iLQRReachAvoid(iLQR):
         states, controls, J_new, critical, failure_margins, target_margins, reachavoid_margin = self.forward_pass(states, controls, K_closed_loop, k_open_loop, alpha_chosen)
         cvg_tolerance = jp.abs((J - J_new) / J)
         status = 0
-        status = jax.lax.cond((cvg_tolerance<1e-4) & (J_new>0), lambda: 1, lambda: status)
+        status = jax.lax.cond((cvg_tolerance<1e-5) & (J_new>0), lambda: 1, lambda: status)
         status = jax.lax.cond((status!=1) & (alpha_chosen<self.min_alpha), lambda: 2, lambda: status)
 
         num_iters += 1
