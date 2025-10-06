@@ -123,7 +123,8 @@ class iLQRSafetyFilter(BasePolicy):
         # # unroll two iterations
         num_iters = 0
         args = (state, control_cbf_cand, V_x_next, controlsopt_next, statesopt_next, scaled_c, num_iters, scaling_factor, 
-                                                    cutoff, Vopt_next, marginopt_next, is_inside_target_next, warmup) 
+                                                    cutoff, Vopt_next, marginopt_next, is_inside_target_next, warmup)
+        args = self.run_ddpcbf_iteration(args)
         (state, control_cbf_cand, grad_x, reinit_controls, statesopt_next,  
             scaled_c, num_iters, 
                 scaling_factor, cutoff, Vopt_next, marginopt_next, is_inside_target_next, warmup) = self.run_ddpcbf_iteration(args)

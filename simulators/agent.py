@@ -168,7 +168,13 @@ class Agent:
         if self.policy_type == "iLQRSafetyFilter":
             # Execute task control
             if self.is_task_ilqr:
-                task_ctrl, _ = self.task_policy.get_action_jitted(obs=obs, controls=jnp.zeros((self.safety_policy.dim_u, self.safety_policy.N)), state=kwargs['state'], warmup=warmup)
+                reinit_controls = np.zeros((self.safety_policy.dim_u, self.safety_policy.N))
+                if self.dyn.id == "PVTOL6D":
+                    reinit_controls[1, :] = self.dyn.mass * self.dyn.g
+                else:
+                    reinit_controls[0, :] = self.dyn.ctrl_space[0, 0]
+                reinit_controls = jnp.array(reinit_controls)
+                task_ctrl, _ = self.task_policy.get_action_jitted(obs=obs, controls=reinit_controls, state=kwargs['state'])
             elif self.dyn.id ==  "PVTOL6D":
                 task_ctrl = self.task_policy(obs, self.dyn)
             else:
@@ -176,13 +182,16 @@ class Agent:
             # Filter to safe control
             if prev_sol==None:
                 reinit_controls = np.zeros((self.safety_policy.dim_u, self.safety_policy.N))
-                reinit_controls[0, :] = self.dyn.ctrl_space[0, 0]
+                if self.dyn.id == "PVTOL6D":
+                    reinit_controls[1, :] = self.dyn.mass * self.dyn.g
+                else:
+                    reinit_controls[0, :] = self.dyn.ctrl_space[0, 0]
                 reinit_controls = jnp.array(reinit_controls)
             else:
                 reinit_controls = jnp.array(prev_sol['reinit_controls'])
 
             _action, _solver_info = self.safety_policy.get_action_jitted(  # Proposed action.
-                state=kwargs['state'], obs=obs, task_ctrl=task_ctrl, warmup=warmup, 
+                state=kwargs['state'], obs=obs, task_ctrl=task_ctrl, 
                 reinit_controls=reinit_controls,
             )
             # _action, _solver_info = self.safety_policy.get_action(  # Proposed action.
