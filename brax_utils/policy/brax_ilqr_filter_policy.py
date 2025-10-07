@@ -1,14 +1,8 @@
-from typing import Optional, Dict
-import time
-
 from jax import numpy as jp
 from jax import Array as DeviceArray
-from typing import List
-
-import copy
-
+from functools import partial
+from typing import Optional, Dict, List
 from .brax_ilqr_reachability_policy import iLQRBraxReachability
-from .brax_ilqr_reachavoid_policy import iLQRBraxReachAvoid
 from simulators import BasePolicy
 from simulators import barrier_filter_linear, barrier_filter_quadratic_two, barrier_filter_quadratic_eight
 from brax_utils import WrappedBraxEnv
@@ -37,27 +31,124 @@ class iLQRBraxSafetyFilter(BasePolicy):
         self.barrier_filter_steps = 0
 
         self.brax_env = brax_envs[0]
-        self.cost = copy.deepcopy(cost)
+        self.cost = cost
 
         self.dim_x = self.brax_env.dim_x
         self.dim_u = self.brax_env.dim_u
         self.N = config.N
 
         # Two ILQR solvers
-        if self.config.COST_TYPE == "Reachavoid":
-            self.solver_0 = iLQRBraxReachAvoid(
-                self.id, self.config, brax_envs[1], self.cost)
-            self.solver_1 = iLQRBraxReachAvoid(
-                self.id, self.config, brax_envs[2], self.cost)
-            self.solver_2 = iLQRBraxReachAvoid(
-                self.id, self.config, brax_envs[3], self.cost)
-        elif self.config.COST_TYPE == "Reachability":
+        if self.config.COST_TYPE == "Reachability":
             self.solver_0 = iLQRBraxReachability(
                 self.id, self.config, brax_envs[1], self.cost)
-            self.solver_1 = iLQRBraxReachability(
-                self.id, self.config, brax_envs[2], self.cost)
-            self.solver_2 = iLQRBraxReachability(
-                self.id, self.config, brax_envs[3], self.cost)
+            # self.solver_1 = iLQRBraxReachability(
+            #     self.id, self.config, brax_envs[2], self.cost)
+            # self.solver_2 = iLQRBraxReachability(
+            #     self.id, self.config, brax_envs[3], self.cost)
+
+    def run_ddpcbf_iteration(self, args):
+        state, control_cbf_cand, grad_x, reinit_controls, scaled_c, num_iters, scaling_factor, cutoff, _, _, _, warmup = args
+        num_iters = num_iters + 1
+        # Extract information from solver for enforcing constraint
+        _, B0u = self.brax_env.get_generalized_coordinates_grad(
+            state, control_cbf_cand)
+        control_correction = barrier_filter_linear(
+            grad_x, B0u, scaled_c)
+
+        control_cbf_cand_next = control_cbf_cand + control_correction
+        state_imaginary = self.brax_env.step(
+            state, control_cbf_cand_next
+        )
+        _, controls_next, marginopt_next, Vopt_next, is_inside_target_next, V_x_next = self.solver_0.get_action_jitted(obs=state_imaginary,
+                                                    controls=jp.array(reinit_controls),
+                                                    state=state_imaginary, 
+                                                    warmup=warmup)
+        # CBF constraint violation
+        constraint_violation_next = jp.minimum(Vopt_next - cutoff, 0.0)
+        scaled_c_next = scaling_factor * constraint_violation_next
+
+        return (state, control_cbf_cand_next, V_x_next, controls_next, scaled_c_next, 
+                num_iters, scaling_factor, cutoff,
+                Vopt_next, marginopt_next, is_inside_target_next, warmup)
+
+    def get_action_jitted(
+        self, 
+        obs: DeviceArray, 
+        state: DeviceArray, 
+        task_ctrl: DeviceArray,
+        reinit_controls: DeviceArray,
+        warmup=False,
+    ):
+        control_0, controlsopt_0, marginopt_0, Vopt_0, is_inside_target_0, _ = self.solver_0.get_action_jitted(
+            obs=obs, controls=reinit_controls, state=state, warmup=warmup)
+        # Find safe policy from step 1
+        state_imaginary = self.brax_env.step(
+            state, task_ctrl
+        )
+        boot_controls = jp.array(controlsopt_0)
+        _,  controlsopt_next, marginopt_next, Vopt_next, is_inside_target_next, V_x_next = self.solver_0.get_action_jitted(
+            obs=state_imaginary, controls=boot_controls, state=state_imaginary, warmup=warmup)
+
+        # Iterations
+        cutoff = self.gamma * Vopt_0
+        # # Define initial state and initial performance policy
+        control_cbf_cand = jp.array(task_ctrl)
+        # Checking CBF constraint violation
+        scaling_factor = 1.2
+        mark_barrier_filter = (Vopt_next - cutoff < 0.0)
+        constraint_violation = jp.minimum(Vopt_next - cutoff, 0.0)
+        scaled_c = constraint_violation
+
+        # unroll two iterations
+        num_iters = 0
+        args = (state, control_cbf_cand, V_x_next, controlsopt_next, scaled_c, num_iters, scaling_factor, 
+                                                    cutoff, Vopt_next, marginopt_next, is_inside_target_next, warmup) 
+        args = self.run_ddpcbf_iteration(args)
+        # args = self.run_ddpcbf_iteration(args)
+        (state, control_cbf_cand, grad_x, reinit_controls, 
+            scaled_c, num_iters, 
+                scaling_factor, cutoff, Vopt_next, marginopt_next, is_inside_target_next, warmup) = self.run_ddpcbf_iteration(args)
+
+        # run_ddpcbf_iteration = lambda args: self.run_ddpcbf_iteration(args)
+        # args = (state, control_cbf_cand, V_x_next, controlsopt_next, scaled_c, num_iters, constraint_violation, scaling_factor, 
+        #                                                  cutoff, Vopt_next, marginopt_next, is_inside_target_next, warmup)
+        # args = jax.lax.cond(jp.logical_or(constraint_violation<self.cbf_tol, warmup), run_ddpcbf_iteration, identity_fn, args)
+        # (state, control_cbf_cand, grad_x, reinit_controls, 
+        #     scaled_c, num_iters, constraint_violation, 
+        #         scaling_factor, cutoff, Vopt_next, marginopt_next, is_inside_target_next, warmup) = args
+        # args = jax.lax.cond(jp.logical_or(constraint_violation<self.cbf_tol, warmup), run_ddpcbf_iteration, identity_fn, args)
+        # (state, control_cbf_cand, grad_x, reinit_controls, 
+        #     scaled_c, num_iters, constraint_violation, 
+        #         scaling_factor, cutoff, Vopt_next, marginopt_next, is_inside_target_next, warmup) = args
+
+        # Exit loop once CBF constraint satisfied or maximum iterations
+        # violated
+        # check_ddpcbf_iteration_continue = lambda args: self.check_ddpcbf_iteration_continue(args)
+        # run_ddpcbf_iteration = lambda args: self.run_ddpcbf_iteration(args)
+        # args = (state, control_cbf_cand, V_x_next, controlsopt_next, scaled_c, num_iters, constraint_violation, scaling_factor, 
+        #                                                  cutoff, Vopt_next, marginopt_next, is_inside_target_next, warmup) 
+        # (state, control_cbf_cand, grad_x, reinit_controls, 
+        #     scaled_c, num_iters, constraint_violation, 
+        #         scaling_factor, cutoff, Vopt_next, marginopt_next, is_inside_target_next, warmup) = jax.lax.while_loop(check_ddpcbf_iteration_continue, 
+        #                         run_ddpcbf_iteration, args)
+
+        solver_info = {
+            'controls': reinit_controls,
+            'reinit_controls': reinit_controls,
+            'Vopt': Vopt_0,
+            'marginopt': marginopt_0,
+            'num_iters': num_iters,
+            'Vopt_next': Vopt_next,
+            'marginopt_next': marginopt_next,
+            'is_inside_target_next': is_inside_target_next,
+            'safe_opt_control': jp.array(control_0),
+            'mark_barrier_filter': mark_barrier_filter,
+            'mark_complete_filter': False,
+            'grad_x': grad_x,
+            'resolve': False,
+        }
+
+        return control_cbf_cand.ravel(), solver_info     
 
     def get_action(
         self, 
@@ -75,7 +166,7 @@ class iLQRBraxSafetyFilter(BasePolicy):
         if prev_sol is not None:
             controls_initialize = jp.array(prev_sol['reinit_controls'])
         else:
-            controls_initialize = None
+            controls_initialize = jp.zeros((self.dim_u, self.N))
 
         if prev_sol is None or prev_sol['resolve']:
             control_0, solver_info_0 = self.solver_0.get_action(

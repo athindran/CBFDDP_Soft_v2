@@ -1,7 +1,9 @@
 from typing import Optional, Tuple, Dict, List
+from jax import numpy as jnp
 import copy
 import numpy as np
 import time
+import jax
 
 # Dynamics.
 from .dynamics.bicycle5d import Bicycle5D
@@ -167,16 +169,43 @@ class Agent:
         if self.policy_type == "iLQRSafetyFilter":
             # Execute task control
             if self.is_task_ilqr:
-                task_ctrl, _ = self.task_policy.get_action(obs=obs, controls=None, state=kwargs['state'], warmup=warmup)
+                reinit_controls = np.zeros((self.safety_policy.dim_u, self.safety_policy.N))
+                if self.dyn.id == "PVTOL6D":
+                    reinit_controls[1, :] = self.dyn.mass * self.dyn.g
+                else:
+                    reinit_controls[0, :] = self.dyn.ctrl_space[0, 0]
+                reinit_controls = jnp.array(reinit_controls)
+                task_ctrl, _ = self.task_policy.get_action_jitted(obs=jnp.array(obs), 
+                                                                  controls=jnp.array(reinit_controls), 
+                                                                  state=jnp.array(kwargs['state']))
             elif self.dyn.id ==  "PVTOL6D":
                 task_ctrl = self.task_policy(obs, self.dyn)
             else:
                 task_ctrl = self.task_policy(obs)
             # Filter to safe control
-            _action, _solver_info = self.safety_policy.get_action(  # Proposed action.
-                state=kwargs['state'], obs=obs, task_ctrl=task_ctrl, warmup=warmup, 
-                prev_sol=prev_sol, prev_ctrl=prev_ctrl, 
-            )
+            if prev_sol==None:
+                reinit_controls = np.zeros((self.safety_policy.dim_u, self.safety_policy.N))
+                if self.dyn.id == "PVTOL6D":
+                    reinit_controls[1, :] = self.dyn.mass * self.dyn.g
+                else:
+                    reinit_controls[0, :] = self.dyn.ctrl_space[0, 0]
+                reinit_controls = jnp.array(reinit_controls)
+            else:
+                reinit_controls = jnp.array(prev_sol['reinit_controls'])
+
+            start_time = time.time()
+            with jax.default_device('cpu'):
+                _action, _solver_info = self.safety_policy.get_action_jitted(  # Proposed action.
+                    state=jnp.array(kwargs['state']), obs=jnp.array(obs), task_ctrl=jnp.array(task_ctrl), 
+                    reinit_controls=jnp.array(reinit_controls),
+                )
+                _action = jax.block_until_ready(_action)
+            process_time = time.time() - start_time
+            _solver_info['process_time'] = process_time
+            # _action, _solver_info = self.safety_policy.get_action(  # Proposed action.
+            #     state=kwargs['state'], obs=obs, task_ctrl=task_ctrl, warmup=warmup, 
+            #     prev_sol=prev_sol, prev_ctrl=prev_ctrl, 
+            # )
         else:
             _action, _solver_info = self.policy.get_action(  # Proposed action.
                 obs=obs, agents_action=agents_action, **kwargs
