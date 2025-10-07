@@ -31,13 +31,13 @@ class iLQRReachability(iLQR):
         if self.line_search == 'baseline':
             alpha_chosen = self.baseline_line_search(states, controls, K_closed_loop, k_open_loop, J)
         elif self.line_search == 'armijo':
-            alpha_chosen = self.armijo_line_search( state=state, gc_states=gc_states, controls=controls, Ks1=K_closed_loop, ks1=k_open_loop, 
+            alpha_chosen = self.armijo_line_search(states=states, controls=controls, Ks1=K_closed_loop, ks1=k_open_loop, 
                                                     critical=critical, J=J, Q_u=Q_u)
         elif self.line_search == 'trust_region_constant_margin':
-            alpha_chosen = self.trust_region_search_constant_margin( state=state, gc_states=gc_states, controls=controls, Ks1=K_closed_loop,
+            alpha_chosen = self.trust_region_search_constant_margin(states=states, controls=controls, Ks1=K_closed_loop,
                                                                     ks1=k_open_loop, critical=critical, J=J, Q_u=Q_u)
         elif self.line_search == 'trust_region_tune_margin':
-            alpha_chosen = self.trust_region_search_tune_margin(state=state, gc_states=gc_states, controls=controls, Ks1=K_closed_loop, 
+            alpha_chosen = self.trust_region_search_tune_margin(states=states, controls=controls, Ks1=K_closed_loop, 
                                                                 ks1=k_open_loop, critical=critical, J=J,  
                                                                 c_x=c_x, c_xx=c_xx, Q_u=Q_u)
 
