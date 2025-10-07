@@ -200,6 +200,7 @@ class Agent:
                     reinit_controls=jnp.array(reinit_controls),
                 )
                 _action = jax.block_until_ready(_action)
+            _action = np.array(_action)
             process_time = time.time() - start_time
             _solver_info['process_time'] = process_time
             # _action, _solver_info = self.safety_policy.get_action(  # Proposed action.

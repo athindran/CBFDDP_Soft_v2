@@ -5,7 +5,6 @@ from jax import numpy as jp
 from jax import Array as DeviceArray
 from jax import block_until_ready
 
-import copy
 import jax
 
 from functools import partial
@@ -31,17 +30,11 @@ class iLQRSafetyFilter(BasePolicy):
             self.gamma = None
 
         self.lr_threshold = config.LR_THRESHOLD
-
         self.filter_steps = 0
         self.barrier_filter_steps = 0
-
-        self.dyn = copy.deepcopy(dyn)
-        self.rollout_dyn_0 = copy.deepcopy(dyn)
-        self.rollout_dyn_1 = copy.deepcopy(dyn)
-        self.rollout_dyn_2 = copy.deepcopy(dyn)
-
-        self.cost = copy.deepcopy(cost)
-
+        self.dyn = dyn
+        self.rollout_dyn_0 = dyn
+        self.cost = cost
         self.dim_x = dyn.dim_x
         self.dim_u = dyn.dim_u
         self.N = config.N
@@ -50,17 +43,17 @@ class iLQRSafetyFilter(BasePolicy):
         if config.COST_TYPE == "Reachavoid":
             self.solver_0 = iLQRReachAvoid(
                 self.id, config, self.rollout_dyn_0, self.cost)
-            self.solver_1 = iLQRReachAvoid(
-                self.id, config, self.rollout_dyn_1, self.cost)
-            self.solver_2 = iLQRReachAvoid(
-                self.id, config, self.rollout_dyn_1, self.cost)
+            # self.solver_0 = iLQRReachAvoid(
+            #     self.id, config, self.rollout_dyn_1, self.cost)
+            # self.solver_0 = iLQRReachAvoid(
+            #     self.id, config, self.rollout_dyn_1, self.cost)
         elif config.COST_TYPE == "Reachability":
             self.solver_0 = iLQRReachability(
                 self.id, config, self.rollout_dyn_0, self.cost)
-            self.solver_1 = iLQRReachability(
-                self.id, config, self.rollout_dyn_1, self.cost)
-            self.solver_2 = iLQRReachability(
-                self.id, config, self.rollout_dyn_1, self.cost)
+            # self.solver_0 = iLQRReachability(
+            #     self.id, config, self.rollout_dyn_1, self.cost)
+            # self.solver_0 = iLQRReachability(
+            #     self.id, config, self.rollout_dyn_1, self.cost)
 
     @partial(jax.jit, static_argnames='self')
     def run_ddpcbf_iteration(self, args):
@@ -76,7 +69,7 @@ class iLQRSafetyFilter(BasePolicy):
         state_imaginary, control_cbf_cand_next = self.dyn.integrate_forward_jax(
             state, control_cbf_cand_next
         )
-        _, controls_next, statesopt_next, marginopt_next, Vopt_next, is_inside_target_next, V_x_next = self.solver_2.get_action_jitted(obs=state_imaginary,
+        _, controls_next, statesopt_next, marginopt_next, Vopt_next, is_inside_target_next, V_x_next = self.solver_0.get_action_jitted(obs=state_imaginary,
                                                     controls=jp.array(reinit_controls),
                                                     state=state_imaginary, 
                                                     warmup=warmup)
@@ -106,7 +99,7 @@ class iLQRSafetyFilter(BasePolicy):
             state, task_ctrl
         )
         boot_controls = jp.array(controlsopt_0)
-        _,  controlsopt_next, statesopt_next, marginopt_next, Vopt_next, is_inside_target_next, V_x_next = self.solver_1.get_action_jitted(
+        _,  controlsopt_next, statesopt_next, marginopt_next, Vopt_next, is_inside_target_next, V_x_next = self.solver_0.get_action_jitted(
             obs=state_imaginary, controls=boot_controls, state=state_imaginary, warmup=warmup)
 
         # Iterations
