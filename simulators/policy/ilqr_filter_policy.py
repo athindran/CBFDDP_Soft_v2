@@ -65,6 +65,7 @@ class iLQRSafetyFilter(BasePolicy):
             self.solver_2 = iLQRReachability(
                 self.id, self.config, self.rollout_dyn_1, self.cost)
 
+    @partial(jax.jit, static_argnames='self')
     def run_ddpcbf_iteration(self, args):
         state, control_cbf_cand, grad_x, reinit_controls, _, scaled_c, num_iters, scaling_factor, cutoff, _, _, _, warmup = args
         num_iters = num_iters + 1
@@ -90,6 +91,7 @@ class iLQRSafetyFilter(BasePolicy):
                 num_iters, scaling_factor, cutoff,
                 Vopt_next, marginopt_next, is_inside_target_next, warmup)
 
+    @partial(jax.jit, static_argnames='self')
     def get_action_jitted(
         self, 
         obs: DeviceArray, 
@@ -98,7 +100,7 @@ class iLQRSafetyFilter(BasePolicy):
         reinit_controls: DeviceArray,
         warmup=False,
     ):
-        start_time = time.time()
+        #start_time = time.time()
         task_ctrl = task_ctrl.ravel()
         control_0, controlsopt_0, statesopt_0, marginopt_0, Vopt_0, is_inside_target_0, _ = self.solver_0.get_action_jitted(
             obs=obs, controls=reinit_controls, state=state, warmup=warmup)
@@ -116,7 +118,7 @@ class iLQRSafetyFilter(BasePolicy):
         control_cbf_cand = jp.array(task_ctrl)
         # # Checking CBF constraint violation
         scaling_factor = 0.8
-        mark_barrier_filter = (Vopt_next - cutoff < 0.0)
+        # mark_barrier_filter = (Vopt_next - cutoff < 0.0)
         constraint_violation = jp.minimum(Vopt_next - cutoff, 0.0)
         scaled_c = constraint_violation
 
@@ -151,8 +153,8 @@ class iLQRSafetyFilter(BasePolicy):
         #     scaled_c, num_iters, constraint_violation, 
         #         scaling_factor, cutoff, Vopt_next, marginopt_next, is_inside_target_next, warmup) = jax.lax.while_loop(check_ddpcbf_iteration_continue, 
         #                         run_ddpcbf_iteration, args)
-        control_cbf_cand = jax.block_until_ready(control_cbf_cand)
-        self.barrier_filter_steps += mark_barrier_filter
+        #control_cbf_cand = jax.block_until_ready(control_cbf_cand)
+        #self.barrier_filter_steps += mark_barrier_filter
         solver_info = {
             'states': statesopt_next,
             'controls': reinit_controls,
@@ -165,14 +167,15 @@ class iLQRSafetyFilter(BasePolicy):
             'is_inside_target_next': is_inside_target_next,
             'safe_opt_ctrl': control_0,
             'task_ctrl': task_ctrl,
-            'mark_barrier_filter': mark_barrier_filter,
+            'mark_barrier_filter': False,
             'mark_complete_filter': False,
             'grad_x': grad_x,
-            'process_time': time.time() - start_time,
+            #'process_time': time.time() - start_time,
             'resolve': False,
-            'barrier_filter_steps': self.barrier_filter_steps,
+            'barrier_filter_steps': 0,
             'filter_steps': 0,
         }
+
         return control_cbf_cand.ravel(), solver_info
 
     def get_action(

@@ -19,10 +19,10 @@ import os
 import sys
 sys.path.append(".")
 
-os.environ["CUDA_VISIBLE_DEVICES"] = " "
+# os.environ["CUDA_VISIBLE_DEVICES"] = " "
 
 
-jax.config.update('jax_platform_name', 'cpu')
+# jax.config.update('jax_platform_name', 'cpu')
 
 
 def main(config_file, road_boundary, filter_type, is_task_ilqr, line_search):
@@ -334,7 +334,10 @@ if __name__ == "__main__":
     out_folder, plot_tag, config_agent = None, None, None
     for filter_type in filters:
         jax.clear_caches()
-        out_folder, plot_tag, config_agent, config_solver = main(args.config_file, args.road_boundary, filter_type=filter_type, is_task_ilqr=(not args.naive_task),         
+        device = jax.devices()[0]
+        print(device)
+        with jax.default_device('cpu'):
+            out_folder, plot_tag, config_agent, config_solver = main(args.config_file, args.road_boundary, filter_type=filter_type, is_task_ilqr=(not args.naive_task),         
                                                     line_search=args.line_search)
 
     make_bicycle_comparison_report(

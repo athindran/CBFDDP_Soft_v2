@@ -3,6 +3,7 @@ from jax import numpy as jnp
 import copy
 import numpy as np
 import time
+import jax
 
 # Dynamics.
 from .dynamics.bicycle5d import Bicycle5D
@@ -190,10 +191,15 @@ class Agent:
             else:
                 reinit_controls = jnp.array(prev_sol['reinit_controls'])
 
-            _action, _solver_info = self.safety_policy.get_action_jitted(  # Proposed action.
-                state=kwargs['state'], obs=obs, task_ctrl=task_ctrl, 
-                reinit_controls=reinit_controls,
-            )
+            start_time = time.time()
+            with jax.default_device('cpu'):
+                _action, _solver_info = self.safety_policy.get_action_jitted(  # Proposed action.
+                    state=jnp.array(kwargs['state']), obs=jnp.array(obs), task_ctrl=jnp.array(task_ctrl), 
+                    reinit_controls=jnp.array(reinit_controls),
+                )
+                _action = jax.block_until_ready(_action)
+            end_time = time.time() - start_time
+            _solver_info['process_time'] = end_time
             # _action, _solver_info = self.safety_policy.get_action(  # Proposed action.
             #     state=kwargs['state'], obs=obs, task_ctrl=task_ctrl, warmup=warmup, 
             #     prev_sol=prev_sol, prev_ctrl=prev_ctrl, 

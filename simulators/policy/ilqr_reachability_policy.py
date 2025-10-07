@@ -76,8 +76,8 @@ class iLQRReachability(iLQR):
         status = 0
         cvg_tolerance = 1.0
 
-        run_ddp_iteration = lambda args: self.run_ddp_iteration(args)
-        check_ddp_iteration_continue = lambda args: self.check_ddp_iteration_continue(args)
+        run_ddp_iteration = self.run_ddp_iteration
+        check_ddp_iteration_continue = self.check_ddp_iteration_continue
 
         c_x, c_u, c_xx, c_uu, c_ux = self.cost.get_derivatives(
             states, controls
