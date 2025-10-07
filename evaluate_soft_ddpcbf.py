@@ -274,11 +274,12 @@ def main(config_file, road_boundary, filter_type, is_task_ilqr, line_search):
         advanced_animate=should_animate,
     )
 
-    print("result:", result)
+    print(f"--------------------RESULT: {result}----------------------")
     print(traj_info['step_history'][-1]["done_type"])
     constraints: Dict = traj_info['step_history'][-1]['constraints']
     for k, v in constraints.items():
         print(f"{k}: {v[0, 1]:.1e}")
+    print("-----------------------------------------------------------")
 
     # endregion
 
