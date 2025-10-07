@@ -6,22 +6,10 @@ import jax
 from jax import numpy as jnp
 
 
-class BaseMargin(ABC):
+class BaseMargin:
 
     def __init__(self):
         super().__init__()
-
-    @abstractmethod
-    def get_stage_margin(
-        self, state: DeviceArray, ctrl: DeviceArray
-    ) -> DeviceArray:
-        raise NotImplementedError
-
-    @abstractmethod
-    def get_target_stage_margin(
-        self, state: DeviceArray, ctrl: DeviceArray
-    ) -> DeviceArray:
-        raise NotImplementedError
 
     @partial(jax.jit, static_argnames='self')
     def get_mapped_margin(self, state: DeviceArray,
@@ -164,6 +152,7 @@ class SoftBarrierEnvelope(BaseMargin):
         self.q2 = q2
         self.margin = margin
 
+    @partial(jax.jit, static_argnames='self')
     def get_stage_margin(
         self, state: DeviceArray, ctrl: DeviceArray
     ) -> DeviceArray:
@@ -173,6 +162,7 @@ class SoftBarrierEnvelope(BaseMargin):
                                a_max=self.clip_max)
         )
 
+    @partial(jax.jit, static_argnames='self')
     def get_target_stage_margin(
         self, state: DeviceArray, ctrl: DeviceArray
     ) -> DeviceArray:

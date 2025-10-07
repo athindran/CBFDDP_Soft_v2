@@ -13,7 +13,7 @@ class CircleObsMargin(BaseMargin):
     """
 
     def __init__(
-        self, circle_spec=np.ndarray,
+        self, circle_spec: np.ndarray,
         buffer: float = 0.
     ):
         """
