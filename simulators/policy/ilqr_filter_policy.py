@@ -184,7 +184,7 @@ class iLQRSafetyFilter(BasePolicy):
             # Exit loop once CBF constraint satisfied or maximum iterations
             # violated
             control_bias_term = np.zeros((self.dim_u,))
-            while((constraint_violation < cbf_tol or warmup) and num_iters < 5):
+            while((constraint_violation < cbf_tol or warmup) and num_iters < 3):
                 num_iters = num_iters + 1
 
                 # Extract information from solver for enforcing constraint
