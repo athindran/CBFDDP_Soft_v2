@@ -1,33 +1,13 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Tuple, Dict, Optional
-import numpy as np
 
 
-class BasePolicy(ABC):
+class BasePolicy:
 
     def __init__(self, id: str, config) -> None:
         super().__init__()
         self.id = id
-        self.config = config
-
-    @abstractmethod
-    def get_action(
-        self, obs: np.ndarray,
-        agents_action: Optional[Dict[str, np.ndarray]] = None, **kwargs
-    ) -> Tuple[np.ndarray, dict]:
-        """Gets the action to execute.
-
-        Args:
-            obs (np.ndarray): current observation.
-            agents_action (Optional[Dict]): other agents' actions that are
-                observable to the ego agent.
-
-        Returns:
-            np.ndarray: the action to be executed.
-            dict: info for the solver, e.g., processing time, status, etc.
-        """
-        raise NotImplementedError
 
     def report(self):
         print(self.id)

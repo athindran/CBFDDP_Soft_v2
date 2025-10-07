@@ -5,10 +5,10 @@ import numpy as np
 from functools import partial
 from jax import Array as DeviceArray
 import jax
-from jax import numpy as jnp
+from jax import numpy as jp
 
 
-class BaseDynamics(ABC):
+class BaseDynamics:
     dim_x: int
 
     def __init__(self, config: Any, action_space: np.ndarray) -> None:
@@ -17,7 +17,7 @@ class BaseDynamics(ABC):
             config (Any): an object specifies configuration.
         """
         self.dt: float = config.DT  # time step for each planning step
-        self.ctrl_space = action_space.copy()
+        self.ctrl_space = jp.array(action_space.copy())
         self.dim_u: int = self.ctrl_space.shape[0]
         self.id = config.DYN
 
@@ -37,7 +37,7 @@ class BaseDynamics(ABC):
             np.ndarray: clipped control.
         """
         state_nxt, ctrl_clip = self.integrate_forward_jax(
-            jnp.array(state), jnp.array(control)
+            jp.array(state), jp.array(control)
         )
         return np.array(state_nxt), np.array(ctrl_clip)
 
@@ -57,7 +57,7 @@ class BaseDynamics(ABC):
             np.ndarray: clipped control.
         """
         state_nxt, ctrl_clip = self.integrate_forward_jax_with_noise(
-            jnp.array(state), jnp.array(control), seed=kwargs['seed'],
+            jp.array(state), jp.array(control), seed=kwargs['seed'],
         )
         return np.array(state_nxt), np.array(ctrl_clip)
 

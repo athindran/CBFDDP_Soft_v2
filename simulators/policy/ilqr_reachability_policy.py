@@ -1,6 +1,5 @@
 from typing import Tuple, Optional, Dict
 import time
-import numpy as np
 import jax
 from jax import numpy as jp
 from jax import Array as DeviceArray
@@ -94,111 +93,6 @@ class iLQRReachability(iLQR):
         # )
 
         return controls[:, 0], controls, states, reachable_margin, J, False, V_x
-
-    def get_action(
-        self, obs: np.ndarray, controls: Optional[np.ndarray] = None,
-        agents_action: Optional[Dict] = None, recede_horizon=False, **kwargs
-    ) -> np.ndarray:
-        status = 0
-        self.tol = 1e-4
-        self.min_alpha = 1e-12
-        line_search = self.line_search
-
-        # `controls` include control input at timestep N-1, which is a dummy
-        # control of zeros.
-        if controls is None:
-            # For consistent comparisons, initialize with zeros
-            controls = np.zeros((self.dim_u, self.N))
-            # NOTE: Comment the environment specific branching for profiling.
-            if self.dyn.id == "PVTOL6D":
-              controls[1, :] = self.dyn.mass * self.dyn.g
-            elif self.dyn.id == "Bicycle4D" or self.dyn.id == "Bicycle5D" or self.dyn.id=="PointMass4D":
-              controls[0, :] = self.dyn.ctrl_space[0, 0]
-            controls = jp.array(controls)
-        else:
-            assert controls.shape[1] == self.N
-            controls = jp.array(controls)
-
-        # Rolls out the nominal trajectory and gets the initial cost.
-        states, controls = self.rollout_nominal(
-            jp.array(kwargs.get('state')), controls
-        )
-
-        failure_margins = self.cost.constraint.get_mapped_margin(
-            states, controls
-        )
-        ctrl_costs = self.cost.ctrl_cost.get_mapped_margin(states, controls)
-        critical, reachable_margin = self.get_critical_points(failure_margins)
-        J = (reachable_margin + jp.sum(ctrl_costs)).astype(float)
-
-        converged = False
-        time0 = time.time()
-        alpha_chosen = 1.0
-
-        for i in range(self.max_iter):
-            # We need cost derivatives from 0 to N-1, but we only need dynamics
-            # jacobian from 0 to N-2.
-            c_x, c_u, c_xx, c_uu, c_ux = self.cost.get_derivatives(
-                states, controls
-            )
-            fx, fu = self.dyn.get_jacobian(states[:, :-1], controls[:, :-1])
-
-            if self.order == 'DDP':
-                fxx, fuu, fux = self.dyn.get_hessian(states[:, :-1], controls[:, :-1])
-                V_x, V_xx, k_open_loop, K_closed_loop, _, _, Q_u = self.backward_pass_ddp(
-                    c_x=c_x, c_u=c_u, c_xx=c_xx, c_uu=c_uu, c_ux=c_ux, fx=fx, fu=fu,
-                    fxx=fxx, fuu=fuu, fux=fux,
-                    critical=critical,
-                )
-            else:
-                V_x, V_xx, k_open_loop, K_closed_loop, _, _, Q_u = self.backward_pass(
-                    c_x=c_x, c_u=c_u, c_xx=c_xx, c_uu=c_uu, c_ux=c_ux, fx=fx, fu=fu,
-                    critical=critical,
-                )
-            
-            alpha_chosen = 1.0
-            # Choose the best alpha scaling using appropriate line search methods
-            if line_search == 'baseline':
-                alpha_chosen = self.baseline_line_search( states, controls, K_closed_loop, k_open_loop, J)
-            elif line_search == 'armijo':
-                alpha_chosen = self.armijo_line_search( states=states, controls=controls, Ks1=K_closed_loop, ks1=k_open_loop, critical=critical, J=J, Q_u=Q_u)
-            elif line_search == 'trust_region_constant_margin':
-                alpha_chosen = self.trust_region_search_constant_margin( states=states, controls=controls, Ks1=K_closed_loop, ks1=k_open_loop, critical=critical, J=J, Q_u=Q_u)
-            elif line_search == 'trust_region_tune_margin':
-                alpha_chosen = self.trust_region_search_tune_margin( states=states, controls=controls, Ks1=K_closed_loop, ks1=k_open_loop, critical=critical, J=J,  
-                    c_x=c_x, c_xx=c_xx, Q_u=Q_u)
-            else:
-                raise Exception(f'{self.line_search} does not match any implemented line search') 
-            
-            states, controls, J_new, critical, failure_margins, reachable_margin = self.forward_pass(states, controls, K_closed_loop, k_open_loop, alpha_chosen) 
-
-            if (np.abs((J-J_new) / J) < self.tol):  # Small improvement.
-                status = 1
-                if J_new>0:
-                  converged = True
-
-            J = J_new
-            
-            if alpha_chosen<self.min_alpha:
-                status = 2
-                break
-
-            # Terminates early if the objective improvement is negligible.
-            if converged:
-                #print(f"Converged in {i + 1} iterations with {alpha_chosen}")
-                status = 1
-                break
-
-        t_process = time.time() - time0
-        #print(f"Reachability solver took {t_process} seconds with status {status}")
-        states = np.asarray(states)
-        controls = np.asarray(controls)
-        solver_info = dict(
-            states=states, controls=controls, reinit_controls=controls, t_process=t_process, status=status, Vopt=J, marginopt=reachable_margin,
-            grad_x=V_x, grad_xx=V_xx, B0=fu[:, :, 0], is_inside_target=False,  K_closed_loop=K_closed_loop, k_open_loop=k_open_loop, num_ddp_iters=i + 1,
-        )
-
-        return controls[:, 0], solver_info
 
     @partial(jax.jit, static_argnames='self')
     def baseline_line_search(self, states, controls, K_closed_loop, k_open_loop, J, beta=0.7, alpha_initial=1.0):

@@ -247,10 +247,10 @@ class BaseSingleEnv(BaseEnv):
             task_ctrl_history.append(solver_info['task_ctrl'])
 
             if self.agent.compute_evaluation_margin:
-                _, margin_info = self.agent.evaluation_margin_solver.get_action(obs=np.array(self.state), state=np.array(self.state), 
-                                    controls=margin_initializer)
-                safety_metric_history.append(margin_info['Vopt'].ravel()[0])
-                margin_initializer = np.array(margin_info['controls'])
+                _, controls, _, _, J, _, _ = self.agent.evaluation_margin_solver.get_action_jitted(obs=jnp.array(self.state), state=jnp.array(self.state), 
+                                    controls=jnp.array(solver_info['reinit_controls']))
+                safety_metric_history.append(J.astype(float))
+                margin_initializer = np.array(controls)
             else:
                 safety_metrics_history.append(0.0)
 

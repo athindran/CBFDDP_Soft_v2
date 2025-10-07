@@ -3,7 +3,7 @@ import numpy as np
 from functools import partial
 from jax import Array as DeviceArray
 import jax
-from jax import numpy as jnp
+from jax import numpy as jp
 from jax import custom_jvp
 from jax import random
 
@@ -28,7 +28,7 @@ class Bicycle4D(BaseDynamics):
         self.v_min = 0
         self.v_max = config.V_MAX
         self.rear_wheel_offset = 0.4 * self.wheelbase
-        self.noise_var = jnp.array([0.01, 0.01, 0.01, 0.01])
+        self.noise_var = jp.array([0.01, 0.01, 0.01, 0.01])
 
     @partial(jax.jit, static_argnames='self')
     def apply_rear_offset_correction(self, state: DeviceArray):
@@ -40,8 +40,8 @@ class Bicycle4D(BaseDynamics):
         Returns:
             state_offset 
         """
-        state_offset = state.at[0].set(state[0] + self.rear_wheel_offset*jnp.cos(state[3]))
-        state_offset = state_offset.at[1].set(state_offset[1] + self.rear_wheel_offset*jnp.sin(state[3]))
+        state_offset = state.at[0].set(state[0] + self.rear_wheel_offset*jp.cos(state[3]))
+        state_offset = state_offset.at[1].set(state_offset[1] + self.rear_wheel_offset*jp.sin(state[3]))
 
         return state_offset
 
@@ -55,8 +55,8 @@ class Bicycle4D(BaseDynamics):
         Returns:
             state_offset 
         """
-        state_offset = state.at[0].set(state[0] - self.rear_wheel_offset*jnp.cos(state[3]))
-        state_offset = state_offset.at[1].set(state_offset[1] - self.rear_wheel_offset*jnp.sin(state[3]))
+        state_offset = state.at[0].set(state[0] - self.rear_wheel_offset*jp.cos(state[3]))
+        state_offset = state_offset.at[1].set(state_offset[1] - self.rear_wheel_offset*jp.sin(state[3]))
 
         return state_offset
 
@@ -84,7 +84,7 @@ class Bicycle4D(BaseDynamics):
         """
         # Clips the controller values between min and max accel and steer
         # values.
-        ctrl_clip = jnp.clip(
+        ctrl_clip = jp.clip(
             control, self.ctrl_space[:, 0], self.ctrl_space[:, 1])
 
         state_nxt = self._integrate_forward(state, ctrl_clip, add_disturbance=False, key=jax.random.PRNGKey(43))
@@ -105,7 +105,7 @@ class Bicycle4D(BaseDynamics):
         """
         # Clips the controller values between min and max accel and steer
         # values.
-        ctrl_clip = jnp.clip(
+        ctrl_clip = jp.clip(
             control, self.ctrl_space[:, 0], self.ctrl_space[:, 1])
 
         state_nxt = self._integrate_forward(state, ctrl_clip, add_disturbance=True, key=jax.random.PRNGKey(seed))
@@ -128,12 +128,12 @@ class Bicycle4D(BaseDynamics):
         def false_fn(args):
             return args
 
-        deriv = jnp.zeros((self.dim_x,))
-        deriv = deriv.at[0].set(state[2] * jnp.cos(state[3]))
-        deriv = deriv.at[1].set(state[2] * jnp.sin(state[3]))
+        deriv = jp.zeros((self.dim_x,))
+        deriv = deriv.at[0].set(state[2] * jp.cos(state[3]))
+        deriv = deriv.at[1].set(state[2] * jp.sin(state[3]))
         deriv = deriv.at[2].set(control[0])
-        deriv = deriv.at[3].set(state[2] * jnp.tan(control[1]) / self.wheelbase)
-        deriv_out, noise = jax.lax.cond(add_disturbance, true_fn, false_fn, (deriv, jnp.zeros(self.dim_x)))
+        deriv = deriv.at[3].set(state[2] * jp.tan(control[1]) / self.wheelbase)
+        deriv_out, noise = jax.lax.cond(add_disturbance, true_fn, false_fn, (deriv, jp.zeros(self.dim_x)))
         return deriv_out
 
     @partial(jax.jit, static_argnames='self')
@@ -165,7 +165,7 @@ class Bicycle4D(BaseDynamics):
 
         state_nxt = state + (k1 + 2 * k2 + 2 * k3 + k4) * dt / 6
         # state_nxt = state_nxt.at[2].set(
-        #     jnp.clip(state_nxt[2], self.v_min, self.v_max)
+        #     jp.clip(state_nxt[2], self.v_min, self.v_max)
         # )
 
         return state_nxt
@@ -174,12 +174,12 @@ class Bicycle4D(BaseDynamics):
     def get_jacobian_fx(
         self, obs: DeviceArray, control: DeviceArray
     ) -> Tuple[DeviceArray, DeviceArray]:
-        Ac = jnp.array([[0, 0, jnp.cos(obs[3]), -obs[2] * jnp.sin(obs[3])],
-                        [0, 0, jnp.sin(obs[3]), obs[2] * jnp.cos(obs[3])],
+        Ac = jp.array([[0, 0, jp.cos(obs[3]), -obs[2] * jp.sin(obs[3])],
+                        [0, 0, jp.sin(obs[3]), obs[2] * jp.cos(obs[3])],
                         [0, 0, 0, 0],
                         [0, 0, 0, 0]])
 
-        Ad = jnp.eye(self.dim_x) + Ac * self.dt + \
+        Ad = jp.eye(self.dim_x) + Ac * self.dt + \
             0.5 * Ac @ Ac * self.dt * self.dt
 
         return Ad
@@ -188,10 +188,10 @@ class Bicycle4D(BaseDynamics):
     def get_jacobian_fu(
         self, obs: DeviceArray, control: DeviceArray
     ) -> DeviceArray:
-        Bc = jnp.array([[0, 0],
+        Bc = jp.array([[0, 0],
                        [0, 0],
                        [1, 0],
-                       [0, obs[2] / (1e-6 + self.wheelbase * jnp.cos(control[1])**2)]])
+                       [0, obs[2] / (1e-6 + self.wheelbase * jp.cos(control[1])**2)]])
 
         Bd = self.dt * Bc
 
@@ -211,17 +211,17 @@ class Bicycle4D(BaseDynamics):
     @partial(jax.jit, static_argnames='self')
     def get_jacobian_fx_fu(self, obs: DeviceArray,
                            control: DeviceArray) -> Tuple:
-        Ac = jnp.array([[0, 0, jnp.cos(obs[3]), -1 * obs[2] * jnp.sin(obs[3])],
-                        [0, 0, jnp.sin(obs[3]), obs[2] * jnp.cos(obs[3])],
+        Ac = jp.array([[0, 0, jp.cos(obs[3]), -1 * obs[2] * jp.sin(obs[3])],
+                        [0, 0, jp.sin(obs[3]), obs[2] * jp.cos(obs[3])],
                         [0, 0, 0, 0],
                         [0, 0, 0, 0]])
 
-        Bc = jnp.array([[0, 0],
+        Bc = jp.array([[0, 0],
                        [0, 0],
                        [1, 0],
-                       [0, obs[2] / (1e-6 + self.wheelbase * jnp.cos(control[1])**2)]])
+                       [0, obs[2] / (1e-6 + self.wheelbase * jp.cos(control[1])**2)]])
 
-        Ad = jnp.eye(self.dim_x) + Ac * self.dt + \
+        Ad = jp.eye(self.dim_x) + Ac * self.dt + \
             0.5 * Ac @ Ac * self.dt * self.dt
         Bd = self.dt * Bc
 

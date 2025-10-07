@@ -1,7 +1,6 @@
 from typing import Tuple, Optional, Dict
 import time
 import copy
-import numpy as np
 import jax
 from jax import numpy as jp
 from jax import Array as DeviceArray
@@ -32,8 +31,6 @@ class iLQR(BasePolicy):
         self.tol = 1e-5  # ILQR update tolerance.
         self.eps = getattr(config, "EPS", 1e-6)
         self.min_alpha = 1e-12
-        # Stepsize scheduler.
-        self.alphas = 0.5**(np.arange(30))
 
     @partial(jax.jit, static_argnames='self')
     def run_ddp_iteration(self, args):
@@ -86,79 +83,6 @@ class iLQR(BasePolicy):
 
         solver_info = dict(
             states=states, controls=controls, t_process=0.0, status=status, J=J
-        )
-        return controls[:, 0], solver_info
-
-    def get_action(
-        self, obs: np.ndarray, controls: Optional[np.ndarray] = None,
-        agents_action: Optional[Dict] = None, **kwargs
-    ) -> np.ndarray:
-        status = 0
-
-        # `controls` include control input at timestep N-1, which is a dummy
-        # control of zeros.
-        if controls is None:
-            controls = np.zeros((self.dim_u, self.N))
-            if self.dyn.id == "PVTOL6D":
-                controls[1, :] = self.dyn.mass * self.dyn.g
-            controls = jp.array(controls)
-        else:
-            assert controls.shape[1] == self.N
-            controls = jp.array(controls)
-
-        # Rolls out the nominal trajectory and gets the initial cost.
-        states, controls = self.rollout_nominal(
-            jp.array(kwargs.get('state')), controls
-        )
-        J = self.cost.get_traj_cost(states, controls)
-
-        converged = False
-        time0 = time.time()
-        for i in range(self.max_iter):
-            # We need cost derivatives from 0 to N-1, but we only need dynamics
-            # jacobian from 0 to N-2.
-            c_x, c_u, c_xx, c_uu, c_ux = self.cost.get_derivatives(
-                states, controls)
-            fx, fu = self.dyn.get_jacobian(states[:, :-1], controls[:, :-1])
-            K_closed_loop, k_open_loop = self.backward_pass(
-                c_x=c_x, c_u=c_u, c_xx=c_xx, c_uu=c_uu, c_ux=c_ux, fx=fx, fu=fu
-            )
-            updated = False
-            for alpha in self.alphas:
-                X_new, U_new, J_new = self.forward_pass(
-                    states, controls, K_closed_loop, k_open_loop, alpha
-                )
-
-                if J_new <= J:  # Improved!
-                    # Small improvement.
-                    if np.abs((J - J_new) / J) < self.tol:
-                        converged = True
-
-                    # Updates nominal trajectory and best cost.
-                    J = J_new
-                    states = X_new
-                    controls = U_new
-                    updated = True
-                    break
-
-            # Terminates early if there is no update within alphas.
-            if not updated:
-                status = 2
-                break
-
-            # Terminates early if the objective improvement is negligible.
-            if converged:
-                status = 1
-                break
-        t_process = time.time() - time0
-
-        states = np.asarray(states)
-        controls = np.asarray(controls)
-        K_closed_loop = np.asarray(K_closed_loop)
-        k_open_loop = np.asarray(k_open_loop)
-        solver_info = dict(
-            states=states, controls=controls, K_closed_loop=K_closed_loop,
-            k_open_loop=k_open_loop, t_process=t_process, status=status, J=J
         )
         return controls[:, 0], solver_info
 
