@@ -175,7 +175,9 @@ class Agent:
                 else:
                     reinit_controls[0, :] = self.dyn.ctrl_space[0, 0]
                 reinit_controls = jnp.array(reinit_controls)
-                task_ctrl, _ = self.task_policy.get_action_jitted(obs=obs, controls=reinit_controls, state=kwargs['state'])
+                task_ctrl, _ = self.task_policy.get_action_jitted(obs=jnp.array(obs), 
+                                                                  controls=jnp.array(reinit_controls), 
+                                                                  state=jnp.array(kwargs['state']))
             elif self.dyn.id ==  "PVTOL6D":
                 task_ctrl = self.task_policy(obs, self.dyn)
             else:
@@ -198,8 +200,8 @@ class Agent:
                     reinit_controls=jnp.array(reinit_controls),
                 )
                 _action = jax.block_until_ready(_action)
-            end_time = time.time() - start_time
-            _solver_info['process_time'] = end_time
+            process_time = time.time() - start_time
+            _solver_info['process_time'] = process_time
             # _action, _solver_info = self.safety_policy.get_action(  # Proposed action.
             #     state=kwargs['state'], obs=obs, task_ctrl=task_ctrl, warmup=warmup, 
             #     prev_sol=prev_sol, prev_ctrl=prev_ctrl, 
