@@ -118,7 +118,7 @@ class iLQRSafetyFilter(BasePolicy):
         control_cbf_cand = jp.array(task_ctrl)
         # # Checking CBF constraint violation
         scaling_factor = 0.8
-        # mark_barrier_filter = (Vopt_next - cutoff < 0.0)
+        mark_barrier_filter = (Vopt_next - cutoff < 0.0)
         constraint_violation = jp.minimum(Vopt_next - cutoff, 0.0)
         scaled_c = constraint_violation
 
@@ -167,7 +167,7 @@ class iLQRSafetyFilter(BasePolicy):
             'is_inside_target_next': is_inside_target_next,
             'safe_opt_ctrl': control_0,
             'task_ctrl': task_ctrl,
-            'mark_barrier_filter': False,
+            'mark_barrier_filter': mark_barrier_filter,
             'mark_complete_filter': False,
             'grad_x': grad_x,
             #'process_time': time.time() - start_time,
