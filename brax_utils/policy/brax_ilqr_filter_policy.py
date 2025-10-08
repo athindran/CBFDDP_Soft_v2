@@ -2,7 +2,7 @@ from typing import Optional, Dict
 import time
 
 from jax import numpy as jp
-from jax import Array as DeviceArray
+from jaxlib.xla_extension import ArrayImpl as DeviceArray
 from typing import List
 
 import copy

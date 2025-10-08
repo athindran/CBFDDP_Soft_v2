@@ -125,7 +125,7 @@ def make_barkour_reachability_plot():
 def make_reacher_plot():
     reacher_cbfddp_save_folder = './brax_videos/reacher/seed_0/ilqr_filter_with_neural_policy_Reachability_save_data.npy'
     reacher_lrddp_save_folder = './brax_videos/reacher/seed_0/lr_filter_with_neural_policy_Reachability_save_data.npy'
-    reacher_neural_save_folder = './brax_videos/reacher/seed_0/neural_save_data.npy'
+    reacher_neural_save_folder = './brax_videos/reacher/seed_0/neural_Reachability_save_data.npy'
 
     reacher_cbfddp_data = np.load(reacher_cbfddp_save_folder, allow_pickle=True)
     reacher_lrddp_data = np.load(reacher_lrddp_save_folder, allow_pickle=True)

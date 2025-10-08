@@ -2,7 +2,8 @@ from typing import Tuple, Optional, Dict
 import time
 import jax
 from jax import numpy as jp
-from jax import Array as DeviceArray
+import numpy as np
+from jaxlib.xla_extension import ArrayImpl as DeviceArray
 from functools import partial
 
 from .brax_ilqr_policy import iLQRBrax
@@ -18,7 +19,8 @@ class iLQRBraxReachability(iLQRBrax):
     # `controls` include control input at timestep N-1, which is a dummy
     # control of zeros.
     if controls is None:
-        controls = jp.zeros((self.dim_u, self.N))
+        controls_np = np.random.rand(self.dim_u, self.N)
+        controls = jp.array(controls_np)
 
     # Rolls out the nominal trajectory and gets the initial cost.
     gc_states, controls, pipeline_states = self.rollout_nominal(

@@ -3,7 +3,8 @@ import time
 import copy
 import jax
 from jax import numpy as jp
-from jax import Array as DeviceArray
+import numpy as np
+from jaxlib.xla_extension import ArrayImpl as DeviceArray
 from functools import partial
 
 from simulators import BasePolicy
@@ -41,7 +42,8 @@ class iLQRBrax(BasePolicy):
         # `controls` include control input at timestep N-1, which is a dummy
         # control of zeros.
         if controls is None:
-            controls = jp.zeros((self.dim_u, self.N))
+            controls_np = np.random.rand(self.dim_u, self.N)
+            controls = jp.array(controls_np)
         else:
             assert controls.shape[1] == self.N
             controls = jp.array(controls)
