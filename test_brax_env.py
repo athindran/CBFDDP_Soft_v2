@@ -332,7 +332,7 @@ def main(seed: int, env_name='reacher', policy_type="neural"):
                   'filter_iters': filter_iters
                   }
     brax_env.plot_states_and_controls(save_dict, save_folder)
-    #jp.save(os.path.join(save_folder, f'{policy_type}_{config_cost.COST_TYPE}_save_data.jpy'), save_dict)
+    jp.save(os.path.join(save_folder, f'{policy_type}_{config_cost.COST_TYPE}_save_data'), save_dict)
 
 if __name__ == "__main__":
     for seed in range(1):

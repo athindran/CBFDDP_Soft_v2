@@ -119,6 +119,7 @@ def make_barkour_reachability_plot():
     ax.set_xlabel('Time (s)')
 
     plt.savefig('./plots_summary/barkour_summary.pdf', bbox_inches='tight', dpi=500)
+    plt.savefig('./plots_summary/barkour_summary.png', bbox_inches='tight', dpi=500)
 
 
 def make_reacher_plot():
@@ -245,6 +246,7 @@ def make_reacher_plot():
     col1_axes[0].legend(fontsize=9, loc='upper left', bbox_to_anchor=(-0.05, 1.48), ncol=1, framealpha=0)
 
     plt.savefig('./plots_summary/reacher_summary.pdf', bbox_inches='tight', dpi=500)
+    plt.savefig('./plots_summary/reacher_summary.png', bbox_inches='tight', dpi=500)
 
 make_reacher_plot()
 make_barkour_reachability_plot()
