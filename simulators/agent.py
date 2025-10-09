@@ -200,7 +200,7 @@ class Agent:
                     reinit_controls=jnp.array(reinit_controls),
                 )
                 _action = jax.block_until_ready(_action)
-            _action = np.array(_action)
+            #_action = np.array(_action)
             process_time = time.time() - start_time
             _solver_info['process_time'] = process_time
             # _action, _solver_info = self.safety_policy.get_action(  # Proposed action.
@@ -208,9 +208,26 @@ class Agent:
             #     prev_sol=prev_sol, prev_ctrl=prev_ctrl, 
             # )
         else:
-            _action, _solver_info = self.policy.get_action(  # Proposed action.
-                obs=obs, agents_action=agents_action, **kwargs
-            )
+            reinit_controls = np.zeros((self.policy.dim_u, self.policy.N))
+            with jax.default_device('gpu'):
+                state_jnp = jnp.array(kwargs['state'])
+                obs_jnp = jnp.array(obs)
+                controls_jnp = jnp.array(reinit_controls)
+                get_action_jit = self.policy.get_action_jitted
+                controls_jnp = controls_jnp.block_until_ready()
+                obs_jnp = obs_jnp.block_until_ready()
+                state_jnp = state_jnp.block_until_ready()
+                print("Moved to device")
+                print(obs_jnp.device)
+                start_time = time.time()
+                _action, _, _, _, _, _, _ = get_action_jit(  # Proposed action.
+                    obs=obs_jnp, state=state_jnp, controls=controls_jnp, warmup=False
+                )
+                #_action = jax.block_until_ready(_action)
+                #_action = np.array(_action)
+                print(time.time() - start_time)
+                print(_action.device)
+                _solver_info = {}
         _action_dict[self.id] = _action
 
         return _action, _solver_info

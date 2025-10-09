@@ -60,7 +60,6 @@ class iLQRReachability(iLQR):
         self, obs: DeviceArray, state: DeviceArray, controls: DeviceArray, warmup: bool = False
     ):
         status = 0
-        self.min_alpha = 1e-12
         states, controls = self.rollout_nominal(
             state, jp.array(controls)
         )
@@ -177,14 +176,14 @@ class iLQRReachability(iLQR):
         def check_continue(args):
             _, _, _, _, J, J_new, _, grad_alpha, traj_diff, _, alpha = args
             armijo_violation = ( J_new < J + 0.5 * grad_alpha * alpha )
-            trust_region_violation = (traj_diff > self.margin)
+            trust_region_violation = (traj_diff > margin)
             return jp.logical_and(alpha > self.min_alpha, jp.logical_or(armijo_violation, trust_region_violation))
 
         alpha = alpha_init
         J_new = -jp.inf
         grad_alpha = 0
         t_star = jp.argwhere(critical != 0, size=self.N - 1)[0][0]
-        self.margin = 2.0
+        margin = 2.0
         traj_diff = 0.0
 
         states, controls, Ks1, ks1, J, J_new, _, _, _, _, alpha = jax.lax.while_loop(check_continue, run_forward_pass, (states, controls,

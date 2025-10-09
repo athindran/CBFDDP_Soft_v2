@@ -1,4 +1,3 @@
-from abc import ABC, abstractmethod
 from typing import Tuple, Optional
 from functools import partial
 from jax import Array as DeviceArray

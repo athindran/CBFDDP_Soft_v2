@@ -1,6 +1,5 @@
 from typing import Tuple, Optional, Dict
 import time
-import copy
 import jax
 from jax import numpy as jp
 from jax import Array as DeviceArray
@@ -18,9 +17,9 @@ class iLQR(BasePolicy):
     ) -> None:
         super().__init__(id, config)
         self.policy_type = "iLQR"
-        self.dyn = copy.deepcopy(dyn)
-        self.cost = copy.deepcopy(cost)
-        self.line_search = getattr(config, "LINE_SEARCH", 'baseline')
+        self.dyn = dyn
+        self.cost = cost
+        self.line_search = 'baseline'
 
         # iLQR parameters
         self.dim_x = dyn.dim_x
@@ -29,7 +28,7 @@ class iLQR(BasePolicy):
         self.order = config.ORDER
         self.max_iter = config.MAX_ITER
         self.tol = 1e-5  # ILQR update tolerance.
-        self.eps = getattr(config, "EPS", 1e-6)
+        self.eps = 1e-6
         self.min_alpha = 1e-12
 
     @partial(jax.jit, static_argnames='self')
