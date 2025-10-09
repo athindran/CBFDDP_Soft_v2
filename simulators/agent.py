@@ -223,10 +223,9 @@ class Agent:
                 _action, _, _, _, _, _, _ = get_action_jit(  # Proposed action.
                     obs=obs_jnp, state=state_jnp, controls=controls_jnp, warmup=False
                 )
-                #_action = jax.block_until_ready(_action)
-                #_action = np.array(_action)
+                _action = jax.block_until_ready(_action)
+                _action = np.array(_action)
                 print(time.time() - start_time)
-                print(_action.device)
                 _solver_info = {}
         _action_dict[self.id] = _action
 
