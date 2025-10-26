@@ -396,7 +396,7 @@ def make_animation_plots(env, obs_history, action_history, solver_info, safety_p
 
 
 def make_bicycle_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", plot_folder="./plots_paper/", 
-                    tag="reachavoid", road_boundary=1.2, dt=0.01, filters=['SoftCBF']):
+                    tag="reachavoid", road_boundary=1.2, dt=0.01, filters=['SoftCBF'], cbf_gamma=-10, soft_cbf_gamma=-10):
     if not os.path.exists(plot_folder):
         os.makedirs(plot_folder)
 
@@ -405,7 +405,7 @@ def make_bicycle_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", 
 
     hide_label = False
 
-    legend_fontsize = 9
+    legend_fontsize = 7.0
     road_bounds = [road_boundary]
     yaw_consts = [None]
     label_yc = [None]
@@ -417,11 +417,12 @@ def make_bicycle_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", 
     rblist = []
     showlist = []
     showcontrollist = []
+    gammavals = []
     colors = {}
     colors['SoftLR'] = 'g'
-    colors['LR'] = 'r'
-    colors['CBF'] = 'b'
-    colors['SoftCBF'] = 'k'
+    colors['LR'] = 'k'
+    colors['CBF'] = (0.9, 0.0, 0.15, 1.0)
+    colors['SoftCBF'] = (0.15, 0.0, 1.0, 1.0)
     styles = ['solid', 'solid', 'solid', 'solid']
 
     for sh in filters:
@@ -440,12 +441,16 @@ def make_bicycle_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", 
                     if not hide_label:
                         if sh=='SoftCBF':
                             labellist.append("CBFDDP-SM")
+                            gammavals.append(soft_cbf_gamma)
                         elif sh=='CBF':
                             labellist.append("CBFDDP-HM")
+                            gammavals.append(cbf_gamma)
                         elif sh=='SoftLR':
                             labellist.append("LRDDP-SM")
+                            gammavals.append(0.0)
                         else:
                             labellist.append(sh + "DDP")
+                            gammavals.append(0.0)
                     else:
                         labellist.append("                          ")
                 colorlist.append(colors[sh])
@@ -520,11 +525,14 @@ def make_bicycle_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", 
         c_obs = 'k'
         env = CarSingle5DEnv(config_env, config_agent, config_cost)
 
-        fig = plt.figure(layout='constrained', figsize=(7.5, 5.5))
-        subfigs = fig.subfigures(1, 2, wspace=0.05, width_ratios=[1.6, 1])
-        subfigs_col1 = subfigs[0].subfigures(2, 1, height_ratios=[1, 1.5])
+        fig = plt.figure(layout='constrained', figsize=(5.5, 4.7))
+        title_string = config_cost.COST_TYPE + " - " + config_agent.DYN
+        fig.suptitle(title_string, fontsize=10)
+        subfigs = fig.subfigures(1, 2, wspace=0.05, width_ratios=[1.55, 1])
+        subfigs_col1 = subfigs[0].subfigures(2, 1, height_ratios=[1, 1.4])
         ax = subfigs_col1[0].subplots(1, 1)
         # track, obstacles, footprint
+        # env.render_state_cost_map(ax, nx=500, ny=500, vel=0.0, yaw=0.0, delta=0.0)
         env.render_obs(ax=ax, c=c_obs)
         ax.axis(env.visual_extent)
         ax.set_aspect('equal')
@@ -535,7 +543,7 @@ def make_bicycle_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", 
             if showlist[idx]:
                 sc = ax.plot(
                     obs_data[:, 0], obs_data[:, 1], c=colorlist[int(idx)], alpha = 1.0, 
-                    label=labellist[int(idx)], linewidth=1.5, linestyle=stylelist[int(idx)]
+                    label=labellist[int(idx)] + f"($\gamma$={gammavals[idx]})", linewidth=1.0, linestyle=stylelist[int(idx)]
                 )
 
                 complete_filter_indices = plot_obses_complete_filter_list[idx]
@@ -561,18 +569,18 @@ def make_bicycle_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", 
                         if not hide_label:
                             ax.plot(obs_data[barrier_filter_indices, 0], 
                                     obs_data[barrier_filter_indices, 1], 'x', 
-                                    color=colorlist[int(idx)], alpha=0.65, markersize=3.0, 
+                                    color=colorlist[int(idx)], alpha=0.65, markersize=1.2, 
                                     label=labellist[int(idx)] + ' filter')
                         else:
                             ax.plot(obs_data[barrier_filter_indices, 0], 
                                     obs_data[barrier_filter_indices, 1], 'x', 
-                                    color=colorlist[int(idx)], alpha=0.65, markersize=3.0, label='            ')
+                                    color=colorlist[int(idx)], alpha=0.65, markersize=1.2, label='            ')
                         #lgd_b = False
                     else:
                         ax.plot(obs_data[barrier_filter_indices, 0], obs_data[barrier_filter_indices, 1], 'x', color=colorlist[int(idx)], alpha=0.65, markersize=5.0)
     
             ax.legend(framealpha=0, fontsize=legend_fontsize, loc='upper left', 
-                      ncol=2, bbox_to_anchor=(-0.05, 1.35), fancybox=False, shadow=False)
+                      ncol=2, bbox_to_anchor=(-0.05, 1.40), fancybox=False, shadow=False)
 
             
             if hide_label:
@@ -589,8 +597,8 @@ def make_bicycle_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", 
             ax.plot(np.linspace(0, env.visual_extent[1], 100), np.array([rblist[idx]]*100), 'k--')
             ax.plot(np.linspace(0, env.visual_extent[1], 100), np.array([-1*rblist[idx]]*100), 'k--')
             if not hide_label:
-                ax.set_xlabel('X position', fontsize=legend_fontsize)
-                ax.set_ylabel('Y position', fontsize=legend_fontsize)
+                ax.set_xlabel('X position $(m)$', fontsize=legend_fontsize)
+                ax.set_ylabel('Y position $(m)$', fontsize=legend_fontsize)
             ax.yaxis.set_label_coords(-0.03, 0.5)
             ax.xaxis.set_label_coords(0.5, -0.04)
 
@@ -615,26 +623,26 @@ def make_bicycle_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", 
                 fillarray = np.zeros(maxsteps)
                 fillarray[np.array(plot_obses_barrier_filter_list[idx], dtype=np.int64)] = 1
                 axes[0].plot(x_times, controls_data[:, 0], label=labellist[int(idx)], c=colorlist[int(idx)], 
-                             alpha = 1.0, linewidth=1.5, linestyle=styles[idx])
+                             alpha = 1.0, linewidth=1.0, linestyle=styles[idx])
                 axes[1].plot(x_times, controls_data[:, 1], label=labellist[int(idx)], c=colorlist[int(idx)], 
-                             alpha = 1.0, linewidth=1.5, linestyle=styles[idx])
+                             alpha = 1.0, linewidth=1.0, linestyle=styles[idx])
                 axes[0].fill_between(x_times, action_space[0, 0], action_space[0, 1], 
                                      where=fillarray[0:nsteps], color=colorlist[int(idx)], alpha=0.15)
                 axes[1].fill_between(x_times, action_space[1, 0], action_space[1, 1], 
                                      where=fillarray[0:nsteps], color=colorlist[int(idx)], alpha=0.15)
                 if 'CBFDDP-SM' in labellist[int(idx)]:
                     axes[0].plot(x_times, plot_task_ctrl_list[idx][:, 0], label=labellist[int(idx)]+'-Task', c=colorlist[int(idx)], 
-                                alpha = 0.6, linewidth=1.5, linestyle='--')
+                                alpha = 0.6, linewidth=1.0, linestyle='--')
                     axes[1].plot(x_times, plot_task_ctrl_list[idx][:, 1], label=labellist[int(idx)]+'-Task', c=colorlist[int(idx)], 
-                                alpha = 0.6, linewidth=1.5, linestyle='--')
+                                alpha = 0.6, linewidth=1.0, linestyle='--')
                     axes[0].plot(x_times, plot_safe_opt_list[idx][:, 0], label=labellist[int(idx)]+'-SafeOpt', c=colorlist[int(idx)], 
-                                alpha = 0.6, linewidth=1.5, linestyle='dotted')
+                                alpha = 0.6, linewidth=1.0, linestyle='dotted')
                     axes[1].plot(x_times, plot_safe_opt_list[idx][:, 1], label=labellist[int(idx)]+'-SafeOpt', c=colorlist[int(idx)], 
-                                alpha = 0.6, linewidth=1.5, linestyle='dotted')
+                                alpha = 0.6, linewidth=1.0, linestyle='dotted')
 
             if not hide_label:
                 #axes[0].set_xlabel('Time index', fontsize=legend_fontsize)
-                axes[0].set_ylabel('Acceleration', fontsize=legend_fontsize)
+                axes[0].set_ylabel(f'Accel $(m/s^2)$', fontsize=legend_fontsize)
             #axes[0].grid(True)
             axes[0].set_xticks(ticks=[], labels=[], fontsize=5, labelsize=5)
             axes[0].set_yticks(ticks=[action_space[0, 0], action_space[0, 1]], 
@@ -649,8 +657,8 @@ def make_bicycle_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", 
                 axes[0].set_yticklabels([])
 
             if not hide_label:
-                axes[1].set_xlabel('Time (s)', fontsize=legend_fontsize)
-                axes[1].set_ylabel('Steer control', fontsize=legend_fontsize)
+                axes[1].set_xlabel('Time $(s)$', fontsize=legend_fontsize)
+                axes[1].set_ylabel(f'Steer $(rad/s)$', fontsize=legend_fontsize)
             #axes[1].grid(True)
             axes[1].set_xticks(ticks=[0, round(dt*maxsteps, 2)], labels=[0, round(dt*maxsteps, 2)], fontsize=legend_fontsize)
             axes[1].set_yticks(ticks=[action_space[1, 0], action_space[1, 1]], 
@@ -678,10 +686,10 @@ def make_bicycle_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", 
     max_value = 2.5
     for idx, values_data in enumerate(plot_values_list):
         if showcontrollist[idx]:
-            x_times = dt*np.arange(values_data.size)
-            ax_v.plot(x_times, values_data, label=labellist[int(idx)], c=colorlist[int(idx)], 
-                             alpha = 1.0, linewidth=1.5, linestyle='solid')
-            nsteps = values_data.size
+            x_times = dt*np.arange(safety_metrics_data.size)
+            ax_v.plot(x_times, safety_metrics_data, label=labellist[int(idx)], c=colorlist[int(idx)], 
+                             alpha = 1.0, linewidth=1.0, linestyle='solid')
+            nsteps = safety_metrics_data.size
             fillarray = np.zeros(nsteps)
             fillarray[np.array(plot_obses_barrier_filter_list[idx], dtype=np.int64)] = 1
             ax_v.fill_between(x_times, 0.0, max_value, 
@@ -695,10 +703,14 @@ def make_bicycle_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", 
     ax_v.set_ylim([0.0, max_value])
     ax_v.yaxis.set_label_coords(-0.04, 0.5)
     ax_v.xaxis.set_label_coords(0.5, -0.04)
-    ax_v.set_xlabel('Time (s)', 
+    ax_v.set_xlabel('Time $(s)$', 
                         fontsize=legend_fontsize)
-    ax_v.set_ylabel('Value function', 
-                        fontsize=legend_fontsize)
+    if config_cost.COST_TYPE == 'Reachability':
+        ax_v.set_ylabel('Reachability Value (SM)', 
+                            fontsize=6.3)
+    else:
+        ax_v.set_ylabel('ReachAvoid Value (SM)', 
+                    fontsize=6.3)
     # ax_v.legend(framealpha=0, fontsize=legend_fontsize, loc='upper left', 
     #                        ncol=3, bbox_to_anchor=(0.05, 1.1), fancybox=False, shadow=False)
         
@@ -749,12 +761,12 @@ def make_bicycle_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", 
     #         bbox_inches='tight', transparent=hide_label
     #     )
 
-    ax_st = subfigs_col2[1].subplots(1, 1)
+    ax_st = subfigs_col2[2]
 
     if 'reachability' in tag:
-        max_value = 0.1
+        max_value = 0.02
     else:
-        max_value = 1.0
+        max_value = 0.8
 
     for idx, process_times_data in enumerate(plot_times_list):
         x_times = dt*np.arange(process_times_data.size)
@@ -773,19 +785,19 @@ def make_bicycle_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", 
     ax_st.set_ylim([0.0, max_value])
     ax_st.yaxis.set_label_coords(-0.04, 0.5)
     ax_st.xaxis.set_label_coords(0.5, -0.04)
-    ax_st.set_xlabel('Time (s)', 
+    ax_st.set_xlabel('Time $(s)$', 
                         fontsize=legend_fontsize)
-    ax_st.set_ylabel('Safety filter process time (s)', 
+    ax_st.set_ylabel('Filter time (s)', 
                         fontsize=legend_fontsize)
     # ax_st.legend(framealpha=0, fontsize=legend_fontsize, loc='upper left', 
     #                        ncol=3, bbox_to_anchor=(0.05, 1.1), fancybox=False, shadow=False)
         
-    # fig.savefig(
-    #         plot_folder + tag + str(hide_label) + "_jaxs.pdf", dpi=200, 
-    #         bbox_inches='tight', transparent=hide_label
-    #     )
     fig.savefig(
-            plot_folder + tag + str(hide_label) + "_jax.png", dpi=200, 
+            plot_folder + tag + str(hide_label) + "_jax.pdf", dpi=400, 
+            bbox_inches='tight', transparent=hide_label
+        )
+    fig.savefig(
+            plot_folder + tag + str(hide_label) + "_jax.png", dpi=400, 
             bbox_inches='tight', transparent=hide_label
         )
 
@@ -801,7 +813,7 @@ def make_bicycle_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", 
 
 
 def make_pvtol_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", plot_folder="./plots_paper/", 
-                    tag="reachavoid", dt=0.01, filters=['SoftCBF']):
+                    tag="reachavoid", dt=0.01, filters=['SoftCBF'], cbf_gamma=-10, soft_cbf_gamma=-10):
     if not os.path.exists(plot_folder):
         os.makedirs(plot_folder)
 
@@ -810,7 +822,7 @@ def make_pvtol_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", pl
 
     hide_label = False
 
-    legend_fontsize = 8
+    legend_fontsize = 7.0
 
     suffixlist = []
     labellist = []
@@ -818,11 +830,12 @@ def make_pvtol_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", pl
     stylelist = []
     showlist = []
     showcontrollist = []
+    gammavals = []
     colors = {}
     colors['SoftLR'] = 'g'
-    colors['LR'] = 'r'
-    colors['CBF'] = 'b'
-    colors['SoftCBF'] = 'k'
+    colors['LR'] = 'k'
+    colors['CBF'] = (0.9, 0.0, 0.15, 1.0)
+    colors['SoftCBF'] = (0.15, 0.0, 1.0, 1.0)
     styles = ['solid', 'solid', 'solid', 'solid']
 
     for sh in filters:
@@ -830,12 +843,16 @@ def make_pvtol_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", pl
         if not hide_label:
             if sh=='SoftCBF':
                 labellist.append("CBFDDP-SM")
+                gammavals.append(soft_cbf_gamma)
             elif sh=='CBF':
                 labellist.append("CBFDDP-HM")
+                gammavals.append(cbf_gamma)
             elif sh=='SoftLR':
                 labellist.append("LRDDP-SM")
+                gammavals.append(0.0)
             else:
                 labellist.append(sh + "DDP")
+                gammavals.append(0.0)
         else:
             labellist.append("                          ")
         colorlist.append(colors[sh])
@@ -902,8 +919,10 @@ def make_pvtol_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", pl
         c_obs = 'k'
         env = Pvtol6DEnv(config_env, config_agent, config_cost)
 
-        fig = plt.figure(layout='constrained', figsize=(7.5, 5.8))
-        subfigs = fig.subfigures(1, 2, wspace=0.05, width_ratios=[1.6, 1])
+        fig = plt.figure(layout='constrained', figsize=(5.5, 4.5))
+        title_string = config_cost.COST_TYPE + " - " + config_agent.DYN
+        fig.suptitle(title_string, fontsize=12)
+        subfigs = fig.subfigures(1, 2, wspace=0.05, width_ratios=[1.55, 1])
         subfigs_col1 = subfigs[0].subfigures(2, 1, height_ratios=[1, 1.5])
         ax = subfigs_col1[0].subplots(1, 1)
         # track, obstacles, footprint
@@ -917,7 +936,7 @@ def make_pvtol_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", pl
             if showlist[idx]:
                 sc = ax.plot(
                     obs_data[:, 0], obs_data[:, 1], c=colorlist[int(idx)], alpha = 1.0, 
-                    label=labellist[int(idx)], linewidth=1.5, linestyle=stylelist[int(idx)]
+                    label=labellist[int(idx)] + f"($\gamma$={gammavals[idx]})", linewidth=1.5, linestyle=stylelist[int(idx)]
                 )
 
                 complete_filter_indices = plot_obses_complete_filter_list[idx]
@@ -969,8 +988,8 @@ def make_pvtol_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", pl
                               fontsize=legend_fontsize)
 
             if not hide_label:
-                ax.set_xlabel('X position', fontsize=legend_fontsize)
-                ax.set_ylabel('Y position', fontsize=legend_fontsize)
+                ax.set_xlabel('X position $(m)$', fontsize=legend_fontsize)
+                ax.set_ylabel('Y position $(m)$', fontsize=legend_fontsize)
             ax.yaxis.set_label_coords(-0.03, 0.5)
             ax.xaxis.set_label_coords(0.5, -0.04)
 
@@ -995,9 +1014,9 @@ def make_pvtol_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", pl
                 fillarray = np.zeros(maxsteps)
                 fillarray[np.array(plot_obses_barrier_filter_list[idx], dtype=np.int64)] = 1
                 axes[0].plot(x_times, controls_data[:, 0], label=labellist[int(idx)], c=colorlist[int(idx)], 
-                             alpha = 1.0, linewidth=1.5, linestyle=styles[idx])
+                             alpha = 1.0, linewidth=1.1, linestyle=styles[idx])
                 axes[1].plot(x_times, controls_data[:, 1], label=labellist[int(idx)], c=colorlist[int(idx)], 
-                             alpha = 1.0, linewidth=1.5, linestyle=styles[idx])
+                             alpha = 1.0, linewidth=1.1, linestyle=styles[idx])
                 axes[0].fill_between(x_times, action_space[0, 0], action_space[0, 1], 
                                      where=fillarray[0:nsteps], color=colorlist[int(idx)], alpha=0.15)
                 axes[1].fill_between(x_times, action_space[1, 0], action_space[1, 1], 
@@ -1014,7 +1033,7 @@ def make_pvtol_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", pl
 
             if not hide_label:
                 #axes[0].set_xlabel('Time index', fontsize=legend_fontsize)
-                axes[0].set_ylabel('Thrust X', fontsize=legend_fontsize)
+                axes[0].set_ylabel('Thrust X $(N)$', fontsize=legend_fontsize)
             #axes[0].grid(True)
             axes[0].set_xticks(ticks=[], labels=[], fontsize=5, labelsize=5)
             axes[0].set_yticks(ticks=[action_space[0, 0], action_space[0, 1]], 
@@ -1029,8 +1048,8 @@ def make_pvtol_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", pl
                 axes[0].set_yticklabels([])
 
             if not hide_label:
-                axes[1].set_xlabel('Time (s)', fontsize=legend_fontsize)
-                axes[1].set_ylabel('Thrust Y', fontsize=legend_fontsize)
+                axes[1].set_xlabel('Time $(s)$', fontsize=legend_fontsize)
+                axes[1].set_ylabel('Thrust Y $(N)$', fontsize=legend_fontsize)
             #axes[1].grid(True)
             axes[1].set_xticks(ticks=[0, round(dt*maxsteps, 2)], labels=[0, round(dt*maxsteps, 2)], fontsize=legend_fontsize)
             axes[1].set_yticks(ticks=[30., 45.], 
@@ -1053,15 +1072,38 @@ def make_pvtol_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", pl
         #     bbox_inches='tight', transparent=hide_label
         # )
 
-    subfigs_col2 = subfigs[1].subfigures(2, 1)
-    ax_v = subfigs_col2[0].subplots(1, 1)
+    subfigs_col2 = subfigs[1].subplots(3, 1, sharex=True)
+
+    axes_x = subfigs_col2[0]
+    maxsteps = 0
+    for idx, obses_data in enumerate(plot_obses_list):
+        nsteps = obses_data.shape[0]
+        maxsteps = np.maximum(maxsteps, nsteps)
+        x_times = dt*np.arange(nsteps)
+        fillarray = np.zeros(maxsteps)
+        fillarray[np.array(plot_obses_barrier_filter_list[idx], dtype=np.int64)] = 1
+        axes_x.plot(x_times, obses_data[:, 1], label=labellist[int(idx)], c=colorlist[int(idx)], 
+                        alpha = 1.0, linewidth=1.0, linestyle=styles[idx])
+        axes_x.fill_between(x_times, env.visual_extent[2], env.visual_extent[3], 
+                                where=fillarray[0:nsteps], color=colorlist[int(idx)], alpha=0.15)
+    axes_x.set_xticks(ticks=[0, round(dt*maxsteps, 2)], labels=[0, round(dt*maxsteps, 2)], fontsize=legend_fontsize)
+    axes_x.set_yticks(ticks=[env.visual_extent[2], env.visual_extent[3]], 
+                               labels=[env.visual_extent[2], env.visual_extent[3]], 
+                               fontsize=legend_fontsize)
+    axes_x.set_ylim([env.visual_extent[2], env.visual_extent[3]])
+    axes_x.yaxis.set_label_coords(-0.04, 0.5)
+    axes_x.xaxis.set_label_coords(0.5, -0.04)
+    axes_x.set_xlabel('Time (s)', fontsize=legend_fontsize)
+    axes_x.set_ylabel('Y position $(m)$', fontsize=legend_fontsize)
+    
+    ax_v = subfigs_col2[1]
     max_value = 3.0
-    for idx, values_data in enumerate(plot_values_list):
+    for idx, safety_metrics_data in enumerate(plot_safety_metrics_list):
         if showcontrollist[idx]:
-            x_times = dt*np.arange(values_data.size)
-            ax_v.plot(x_times, values_data, label=labellist[int(idx)], c=colorlist[int(idx)], 
+            x_times = dt*np.arange(safety_metrics_data.size)
+            ax_v.plot(x_times, safety_metrics_data, label=labellist[int(idx)], c=colorlist[int(idx)], 
                              alpha = 1.0, linewidth=1.5, linestyle='solid')
-            nsteps = values_data.size
+            nsteps = safety_metrics_data.size
             fillarray = np.zeros(nsteps)
             fillarray[np.array(plot_obses_barrier_filter_list[idx], dtype=np.int64)] = 1
             ax_v.fill_between(x_times, 0.0, max_value, 
@@ -1075,10 +1117,14 @@ def make_pvtol_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", pl
     ax_v.set_ylim([0.0, max_value])
     ax_v.yaxis.set_label_coords(-0.04, 0.5)
     ax_v.xaxis.set_label_coords(0.5, -0.04)
-    ax_v.set_xlabel('Time (s)', 
+    ax_v.set_xlabel('Time $(s)$', 
                         fontsize=legend_fontsize)
-    ax_v.set_ylabel('Value function', 
-                        fontsize=legend_fontsize)
+    if config_cost.COST_TYPE == 'Reachability':
+        ax_v.set_ylabel('Reachability Value (HM)', 
+                            fontsize=6.1)
+    else:
+        ax_v.set_ylabel('ReachAvoid Value (HM)', 
+                    fontsize=6.3)
     # ax_v.legend(framealpha=0, fontsize=legend_fontsize, loc='upper left', 
     #                        ncol=3, bbox_to_anchor=(0.05, 1.1), fancybox=False, shadow=False)
         
@@ -1129,10 +1175,9 @@ def make_pvtol_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", pl
     #         bbox_inches='tight', transparent=hide_label
     #     )
 
-    ax_st = subfigs_col2[1].subplots(1, 1)
-
+    ax_st = subfigs_col2[2]
     if 'reachability' in tag:
-        max_value = 0.1
+        max_value = 0.02
     else:
         max_value = 1.0
 
@@ -1153,19 +1198,19 @@ def make_pvtol_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", pl
     ax_st.set_ylim([0.0, max_value])
     ax_st.yaxis.set_label_coords(-0.04, 0.5)
     ax_st.xaxis.set_label_coords(0.5, -0.04)
-    ax_st.set_xlabel('Time (s)', 
+    ax_st.set_xlabel('Time $(s)$', 
                         fontsize=legend_fontsize)
-    ax_st.set_ylabel('Safety filter process time (s)', 
+    ax_st.set_ylabel('Filter time $(s)$', 
                         fontsize=legend_fontsize)
     # ax_st.legend(framealpha=0, fontsize=legend_fontsize, loc='upper left', 
     #                        ncol=3, bbox_to_anchor=(0.05, 1.1), fancybox=False, shadow=False)
         
-    # fig.savefig(
-    #         plot_folder + tag + str(hide_label) + "_jaxs.pdf", dpi=200, 
-    #         bbox_inches='tight', transparent=hide_label
-    #     )
     fig.savefig(
-            plot_folder + tag + str(hide_label) + "_jax.png", dpi=200, 
+            plot_folder + tag + str(hide_label) + "_jax.pdf", dpi=400, 
+            bbox_inches='tight', transparent=hide_label
+        )
+    fig.savefig(
+            plot_folder + tag + str(hide_label) + "_jax.png", dpi=400, 
             bbox_inches='tight', transparent=hide_label
         )
 

@@ -69,6 +69,8 @@ class Agent:
         self.agents_policy = {}
         self.agents_order = None
         self.is_task_ilqr = getattr(config, 'is_task_ilqr', False)
+        self.compute_evaluation_margin = True
+        self.ticks = 357
 
     def integrate_forward(
         self, state: np.ndarray, control: np.ndarray = None
@@ -91,6 +93,29 @@ class Agent:
 
         return self.dyn.integrate_forward(
             state=state, control=control
+        )
+
+    def integrate_forward_with_noise(
+        self, state: np.ndarray, control: np.ndarray = None
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Finds the next state of the vehicle given the current state and
+        control input.
+
+        Args:
+            state (np.ndarray): (dyn.dim_x, ) array.
+            control (np.ndarray): (dyn.dim_u, ) array.
+
+        Returns:
+            np.ndarray: next state.
+            np.ndarray: clipped control.
+        """
+        assert control is not None, (
+            "You need to pass in a control!"
+        )
+        self.ticks = self.ticks + 1
+        return self.dyn.integrate_forward_with_noise(
+            state=state, control=control, seed = self.ticks
         )
 
     def get_dyn_jacobian(
@@ -161,7 +186,9 @@ class Agent:
         return _action, _solver_info
 
     def init_policy(
-        self, policy_type: str, config, cost: Optional[BaseMargin] = None, **kwargs
+        self, policy_type: str, config, cost: Optional[BaseMargin] = None, 
+        evaluation_cost: Optional[BaseMargin] = None,
+        **kwargs
     ):
         self.policy_type = policy_type
 
@@ -194,6 +221,18 @@ class Agent:
             raise ValueError(
                 "The policy type ({}) is not supported!".format(policy_type)
             )
+        if self.compute_evaluation_margin:
+            if config.COST_TYPE=='Reachability':
+                self.evaluation_margin_solver = iLQRReachability(
+                    'margin_solver', config, self.dyn, evaluation_cost)
+            elif config.COST_TYPE=='Reachavoid':
+                self.evaluation_margin_solver = iLQRReachAvoid(
+                    'margin_solver', config, self.dyn, evaluation_cost)
+            else:
+                raise Exception('Not implemented') 
+        else:
+            self.evaluation_margin_solver = None
+
 
     def report(self):
         print(self.id)

@@ -75,6 +75,7 @@ def main(config_file, filter_type, is_task_ilqr):
             task_cost = Pvtol6DCost(
                 config_ilqr_cost, copy.deepcopy(
                     env.agent.dyn))
+
             env.cost = cost  # ! hacky
         else:
             policy_type = "iLQRSafetyFilter"
@@ -91,6 +92,8 @@ def main(config_file, filter_type, is_task_ilqr):
             cost = PvtolReachAvoid6DMargin(
                 config_ilqr_cost, copy.deepcopy(env.agent.dyn), filter_type=filter_type)
             env.cost = cost  # ! hacky
+            evaluation_cost = PvtolReachAvoid6DMargin(
+                config_ilqr_cost, copy.deepcopy(env.agent.dyn), filter_type='CBF')
         else:
             policy_type = "iLQRSafetyFilter"
             task_cost = Pvtol6DCost(
@@ -98,12 +101,15 @@ def main(config_file, filter_type, is_task_ilqr):
                     env.agent.dyn))
             cost = PvtolReachAvoid6DMargin(
                 config_ilqr_cost, copy.deepcopy(env.agent.dyn), filter_type=filter_type)
+            evaluation_cost = PvtolReachAvoid6DMargin(
+                config_ilqr_cost, copy.deepcopy(env.agent.dyn), filter_type='CBF')
             env.cost = cost
 
     env.agent.init_policy(
         policy_type=policy_type,
         config=config_solver,
         cost=cost,
+        evaluation_cost=evaluation_cost,
         task_cost=task_cost)
     max_iter_receding = config_solver.MAX_ITER_RECEDING
 
@@ -270,7 +276,7 @@ def main(config_file, filter_type, is_task_ilqr):
                 image = imageio.imread(filename)
                 writer.append_data(image)
 
-    return out_folder, plot_tag, config_agent
+    return out_folder, plot_tag, config_agent, config_solver
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -286,14 +292,16 @@ if __name__ == "__main__":
     parser.set_defaults(naive_task=False)
 
     args = parser.parse_args()
-    is_task_ilqr = False
-    out_folder, plot_tag, config_agent = main(args.config_file, filter_type='SoftCBF', is_task_ilqr=is_task_ilqr)
-    out_folder, plot_tag, config_agent = main(args.config_file, filter_type='CBF', is_task_ilqr=is_task_ilqr)
+    is_task_ilqr = True
+    out_folder, plot_tag, config_agent, config_solver = main(args.config_file, filter_type='SoftCBF', is_task_ilqr=is_task_ilqr)
+    out_folder, plot_tag, config_agent, config_solver = main(args.config_file, filter_type='CBF', is_task_ilqr=is_task_ilqr)
 
     make_pvtol_comparison_report(
         out_folder,
-        plot_folder='./plots_summary/',
+        plot_folder='./plots_summary_baseline/',
         tag=plot_tag,
         dt=config_agent.DT,
+        cbf_gamma=config_solver.CBF_GAMMA,
+        soft_cbf_gamma=config_solver.SOFT_CBF_GAMMA,
         filters=['SoftCBF', 'CBF'])
 

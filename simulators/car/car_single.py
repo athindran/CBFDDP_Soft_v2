@@ -395,23 +395,25 @@ class CarSingle5DEnv(BaseSingleEnv):
         state[3, :] = yaw
         state[4, :] = delta
         ctrl = np.zeros((self.action_dim, nx * ny))
-
         state = jnp.array(state)
         ctrl = jnp.array(ctrl)
-
         if cost_type == "cost":
             cost = self.cost
         else:
             assert cost_type == "constraint"
             cost = self.cost
-        v = cost.get_mapped_margin(state, ctrl).reshape(nx, ny)
+        get_use_delta = cost.constraint.use_delta
+        cost.constraint.use_delta = False
+        state_offset = self.agent.dyn.get_batched_reverse_rear_offset_correction(state)
+        v = cost.constraint.get_mapped_margin(state_offset, ctrl).reshape(nx, ny)
+        cost.constraint.use_delta = get_use_delta
         NEGATIVE_CONSTANT = 1.0
         v = jnp.where(v>0, 0.0, v)
         v = jnp.where(v<0, NEGATIVE_CONSTANT, v)
         ax.imshow(
             v.T, interpolation='none', extent=[xmin, xmax, ymin, ymax], cmap='Greys',
-                origin='lower',
-                norm = matplotlib.colors.Normalize(vmin=0, vmax=2.5), label='SoftMargin (with ego radius)'
+                norm = matplotlib.colors.Normalize(vmin=0, vmax=2.5), label='SoftMargin (with ego radius)',
+                origin='lower'
         )
 
     def _reshape(

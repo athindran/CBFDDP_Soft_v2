@@ -1,15 +1,17 @@
 from functools import partial
 import jax
-from jax import numpy as jnp
+from jax import numpy as jp
 from jax import Array
 from brax import envs
 from brax.envs.base import State
 from abc import ABC
 from matplotlib import pyplot as plt
+from .barkour_env import BarkourEnv
 import numpy as np
 import os
 import math
 
+envs.register_environment('barkour', BarkourEnv)
 
 class WrappedBraxEnv(ABC):
     def __init__(self, env_name, backend) -> None:
@@ -21,7 +23,7 @@ class WrappedBraxEnv(ABC):
             self.dim_q_states = 2
             self.dim_qd_states = 2
             self.dim_qdd_states = 0
-            self.action_limits = np.array([[-1., -1.], [1., 1.]])
+            self.action_limits = jp.array([[-1., -1.], [1., 1.]])
             self.dt = 0.02
         elif env_name=='ant':
             self.dim_x = 29
@@ -29,8 +31,16 @@ class WrappedBraxEnv(ABC):
             self.dim_q_states = 15
             self.dim_qd_states = 14
             self.dim_qdd_states = 0
-            self.action_limits = np.array([[-1., -1., -1., -1., -1., -1., -1., -1.], [1., 1., 1., 1., 1., 1., 1., 1.]])
+            self.action_limits = jp.array([[-1., -1., -1., -1., -1., -1., -1., -1.], [1., 1., 1., 1., 1., 1., 1., 1.]])
             self.dt = 0.05
+        elif env_name=='barkour':
+            self.dim_x = 36
+            self.dim_u = 12
+            self.dim_q_states = 18
+            self.dim_qd_states = 18
+            self.dim_qdd_states = 0
+            self.action_limits = jp.array([[-1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1.], [1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1.]])
+            self.dt = 0.02
         else:
             # Raise not implemented error.
             pass
@@ -42,7 +52,7 @@ class WrappedBraxEnv(ABC):
     
     @partial(jax.jit, static_argnames='self')
     def get_generalized_coordinates(self, state) -> jax.Array:
-        return jnp.concatenate([state.pipeline_state.q[0:self.dim_q_states], state.pipeline_state.qd[0:self.dim_qd_states], state.pipeline_state.qdd[0:self.dim_qdd_states]], axis=-1) 
+        return jp.concatenate([state.pipeline_state.q[0:self.dim_q_states], state.pipeline_state.qd[0:self.dim_qd_states], state.pipeline_state.qdd[0:self.dim_qdd_states]], axis=-1) 
 
     @partial(jax.jit, static_argnames=['self'])
     def step_generalized_coordinates(self, state, action):
@@ -54,7 +64,7 @@ class WrappedBraxEnv(ABC):
     def get_generalized_coordinates_grad(self, state, action):
         state_grad = jax.jacobian(self.step_generalized_coordinates, argnums=0)(state, action).pipeline_state
         action_grad = jax.jacobian(self.step_generalized_coordinates, argnums=1)(state, action)
-        return jnp.concatenate([state_grad.q[..., 0:self.dim_q_states], state_grad.qd[..., 0:self.dim_qd_states], state_grad.qdd[..., 0:self.dim_qdd_states]], axis=-1), action_grad
+        return jp.concatenate([state_grad.q[..., 0:self.dim_q_states], state_grad.qd[..., 0:self.dim_qd_states], state_grad.qdd[..., 0:self.dim_qdd_states]], axis=-1), action_grad
     
     @partial(jax.jit, static_argnames=['self'])
     def get_generalized_coordinates_hess(self, state, action):
@@ -62,11 +72,11 @@ class WrappedBraxEnv(ABC):
         hess_xx, hess_ux = jax.jacfwd(self.get_generalized_coordinates_grad, argnums=0)(state, action)
         _, hess_uu = jax.jacfwd(self.get_generalized_coordinates_grad, argnums=1)(state, action)
 
-        f_xx = jnp.concatenate([hess_xx.pipeline_state.q[..., 0:self.dim_q_states], 
+        f_xx = jp.concatenate([hess_xx.pipeline_state.q[..., 0:self.dim_q_states], 
                                 hess_xx.pipeline_state.qd[..., 0:self.dim_qd_states],
                                 hess_xx.pipeline_state.qdd[..., 0:self.dim_qdd_states]], axis=-1)
 
-        f_ux = jnp.concatenate([hess_ux.pipeline_state.q[..., 0:self.dim_q_states], 
+        f_ux = jp.concatenate([hess_ux.pipeline_state.q[..., 0:self.dim_q_states], 
                                 hess_ux.pipeline_state.qd[..., 0:self.dim_qd_states],
                                 hess_ux.pipeline_state.qdd[..., 0:self.dim_qdd_states]], axis=-1)
 
@@ -84,7 +94,7 @@ class WrappedBraxEnv(ABC):
     @partial(jax.jit, static_argnames=['self'])
     def get_obs_grad(self, pipeline_state):
         state_grad = jax.jacobian(self._get_obs, argnums=0)(pipeline_state)
-        return jnp.concatenate([state_grad.q[..., 0:self.dim_q_states], state_grad.qd[..., 0:self.dim_qd_states], state_grad.qdd[..., 0:self.dim_qdd_states]], axis=-1)
+        return jp.concatenate([state_grad.q[..., 0:self.dim_q_states], state_grad.qd[..., 0:self.dim_qd_states], state_grad.qdd[..., 0:self.dim_qdd_states]], axis=-1)
 
     @partial(jax.jit, static_argnames='self')    
     def reset(self, rng) -> jax.Array:
@@ -94,43 +104,50 @@ class WrappedBraxEnv(ABC):
     def _get_obs(self, pipeline_state: State) -> jax.Array:
         return self.env._get_obs(pipeline_state)
 
-    def test_gc_rollout(self):
-        # FAILS - to provide information about MJX
-        rng = jax.random.PRNGKey(seed=0)
-        test_state = self.reset(rng=rng)
+    # def test_gc_rollout(self):
+    #     # FAILS - to provide information about MJX
+    #     rng = jax.random.PRNGKey(seed=0)
+    #     test_state = self.reset(rng=rng)
 
-        for _ in range(100):
-            action = np.random.rand(self.dim_u)
-            new_state = self.step(test_state, action)
-            print(test_state.pipeline_state.qpos, test_state.pipeline_state.qvel)
-            new_gc_state = self.step_generalized_coordinates(test_state, test_state.pipeline_state.qpos, test_state.pipeline_state.qvel, action)
+    #     for _ in range(100):
+    #         action = np.random.rand(self.dim_u)
+    #         new_state = self.step(test_state, action)
+    #         print(test_state.pipeline_state.qpos, test_state.pipeline_state.qvel)
+    #         new_gc_state = self.step_generalized_coordinates(test_state, test_state.pipeline_state.qpos, test_state.pipeline_state.qvel, action)
 
-            np.testing.assert_allclose(new_state.pipeline_state.qpos, new_gc_state[0:self.dim_q_states], atol=1e-4, rtol=1e-4)
-            np.testing.assert_allclose(new_state.pipeline_state.qvel, new_gc_state[self.dim_q_states:], atol=1e-4, rtol=1e-4)
+    #         np.testing.assert_allclose(new_state.pipeline_state.qpos, new_gc_state[0:self.dim_q_states], atol=1e-4, rtol=1e-4)
+    #         np.testing.assert_allclose(new_state.pipeline_state.qvel, new_gc_state[self.dim_q_states:], atol=1e-4, rtol=1e-4)
 
-            test_state = new_state
+    #         test_state = new_state
 
-        print("Unit test passed")
+    #     print("Unit test passed")
 
-        return True
+    #     return True
 
     def plot_states_and_controls(self, save_dict, save_folder):
         states = save_dict['gc_states']
         ctrls = save_dict['actions']
         control_cycle_times = save_dict['process_times']
+
+        if 'filter_iters' in save_dict:
+            filter_iters = save_dict['filter_iters']
+        else:
+            filter_iters = np.ones((states.shape[0],))
+
         values = save_dict['values']
         policy_type = save_dict['policy_type']
+        cost_type = save_dict['cost_type']
         is_filter_active = save_dict['filter_active']
         is_filter_fail = save_dict['filter_failed']
         nsteps = states.shape[0]
         range_space = np.arange(0, nsteps) * self.dt
 
-        rowdict = {'ant': 4, 'reacher': 2}
+        rowdict = {'ant': 4, 'barkour': 4, 'reacher': 2}
         nrows = rowdict[self.env_name]
         ncols = math.ceil(self.dim_q_states/nrows)
-        figsize = {'ant': (35, 16), 'reacher': (9, 4)}
-        fontsize = {'ant': 14, 'reacher': 10}
-        linewidths = {'ant': 1.5, 'reacher': 2.5}
+        figsize = {'ant': (35, 16), 'barkour': (35, 16), 'reacher': (9, 4)}
+        fontsize = {'ant': 14, 'barkour': 12, 'reacher': 12}
+        linewidths = {'ant': 1.5, 'barkour': 1.2, 'reacher': 1.5}
         legend_fontsize = fontsize[self.env_name]
         linewidth = linewidths[self.env_name]
 
@@ -152,18 +169,18 @@ class WrappedBraxEnv(ABC):
             fontsize=legend_fontsize)
 
 
-        fig.suptitle(f'Policy: {policy_type}, Environment: {self.env_name}', fontsize=legend_fontsize)
-        fig.savefig(os.path.join(save_folder, f'{policy_type}_q_states.png'), bbox_inches='tight')
+        fig.suptitle(f'Policy: {policy_type}, Cost: {cost_type}, Environment: {self.env_name}', fontsize=legend_fontsize)
+        fig.savefig(os.path.join(save_folder, f'{policy_type}_{cost_type}_q_states.png'), bbox_inches='tight')
         plt.close()
 
         nrows = rowdict[self.env_name]
         ncols = math.ceil(self.dim_qd_states/nrows)
-        figsize = {'ant': (35, 16), 'reacher': (9, 4)}
+        figsize = {'ant': (35, 16), 'barkour': (45, 16), 'reacher': (9, 4)}
         fig, axes = plt.subplots(nrows, ncols, figsize=figsize[self.env_name], sharex=True)
         axes = axes.ravel()
         for idx in range(self.dim_qd_states):
             axes[idx].plot(range_space, states[:, self.dim_q_states + idx], linewidth=linewidth)
-            axes[idx].set_ylabel(f'qd {idx}', fontsize=legend_fontsize)
+            axes[idx].set_ylabel('$\dot{q}$ ' + str(idx), fontsize=legend_fontsize)
             axes[idx].set_xlabel('Time (s)', fontsize=legend_fontsize)
             min_r = states[:, self.dim_q_states + idx].min()
             max_r = states[:, self.dim_q_states + idx].max()
@@ -176,12 +193,12 @@ class WrappedBraxEnv(ABC):
                         labels=[round(states[:, self.dim_q_states + idx].min(), 2), round(states[:, self.dim_q_states + idx].max(), 2)], 
                         fontsize=legend_fontsize)
 
-        fig.suptitle(f'Policy: {policy_type}, Environment: {self.env_name}', fontsize=legend_fontsize)
-        fig.savefig(os.path.join(save_folder, f'{policy_type}_qd_states.png'), bbox_inches='tight')
+        fig.suptitle(f'Policy: {policy_type}, Cost: {cost_type}, Environment: {self.env_name}', fontsize=legend_fontsize)
+        fig.savefig(os.path.join(save_folder, f'{policy_type}_{cost_type}_qd_states.png'), bbox_inches='tight')
         plt.close()
 
-        rowdict = {'ant': 2, 'reacher': 1}
-        figsize = {'ant': (35, 9), 'reacher': (9, 4)}
+        rowdict = {'ant': 2, 'barkour': 3, 'reacher': 1}
+        figsize = {'ant': (35, 9), 'barkour': (45, 14), 'reacher': (9, 4)}
         nrows = rowdict[self.env_name]
         ncols = math.ceil(self.dim_u/nrows)
 
@@ -206,8 +223,8 @@ class WrappedBraxEnv(ABC):
                         fontsize=legend_fontsize)
 
 
-        fig.suptitle(f'Policy: {policy_type}, Environment: {self.env_name}', fontsize=legend_fontsize)
-        fig.savefig(os.path.join(save_folder, f'{policy_type}_actions.png'), bbox_inches='tight')
+        fig.suptitle(f'Policy: {policy_type}, Cost: {cost_type}, Environment: {self.env_name}', fontsize=legend_fontsize)
+        fig.savefig(os.path.join(save_folder, f'{policy_type}_{cost_type}_actions.png'), bbox_inches='tight')
         plt.close()
 
         fig = plt.figure(figsize=(7.5, 3.5))
@@ -224,8 +241,19 @@ class WrappedBraxEnv(ABC):
                         fontsize=legend_fontsize)
         ax.set_ylabel('Control cycle time (s)', 
                         fontsize=legend_fontsize)
-        fig.suptitle(f'Policy: {policy_type}, Environment: {self.env_name}', fontsize=legend_fontsize)
-        fig.savefig(os.path.join(save_folder, f'{policy_type}_process_times.png'), bbox_inches='tight')
+        fig.suptitle(f'Policy: {policy_type}, Cost: {cost_type}, Environment: {self.env_name}', fontsize=legend_fontsize)
+        fig.savefig(os.path.join(save_folder, f'{policy_type}_{cost_type}_process_times.png'), bbox_inches='tight')
+        plt.close()
+
+        fig = plt.figure(figsize=(7.5, 3.5))
+        ax = plt.gca()
+        ax.plot(range_space, filter_iters, linewidth=linewidth)
+        ax.set_xlabel('Time (s)', 
+                        fontsize=legend_fontsize)
+        ax.set_ylabel('Filter iters', 
+                        fontsize=legend_fontsize)
+        fig.suptitle(f'Policy: {policy_type}, Cost: {cost_type}, Environment: {self.env_name}', fontsize=legend_fontsize)
+        fig.savefig(os.path.join(save_folder, f'{policy_type}_{cost_type}_filter_iters.png'), bbox_inches='tight')
         plt.close()
 
         fig = plt.figure(figsize=(9.5, 3.5))
@@ -245,8 +273,8 @@ class WrappedBraxEnv(ABC):
                         fontsize=legend_fontsize)
         ax.set_ylabel('Value function', 
                         fontsize=legend_fontsize)
-        fig.suptitle(f'Policy: {policy_type}, Environment: {self.env_name}', fontsize=legend_fontsize)
-        fig.savefig(os.path.join(save_folder, f'{policy_type}_values.png'), bbox_inches='tight')
+        fig.suptitle(f'Policy: {policy_type}, Cost: {cost_type}, Environment: {self.env_name}', fontsize=legend_fontsize)
+        fig.savefig(os.path.join(save_folder, f'{policy_type}_{cost_type}_values.png'), bbox_inches='tight')
         plt.close()
 
 
@@ -254,7 +282,7 @@ class WrappedMJXEnv(WrappedBraxEnv):
 
     @partial(jax.jit, static_argnames='self')
     def get_generalized_coordinates(self, state) -> jax.Array:
-        return jnp.concatenate([state.pipeline_state.qpos[0:self.dim_q_states], state.pipeline_state.qvel[0:self.dim_qd_states]], axis=-1) 
+        return jp.concatenate([state.pipeline_state.qpos[0:self.dim_q_states], state.pipeline_state.qvel[0:self.dim_qd_states]], axis=-1) 
 
     @partial(jax.jit, static_argnames=['self'])
     def step_generalized_coordinates(self, state, qpos, qvel, action):
@@ -266,9 +294,9 @@ class WrappedMJXEnv(WrappedBraxEnv):
     
     @partial(jax.jit, static_argnames=['self'])
     def get_generalized_coordinates_grad(self, state, action):
-        qpos = jnp.array(state.pipeline_state.qpos)
-        qvel = jnp.array(state.pipeline_state.qvel)
+        qpos = jp.array(state.pipeline_state.qpos)
+        qvel = jp.array(state.pipeline_state.qvel)
         q_grad = jax.jacfwd(self.step_generalized_coordinates, argnums=1)(state, qpos, qvel,  action)
         qd_grad = jax.jacfwd(self.step_generalized_coordinates, argnums=2)(state, qpos, qvel, action)
         action_grad = jax.jacfwd(self.step_generalized_coordinates, argnums=3)(state, qpos, qvel, action)
-        return jnp.concatenate([q_grad[..., 0:self.dim_q_states], qd_grad[..., 0:self.dim_qd_states]], axis=-1), action_grad
+        return jp.concatenate([q_grad[..., 0:self.dim_q_states], qd_grad[..., 0:self.dim_qd_states]], axis=-1), action_grad

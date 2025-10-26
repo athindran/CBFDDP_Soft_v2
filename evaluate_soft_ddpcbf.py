@@ -135,10 +135,14 @@ def main(config_file, road_boundary, filter_type, is_task_ilqr, line_search):
 
     # Provide common fields to cost
     config_cost.N = config_solver.N
-    config_cost.V_MIN = config_agent.V_MIN
-    config_cost.DELTA_MIN = config_agent.DELTA_MIN
-    config_cost.V_MAX = config_agent.V_MAX
-    config_cost.DELTA_MAX = config_agent.DELTA_MAX
+    if not hasattr(config_cost, 'V_MIN'):
+        config_cost.V_MIN = config_agent.V_MIN
+    if not hasattr(config_cost, 'V_MAX'):
+        config_cost.V_MAX = config_agent.V_MAX
+    if not hasattr(config_cost, 'DELTA_MIN'):
+        config_cost.DELTA_MIN = config_agent.DELTA_MIN
+    if not hasattr(config_cost, 'DELTA_MAX'):
+        config_cost.DELTA_MAX = config_agent.DELTA_MAX
 
     config_cost.TRACK_WIDTH_RIGHT = road_boundary
     config_cost.TRACK_WIDTH_LEFT = road_boundary
@@ -171,6 +175,9 @@ def main(config_file, road_boundary, filter_type, is_task_ilqr, line_search):
                     env.agent.dyn))
             cost = BicycleReachAvoid5DMargin(
                 config_ilqr_cost, copy.deepcopy(env.agent.dyn), filter_type)
+            # we use soft margin for an apples-to-apples comparison of the margin
+            evaluation_cost = BicycleReachAvoid5DMargin(
+                config_ilqr_cost, copy.deepcopy(env.agent.dyn), 'SoftCBF')
             env.cost = cost  # ! hacky
     # Not supported
     elif config_cost.COST_TYPE == "Reachability":
@@ -186,12 +193,16 @@ def main(config_file, road_boundary, filter_type, is_task_ilqr, line_search):
                     env.agent.dyn))
             cost = BicycleReachAvoid5DMargin(
                 config_ilqr_cost, copy.deepcopy(env.agent.dyn), filter_type)
+            # we use soft margin for an apples-to-apples comparison of the margin
+            evaluation_cost = BicycleReachAvoid5DMargin(
+                config_ilqr_cost, copy.deepcopy(env.agent.dyn), 'SoftCBF')
             env.cost = cost
 
     env.agent.init_policy(
         policy_type=policy_type,
         config=config_solver,
         cost=cost,
+        evaluation_cost=evaluation_cost,
         task_cost=task_cost)
     max_iter_receding = config_solver.MAX_ITER_RECEDING
 
@@ -269,11 +280,12 @@ def main(config_file, road_boundary, filter_type, is_task_ilqr, line_search):
         advanced_animate=should_animate,
     )
 
-    print("result:", result)
+    print(f"--------------------RESULT: {result}----------------------")
     print(traj_info['step_history'][-1]["done_type"])
     constraints: Dict = traj_info['step_history'][-1]['constraints']
     for k, v in constraints.items():
         print(f"{k}: {v[0, 1]:.1e}")
+    print("-----------------------------------------------------------")
 
     # endregion
 
@@ -292,7 +304,7 @@ def main(config_file, road_boundary, filter_type, is_task_ilqr, line_search):
                 #Image(open(gif_path, 'rb').read(), width=400)
         # endregion
 
-    return out_folder, plot_tag, config_agent
+    return out_folder, plot_tag, config_agent, config_solver
 
 
 if __name__ == "__main__":
@@ -324,11 +336,12 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    filters=['SoftCBF']
+    filters=['CBF', 'SoftCBF']
     
     out_folder, plot_tag, config_agent = None, None, None
     for filter_type in filters:
-        out_folder, plot_tag, config_agent = main(args.config_file, args.road_boundary, filter_type=filter_type, is_task_ilqr=(not args.naive_task),         
+        jax.clear_caches()
+        out_folder, plot_tag, config_agent, config_solver = main(args.config_file, args.road_boundary, filter_type=filter_type, is_task_ilqr=(not args.naive_task),         
                                                     line_search=args.line_search)
 
     make_bicycle_comparison_report(
@@ -337,5 +350,7 @@ if __name__ == "__main__":
         tag=plot_tag + "_" + str(args.road_boundary,),
         road_boundary=args.road_boundary,
         dt=config_agent.DT,
+        cbf_gamma=config_solver.CBF_GAMMA,
+        soft_cbf_gamma=config_solver.SOFT_CBF_GAMMA,
         filters=filters)
 
