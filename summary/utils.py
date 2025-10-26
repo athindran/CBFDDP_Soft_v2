@@ -805,9 +805,9 @@ def make_bicycle_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", 
     ax_st = subfigs_col2[2]
 
     if 'reachability' in tag:
-        max_value = 0.02
+        max_value = 0.08
     else:
-        max_value = 0.8
+        max_value = 0.9
 
     for idx, process_times_data in enumerate(plot_times_list):
         x_times = dt*np.arange(process_times_data.size)
