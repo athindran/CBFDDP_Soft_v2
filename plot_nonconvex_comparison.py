@@ -191,3 +191,7 @@ fig.savefig(
         "./plots_summary/nonconvex_comparison_bic5d.pdf", dpi=400, 
         bbox_inches='tight'
     )
+fig.savefig(
+        "./plots_summary/nonconvex_comparison_bic5d.png", dpi=400, 
+        bbox_inches='tight'
+    )
