@@ -135,10 +135,14 @@ def main(config_file, road_boundary, filter_type, is_task_ilqr, line_search):
 
     # Provide common fields to cost
     config_cost.N = config_solver.N
-    config_cost.V_MIN = config_agent.V_MIN
-    config_cost.DELTA_MIN = config_agent.DELTA_MIN
-    config_cost.V_MAX = config_agent.V_MAX
-    config_cost.DELTA_MAX = config_agent.DELTA_MAX
+    if not hasattr(config_cost, 'V_MIN'):
+        config_cost.V_MIN = config_agent.V_MIN
+    if not hasattr(config_cost, 'V_MAX'):
+        config_cost.V_MAX = config_agent.V_MAX
+    if not hasattr(config_cost, 'DELTA_MIN'):
+        config_cost.DELTA_MIN = config_agent.DELTA_MIN
+    if not hasattr(config_cost, 'DELTA_MAX'):
+        config_cost.DELTA_MAX = config_agent.DELTA_MAX
 
     config_cost.TRACK_WIDTH_RIGHT = road_boundary
     config_cost.TRACK_WIDTH_LEFT = road_boundary
@@ -171,6 +175,7 @@ def main(config_file, road_boundary, filter_type, is_task_ilqr, line_search):
                     env.agent.dyn))
             cost = BicycleReachAvoid5DMargin(
                 config_ilqr_cost, copy.deepcopy(env.agent.dyn), filter_type)
+            # we use soft margin for an apples-to-apples comparison of the margin
             evaluation_cost = BicycleReachAvoid5DMargin(
                 config_ilqr_cost, copy.deepcopy(env.agent.dyn), 'SoftCBF')
             env.cost = cost  # ! hacky
@@ -188,6 +193,7 @@ def main(config_file, road_boundary, filter_type, is_task_ilqr, line_search):
                     env.agent.dyn))
             cost = BicycleReachAvoid5DMargin(
                 config_ilqr_cost, copy.deepcopy(env.agent.dyn), filter_type)
+            # we use soft margin for an apples-to-apples comparison of the margin
             evaluation_cost = BicycleReachAvoid5DMargin(
                 config_ilqr_cost, copy.deepcopy(env.agent.dyn), 'SoftCBF')
             env.cost = cost
