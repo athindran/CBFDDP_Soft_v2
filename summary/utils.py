@@ -730,8 +730,12 @@ def make_bicycle_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", 
         if showhardcbflist[idx]:
             max_value = max(max_value, values_data.max())
             x_times = dt*np.arange(values_data.size)
-            ax_v.plot(x_times, values_data, label='Hard Constraint', c=colorlist[int(idx)], 
-                             alpha = 0.7, linewidth=1.0, linestyle='dashed')
+            if config_cost.COST_TYPE == 'Reachability':
+                ax_v.plot(x_times, values_data, label='Reachability Value (HM)', c=colorlist[int(idx)], 
+                                alpha = 0.7, linewidth=1.0, linestyle='dashed')
+            else:
+                ax_v.plot(x_times, values_data, label='ReachAvoid Value (HM)', c=colorlist[int(idx)], 
+                                alpha = 0.7, linewidth=1.0, linestyle='dashed')
             nsteps = values_data.size
 
     ax_v.set_xticks(ticks=[0, round(dt*maxsteps, 2)], labels=[0, round(dt*maxsteps, 2)], fontsize=legend_fontsize)
