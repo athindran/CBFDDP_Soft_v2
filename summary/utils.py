@@ -417,6 +417,7 @@ def make_bicycle_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", 
     rblist = []
     showlist = []
     showcontrollist = []
+    showhardcbflist = []
     gammavals = []
     colors = {}
     colors['SoftLR'] = 'g'
@@ -468,6 +469,11 @@ def make_bicycle_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", 
                     showcontrollist.append(True)
                 else:
                     showcontrollist.append(False)
+                
+                if sh=='CBF':
+                    showhardcbflist.append(True)
+                else:
+                    showhardcbflist.append(False)
 
     plot_obses_list = []
     plot_actions_list = []
@@ -706,11 +712,12 @@ def make_bicycle_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", 
     axes_x.set_ylabel('X position $(m)$', fontsize=legend_fontsize)
 
     ax_v = subfigs_col2[1]
-    max_value = 1.8
+    max_value = 1.0
     for idx, safety_metrics_data in enumerate(plot_safety_metrics_list):
         if showcontrollist[idx]:
+            max_value = max(max_value, 1.2*safety_metrics_data.max())
             x_times = dt*np.arange(safety_metrics_data.size)
-            ax_v.plot(x_times, safety_metrics_data, label=labellist[int(idx)], c=colorlist[int(idx)], 
+            ax_v.plot(x_times, safety_metrics_data, c=colorlist[int(idx)], 
                              alpha = 1.0, linewidth=1.0, linestyle='solid')
             nsteps = safety_metrics_data.size
             fillarray = np.zeros(nsteps)
@@ -718,6 +725,14 @@ def make_bicycle_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", 
             ax_v.fill_between(x_times, 0.0, max_value, 
                                      where=fillarray, color=colorlist[int(idx)], alpha=0.15)
             ax_v.plot(x_times, 0*x_times, 'k--', linewidth=1.0)
+
+    for idx, values_data in enumerate(plot_values_list):
+        if showhardcbflist[idx]:
+            max_value = max(max_value, values_data.max())
+            x_times = dt*np.arange(values_data.size)
+            ax_v.plot(x_times, values_data, label='Hard Constraint', c=colorlist[int(idx)], 
+                             alpha = 0.7, linewidth=1.0, linestyle='dashed')
+            nsteps = values_data.size
 
     ax_v.set_xticks(ticks=[0, round(dt*maxsteps, 2)], labels=[0, round(dt*maxsteps, 2)], fontsize=legend_fontsize)
     ax_v.set_yticks(ticks=[0, max_value], 
@@ -734,9 +749,8 @@ def make_bicycle_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", 
     else:
         ax_v.set_ylabel('ReachAvoid Value (SM)', 
                     fontsize=6.3)
-    # ax_v.legend(framealpha=0, fontsize=legend_fontsize, loc='upper left', 
-    #                        ncol=3, bbox_to_anchor=(0.05, 1.1), fancybox=False, shadow=False)
-        
+    ax_v.legend(framealpha=0, fontsize=legend_fontsize, loc='upper left', 
+                           ncol=1, bbox_to_anchor=(0.05, 1.2))        
     # fig_v.savefig(
     #         plot_folder + tag + str(hide_label) + "_jax_values.pdf", dpi=200, 
     #         bbox_inches='tight', transparent=hide_label
