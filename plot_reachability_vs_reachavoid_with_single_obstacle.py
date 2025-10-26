@@ -81,7 +81,7 @@ out_folder, plot_tag, config_agent = run_ddp_cbf(config_file, road_boundary, fil
 plot_softcbf_data_reachability = np.load(os.path.join(out_folder, f"road_boundary={road_boundary}/SoftCBF/figure/save_data.npy"), allow_pickle=True)
 plot_softcbf_data_reachability = plot_softcbf_data_reachability.ravel()[0]
 
-
+########## Reach-avoid with road boundary and delta constraints ############
 config_file = './test_configs/reachavoid/test_config_cbf_reachavoid_single_obstacle_bic5D_singular_constraints.yaml'
 
 # Load the config to get key parameters needed for plot generation.
@@ -109,7 +109,7 @@ out_folder, plot_tag, config_agent = run_ddp_cbf(config_file, road_boundary, fil
 plot_softcbf_data_reachavoid_constraints = np.load(os.path.join(out_folder, f"road_boundary={road_boundary}/SoftCBF/figure/save_data.npy"), allow_pickle=True)
 plot_softcbf_data_reachavoid_constraints = plot_softcbf_data_reachavoid_constraints.ravel()[0]
 
-########## Reach-avoid with reduced actuation ############
+########## Reach-avoid with reduced velocity ############
 config_file = './test_configs/reachavoid/test_config_cbf_reachavoid_single_obstacle_bic5D_singular_reduced_velocity.yaml'
 
 # Load the config to get key parameters needed for plot generation.
@@ -133,8 +133,8 @@ env = CarSingle5DEnv(config_env, config_agent, config_cost)
 env.render_obs(ax=ax, c='k')
 
 out_folder, plot_tag, config_agent = run_ddp_cbf(config_file, road_boundary, filter_type='SoftCBF', is_task_ilqr=True, line_search='baseline')
-plot_softcbf_data_reachavoid_actuation = np.load(os.path.join(out_folder, f"road_boundary={road_boundary}/SoftCBF/figure/save_data.npy"), allow_pickle=True)
-plot_softcbf_data_reachavoid_actuation = plot_softcbf_data_reachavoid_actuation.ravel()[0]
+plot_softcbf_data_reachavoid_reducedvelocity = np.load(os.path.join(out_folder, f"road_boundary={road_boundary}/SoftCBF/figure/save_data.npy"), allow_pickle=True)
+plot_softcbf_data_reachavoid_reducedvelocity = plot_softcbf_data_reachavoid_reducedvelocity.ravel()[0]
 
 # Plot everything for visualizing in report.
 plot_actions_list = []
@@ -161,11 +161,11 @@ plot_obses_complete_filter_list.append( np.array(plot_softcbf_data_reachavoid_co
 plot_obses_barrier_filter_list.append( np.array(plot_softcbf_data_reachavoid_constraints['barrier_indices'] ) )
 plot_values_list.append( np.array(plot_softcbf_data_reachavoid_constraints['values'] ) )
 
-plot_actions_list.append( np.array(plot_softcbf_data_reachavoid_actuation['actions']) )
-plot_obses_list.append( np.array(plot_softcbf_data_reachavoid_actuation['obses'] ) )
-plot_obses_complete_filter_list.append( np.array(plot_softcbf_data_reachavoid_actuation['complete_indices'] ) )
-plot_obses_barrier_filter_list.append( np.array(plot_softcbf_data_reachavoid_actuation['barrier_indices'] ) )
-plot_values_list.append( np.array(plot_softcbf_data_reachavoid_actuation['values'] ) )
+plot_actions_list.append( np.array(plot_softcbf_data_reachavoid_reducedvelocity['actions']) )
+plot_obses_list.append( np.array(plot_softcbf_data_reachavoid_reducedvelocity['obses'] ) )
+plot_obses_complete_filter_list.append( np.array(plot_softcbf_data_reachavoid_reducedvelocity['complete_indices'] ) )
+plot_obses_barrier_filter_list.append( np.array(plot_softcbf_data_reachavoid_reducedvelocity['barrier_indices'] ) )
+plot_values_list.append( np.array(plot_softcbf_data_reachavoid_reducedvelocity['values'] ) )
 
 for idx, obs_data in enumerate(plot_obses_list):
     sc = ax.plot(

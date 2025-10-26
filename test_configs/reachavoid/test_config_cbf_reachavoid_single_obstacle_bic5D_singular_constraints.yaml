@@ -52,8 +52,8 @@ cost:
   W_OMEGA: 0.1
   YAW_MIN: -1.57
   YAW_MAX: 1.57
-  DELTA_MIN: -0.5
-  DELTA_MAX: 0.5
+  DELTA_MIN: -0.9
+  DELTA_MAX: 0.9
   SMOOTHING_TEMP: 2.5
 
 agent:
