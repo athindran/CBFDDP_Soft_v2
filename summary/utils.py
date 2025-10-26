@@ -737,7 +737,7 @@ def make_bicycle_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", 
                 ax_v.plot(x_times, values_data, label='ReachAvoid Value (HM)', c=colorlist[int(idx)], 
                                 alpha = 0.7, linewidth=1.0, linestyle='dashed')
             nsteps = values_data.size
-
+    max_value = round(max_value, 2)
     ax_v.set_xticks(ticks=[0, round(dt*maxsteps, 2)], labels=[0, round(dt*maxsteps, 2)], fontsize=legend_fontsize)
     ax_v.set_yticks(ticks=[0, max_value], 
                         labels=[0, max_value], 
