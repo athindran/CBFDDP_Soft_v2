@@ -417,6 +417,7 @@ def make_bicycle_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", 
     rblist = []
     showlist = []
     showcontrollist = []
+    showhardcbflist = []
     gammavals = []
     colors = {}
     colors['SoftLR'] = 'g'
@@ -468,6 +469,11 @@ def make_bicycle_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", 
                     showcontrollist.append(True)
                 else:
                     showcontrollist.append(False)
+                
+                if sh=='CBF':
+                    showhardcbflist.append(True)
+                else:
+                    showhardcbflist.append(False)
 
     plot_obses_list = []
     plot_actions_list = []
@@ -552,35 +558,35 @@ def make_bicycle_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", 
                     if lgd_c:
                         if not hide_label:
                             ax.plot(obs_data[complete_filter_indices, 0], 
-                                    obs_data[complete_filter_indices, 1], 'o', 
-                                    color=colorlist[int(idx)], alpha=0.65, markersize=3.0, 
+                                    obs_data[complete_filter_indices, 1], 'D', 
+                                    color=colorlist[int(idx)], alpha=0.65, markersize=1.5, 
                                     label='Complete filter')
                         else:
                             ax.plot(obs_data[complete_filter_indices, 0], 
-                            obs_data[complete_filter_indices, 1], 'o', 
-                            color=colorlist[int(idx)], alpha=0.65, markersize=3.0, label='                ')
+                            obs_data[complete_filter_indices, 1], 'D', 
+                            color=colorlist[int(idx)], alpha=0.65, markersize=1.5, label='                ')
                         #lgd_c = False
                     else:
                         ax.plot(obs_data[complete_filter_indices, 0], 
-                                obs_data[complete_filter_indices, 1], 'o', 
-                                color=colorlist[int(idx)], alpha=0.65, markersize=3.0)
+                                obs_data[complete_filter_indices, 1], 'D', 
+                                color=colorlist[int(idx)], alpha=0.65, markersize=1.5)
                 if len(barrier_filter_indices)>0:
                     if lgd_b:
                         if not hide_label:
                             ax.plot(obs_data[barrier_filter_indices, 0], 
                                     obs_data[barrier_filter_indices, 1], 'x', 
-                                    color=colorlist[int(idx)], alpha=0.65, markersize=1.2, 
+                                    color=colorlist[int(idx)], alpha=0.65, markersize=1.5, 
                                     label=labellist[int(idx)] + ' filter')
                         else:
                             ax.plot(obs_data[barrier_filter_indices, 0], 
                                     obs_data[barrier_filter_indices, 1], 'x', 
-                                    color=colorlist[int(idx)], alpha=0.65, markersize=1.2, label='            ')
+                                    color=colorlist[int(idx)], alpha=0.65, markersize=1.5, label='            ')
                         #lgd_b = False
                     else:
-                        ax.plot(obs_data[barrier_filter_indices, 0], obs_data[barrier_filter_indices, 1], 'x', color=colorlist[int(idx)], alpha=0.65, markersize=5.0)
+                        ax.plot(obs_data[barrier_filter_indices, 0], obs_data[barrier_filter_indices, 1], 'x', color=colorlist[int(idx)], alpha=0.65, markersize=1.5)
     
             ax.legend(framealpha=0, fontsize=legend_fontsize, loc='upper left', 
-                      ncol=2, bbox_to_anchor=(-0.05, 1.40), fancybox=False, shadow=False)
+                      ncol=2, bbox_to_anchor=(-0.05, 1.45), fancybox=False, shadow=False)
 
             
             if hide_label:
@@ -686,8 +692,9 @@ def make_bicycle_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", 
     max_value = 2.5
     for idx, values_data in enumerate(plot_values_list):
         if showcontrollist[idx]:
+            max_value = max(max_value, 1.2*safety_metrics_data.max())
             x_times = dt*np.arange(safety_metrics_data.size)
-            ax_v.plot(x_times, safety_metrics_data, label=labellist[int(idx)], c=colorlist[int(idx)], 
+            ax_v.plot(x_times, safety_metrics_data, c=colorlist[int(idx)], 
                              alpha = 1.0, linewidth=1.0, linestyle='solid')
             nsteps = safety_metrics_data.size
             fillarray = np.zeros(nsteps)
@@ -696,6 +703,18 @@ def make_bicycle_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", 
                                      where=fillarray, color=colorlist[int(idx)], alpha=0.15)
             ax_v.plot(x_times, 0*x_times, 'k--', linewidth=1.0)
 
+    for idx, values_data in enumerate(plot_values_list):
+        if showhardcbflist[idx]:
+            max_value = max(max_value, values_data.max())
+            x_times = dt*np.arange(values_data.size)
+            if config_cost.COST_TYPE == 'Reachability':
+                ax_v.plot(x_times, values_data, label='Reachability Value (HM)', c=colorlist[int(idx)], 
+                                alpha = 0.7, linewidth=1.0, linestyle='dashed')
+            else:
+                ax_v.plot(x_times, values_data, label='ReachAvoid Value (HM)', c=colorlist[int(idx)], 
+                                alpha = 0.7, linewidth=1.0, linestyle='dashed')
+            nsteps = values_data.size
+    max_value = round(max_value, 2)
     ax_v.set_xticks(ticks=[0, round(dt*maxsteps, 2)], labels=[0, round(dt*maxsteps, 2)], fontsize=legend_fontsize)
     ax_v.set_yticks(ticks=[0, max_value], 
                         labels=[0, max_value], 
@@ -711,9 +730,8 @@ def make_bicycle_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", 
     else:
         ax_v.set_ylabel('ReachAvoid Value (SM)', 
                     fontsize=6.3)
-    # ax_v.legend(framealpha=0, fontsize=legend_fontsize, loc='upper left', 
-    #                        ncol=3, bbox_to_anchor=(0.05, 1.1), fancybox=False, shadow=False)
-        
+    ax_v.legend(framealpha=0, fontsize=legend_fontsize, loc='upper left', 
+                           ncol=1, bbox_to_anchor=(0.05, 1.2))        
     # fig_v.savefig(
     #         plot_folder + tag + str(hide_label) + "_jax_values.pdf", dpi=200, 
     #         bbox_inches='tight', transparent=hide_label
@@ -764,11 +782,14 @@ def make_bicycle_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", 
     ax_st = subfigs_col2[2]
 
     if 'reachability' in tag:
-        max_value = 0.02
+        max_value = 0.04
+        upper_limit = 0.1
     else:
-        max_value = 0.8
+        max_value = 0.05
+        upper_limit = 1.0
 
     for idx, process_times_data in enumerate(plot_times_list):
+        max_value = min(max(max_value, 1.2*process_times_data.max()), upper_limit)
         x_times = dt*np.arange(process_times_data.size)
         ax_st.plot(x_times, process_times_data, label=labellist[int(idx)], c=colorlist[int(idx)], 
                             alpha = 1.0, linewidth=1.5, linestyle='solid')
@@ -778,6 +799,7 @@ def make_bicycle_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", 
         ax_st.fill_between(x_times, 0.0, max_value, 
                                     where=fillarray, color=colorlist[int(idx)], alpha=0.15)
 
+    max_value = round(max_value, 2)
     ax_st.set_xticks(ticks=[0, round(dt*maxsteps, 2)], labels=[0, round(dt*maxsteps, 2)], fontsize=legend_fontsize)
     ax_st.set_yticks(ticks=[0, max_value], 
                         labels=[0, max_value], 
