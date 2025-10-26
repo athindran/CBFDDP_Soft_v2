@@ -18,10 +18,10 @@ os.environ["CUDA_VISIBLE_DEVICES"] = " "
 jax.config.update('jax_platform_name', 'cpu')
 
 fig = plt.figure(layout='constrained', figsize=(7.0, 3.4))
-colorlist = [(0.0, 0, 1.0, 1), (1.0, 0.0, 0.0, 1.0), (0, 0, 0, 0.8), (0.45, 0.0, 1.0, 1.0)]
-labellist = ['Reach-avoid (only obs)', 'Reachability (only obs)', 'Reach-avoid (aux)', 'Reach-avoid (vel)']
-stylelist = ['solid', 'dashed', 'dotted', 'dashdot']
-legend_fontsize = 7.5
+colorlist = [(0.0, 0, 1.0, 0.5), (0.2, 0.8, 0.4, 0.5), (1.0, 0.0, 0.0, 0.5), (0, 0, 0, 0.5), (0.45, 0.0, 1.0, 0.5)]
+labellist = ['Reach-avoid (only obs)', 'Reach-avoid (reinitialize)', 'Reachability (only obs)', 'Reach-avoid (cons)', 'Reach-avoid (slow down)']
+stylelist = ['solid', 'solid', 'dashed', 'solid', 'dashed']
+legend_fontsize = 6.5
 
 ########## Reach avoid with only obstacle ############
 config_file = './test_configs/reachavoid/test_config_cbf_reachavoid_single_obstacle_bic5D_singular.yaml'
@@ -53,6 +53,33 @@ env.render_obs(ax=ax, c='k')
 out_folder, plot_tag, config_agent, config_solver = run_ddp_cbf(config_file, road_boundary, filter_type='SoftCBF', is_task_ilqr=True, line_search='baseline')
 plot_softcbf_data_reachavoid_only_obstacle = np.load(os.path.join(out_folder, f"road_boundary={road_boundary}/SoftCBF/figure/save_data.npy"), allow_pickle=True)
 plot_softcbf_data_reachavoid_only_obstacle = plot_softcbf_data_reachavoid_only_obstacle.ravel()[0]
+
+
+########## Reach avoid with only obstacle  and reiterate ############
+config_file = './test_configs/reachavoid/test_config_cbf_reachavoid_single_obstacle_bic5D_singular_reiterate.yaml'
+road_boundary = 3.5
+
+# Load the config to get key parameters needed for plot generation.
+config = load_config(config_file)
+config_env = config['environment']
+config_agent = config['agent']
+config_solver = config['solver']
+config_cost = config['cost']
+config_cost.N = config_solver.N
+config_cost.V_MIN = config_agent.V_MIN
+config_cost.DELTA_MIN = config_agent.DELTA_MIN
+config_cost.V_MAX = config_agent.V_MAX
+config_cost.DELTA_MAX = config_agent.DELTA_MAX
+config_cost.TRACK_WIDTH_RIGHT = road_boundary
+config_cost.TRACK_WIDTH_LEFT = road_boundary
+config_env.TRACK_WIDTH_RIGHT = road_boundary
+config_env.TRACK_WIDTH_LEFT = road_boundary
+config_agent.FILTER_TYPE = 'SoftCBF'
+
+env = CarSingle5DEnv(config_env, config_agent, config_cost)
+out_folder, plot_tag, config_agent, config_solver = run_ddp_cbf(config_file, road_boundary, filter_type='SoftCBF', is_task_ilqr=True, line_search='baseline')
+plot_softcbf_data_reachavoid_only_obstacle_reiterate = np.load(os.path.join(out_folder, f"road_boundary={road_boundary}/SoftCBF/figure/save_data.npy"), allow_pickle=True)
+plot_softcbf_data_reachavoid_only_obstacle_reiterate = plot_softcbf_data_reachavoid_only_obstacle_reiterate.ravel()[0]
 
 ########## Reachability with all constraints ############
 config_file = './test_configs/reachability/test_config_cbf_reachability_single_obstacle_bic5D_singular.yaml'
@@ -149,6 +176,12 @@ plot_obses_complete_filter_list.append( np.array(plot_softcbf_data_reachavoid_on
 plot_obses_barrier_filter_list.append( np.array(plot_softcbf_data_reachavoid_only_obstacle['barrier_indices'] ) )
 plot_values_list.append( np.array(plot_softcbf_data_reachavoid_only_obstacle['values'] ) )
 
+plot_actions_list.append( np.array(plot_softcbf_data_reachavoid_only_obstacle_reiterate['actions']) )
+plot_obses_list.append( np.array(plot_softcbf_data_reachavoid_only_obstacle_reiterate['obses'] ) )
+plot_obses_complete_filter_list.append( np.array(plot_softcbf_data_reachavoid_only_obstacle_reiterate['complete_indices'] ) )
+plot_obses_barrier_filter_list.append( np.array(plot_softcbf_data_reachavoid_only_obstacle_reiterate['barrier_indices'] ) )
+plot_values_list.append( np.array(plot_softcbf_data_reachavoid_only_obstacle_reiterate['values'] ) )
+
 plot_actions_list.append( np.array(plot_softcbf_data_reachability['actions']) )
 plot_obses_list.append( np.array(plot_softcbf_data_reachability['obses'] ) )
 plot_obses_complete_filter_list.append( np.array(plot_softcbf_data_reachability['complete_indices'] ) )
@@ -178,12 +211,12 @@ for idx, obs_data in enumerate(plot_obses_list):
     if len(complete_filter_indices)>0:
         ax.plot(obs_data[complete_filter_indices, 0], 
                 obs_data[complete_filter_indices, 1], 'o', 
-                color=colorlist[int(idx)], alpha=0.65, markersize=3.0)
+                color=colorlist[int(idx)], alpha=0.65, markersize=1.0)
 
     if len(barrier_filter_indices)>0:
         ax.plot(obs_data[barrier_filter_indices, 0], 
                 obs_data[barrier_filter_indices, 1], 'x', 
-                color=colorlist[int(idx)], alpha=0.65, markersize=3.0, 
+                color=colorlist[int(idx)], alpha=0.65, markersize=1.0, 
                 label=labellist[int(idx)] + ' filter')
 
 ax.legend(framealpha=0, fontsize=legend_fontsize, loc='upper left', 
@@ -219,7 +252,7 @@ for idx, controls_data in enumerate(plot_actions_list):
                     alpha = 1.0, linewidth=1.0, linestyle=stylelist[idx])
     axes[2].plot(x_times, plot_values_list[idx], label=labellist[int(idx)], c=colorlist[int(idx)], 
                     alpha = 1.0, linewidth=1.0, linestyle=stylelist[idx])
-    if idx==3:
+    if idx==4:
         axes[0].fill_between(x_times, action_space[0, 0], action_space[0, 1], 
                                 where=fillarray[0:nsteps], color=colorlist[int(idx)], alpha=0.15)
         axes[1].fill_between(x_times, action_space[1, 0], action_space[1, 1], 
