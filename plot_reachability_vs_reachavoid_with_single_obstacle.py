@@ -18,7 +18,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = " "
 jax.config.update('jax_platform_name', 'cpu')
 
 fig = plt.figure(layout='constrained', figsize=(7.0, 3.4))
-colorlist = [(0.0, 0, 1.0, 0.5), (0.2, 0.8, 0.4, 0.5), (1.0, 0.0, 0.0, 0.5), (0, 0, 0, 0.5), (0.45, 0.0, 1.0, 0.5)]
+colorlist = [(0.0, 0, 1.0, 0.5), (0.0, 0.5, 0.2, 0.5), (1.0, 0.0, 0.0, 0.5), (0, 0, 0, 0.5), (0.45, 0.0, 1.0, 0.5)]
 labellist = ['Reach-avoid (only obs)', 'Reach-avoid (reinitialize)', 'Reachability (only obs)', 'Reach-avoid (cons)', 'Reach-avoid (slow down)']
 stylelist = ['solid', 'solid', 'dashed', 'solid', 'dashed']
 legend_fontsize = 6.5
