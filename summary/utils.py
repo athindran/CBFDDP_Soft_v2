@@ -558,35 +558,35 @@ def make_bicycle_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", 
                     if lgd_c:
                         if not hide_label:
                             ax.plot(obs_data[complete_filter_indices, 0], 
-                                    obs_data[complete_filter_indices, 1], 'o', 
-                                    color=colorlist[int(idx)], alpha=0.65, markersize=3.0, 
+                                    obs_data[complete_filter_indices, 1], 'D', 
+                                    color=colorlist[int(idx)], alpha=0.65, markersize=1.5, 
                                     label='Complete filter')
                         else:
                             ax.plot(obs_data[complete_filter_indices, 0], 
-                            obs_data[complete_filter_indices, 1], 'o', 
-                            color=colorlist[int(idx)], alpha=0.65, markersize=3.0, label='                ')
+                            obs_data[complete_filter_indices, 1], 'D', 
+                            color=colorlist[int(idx)], alpha=0.65, markersize=1.5, label='                ')
                         #lgd_c = False
                     else:
                         ax.plot(obs_data[complete_filter_indices, 0], 
-                                obs_data[complete_filter_indices, 1], 'o', 
-                                color=colorlist[int(idx)], alpha=0.65, markersize=3.0)
+                                obs_data[complete_filter_indices, 1], 'D', 
+                                color=colorlist[int(idx)], alpha=0.65, markersize=1.5)
                 if len(barrier_filter_indices)>0:
                     if lgd_b:
                         if not hide_label:
                             ax.plot(obs_data[barrier_filter_indices, 0], 
                                     obs_data[barrier_filter_indices, 1], 'x', 
-                                    color=colorlist[int(idx)], alpha=0.65, markersize=1.2, 
+                                    color=colorlist[int(idx)], alpha=0.65, markersize=1.5, 
                                     label=labellist[int(idx)] + ' filter')
                         else:
                             ax.plot(obs_data[barrier_filter_indices, 0], 
                                     obs_data[barrier_filter_indices, 1], 'x', 
-                                    color=colorlist[int(idx)], alpha=0.65, markersize=1.2, label='            ')
+                                    color=colorlist[int(idx)], alpha=0.65, markersize=1.5, label='            ')
                         #lgd_b = False
                     else:
-                        ax.plot(obs_data[barrier_filter_indices, 0], obs_data[barrier_filter_indices, 1], 'x', color=colorlist[int(idx)], alpha=0.65, markersize=5.0)
+                        ax.plot(obs_data[barrier_filter_indices, 0], obs_data[barrier_filter_indices, 1], 'x', color=colorlist[int(idx)], alpha=0.65, markersize=1.5)
     
             ax.legend(framealpha=0, fontsize=legend_fontsize, loc='upper left', 
-                      ncol=2, bbox_to_anchor=(-0.05, 1.40), fancybox=False, shadow=False)
+                      ncol=2, bbox_to_anchor=(-0.05, 1.45), fancybox=False, shadow=False)
 
             
             if hide_label:
@@ -805,11 +805,14 @@ def make_bicycle_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", 
     ax_st = subfigs_col2[2]
 
     if 'reachability' in tag:
-        max_value = 0.08
+        max_value = 0.04
+        upper_limit = 0.1
     else:
-        max_value = 0.9
+        max_value = 0.05
+        upper_limit = 1.0
 
     for idx, process_times_data in enumerate(plot_times_list):
+        max_value = min(max(max_value, 1.2*process_times_data.max()), upper_limit)
         x_times = dt*np.arange(process_times_data.size)
         ax_st.plot(x_times, process_times_data, label=labellist[int(idx)], c=colorlist[int(idx)], 
                             alpha = 1.0, linewidth=1.5, linestyle='solid')
@@ -819,6 +822,7 @@ def make_bicycle_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", 
         ax_st.fill_between(x_times, 0.0, max_value, 
                                     where=fillarray, color=colorlist[int(idx)], alpha=0.15)
 
+    max_value = round(max_value, 2)
     ax_st.set_xticks(ticks=[0, round(dt*maxsteps, 2)], labels=[0, round(dt*maxsteps, 2)], fontsize=legend_fontsize)
     ax_st.set_yticks(ticks=[0, max_value], 
                         labels=[0, max_value], 
