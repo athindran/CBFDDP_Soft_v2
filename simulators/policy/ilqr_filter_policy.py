@@ -89,26 +89,26 @@ class iLQRSafetyFilter(BasePolicy):
                 # Search with multiple different initialization.
                 state_delta = np.array(state)
                 boot_controls = np.zeros((self.dim_u, self.N))
-                _, solver_info_delta_0 = self.solver_0.get_action(obs=state_delta, controls=boot_controls, state=state_delta)
+                control_delta_0, solver_info_delta_0 = self.solver_0.get_action(obs=state_delta, controls=boot_controls, state=state_delta)
 
                 if solver_info_delta_0['Vopt'] >= solver_info_0['Vopt']:
-                    solver_info_0 = solver_info_delta_0
+                    control_0, solver_info_0 = control_delta_0, solver_info_delta_0
                 
                 boot_controls = np.zeros((self.dim_u, self.N))
                 boot_controls[0, :] = self.dyn.ctrl_space[0, 0]
                 boot_controls[1, :] = self.dyn.ctrl_space[1, 0]
-                _, solver_info_delta_1 = self.solver_1.get_action(obs=state_delta, controls=boot_controls, state=state_delta)
+                control_delta_1, solver_info_delta_1 = self.solver_1.get_action(obs=state_delta, controls=boot_controls, state=state_delta)
 
                 if solver_info_delta_1['Vopt'] >= solver_info_0['Vopt']:
-                    solver_info_0 = solver_info_delta_1
+                    control_0, solver_info_0 = control_delta_1, solver_info_delta_1
 
                 boot_controls = np.zeros((self.dim_u, self.N))
                 boot_controls[0, :] = self.dyn.ctrl_space[0, 0]
                 boot_controls[1, :] = self.dyn.ctrl_space[1, 1]
-                _, solver_info_delta_2 = self.solver_1.get_action(obs=state_delta, controls=boot_controls, state=state_delta)
+                control_delta_2, solver_info_delta_2 = self.solver_1.get_action(obs=state_delta, controls=boot_controls, state=state_delta)
 
                 if solver_info_delta_2['Vopt'] >= solver_info_0['Vopt']:
-                    solver_info_0 = solver_info_delta_2
+                    control_0, solver_info_0 = control_delta_2, solver_info_delta_2
         else:
             # Potential source of acceleration. We don't need to resolve both ILQs as we can reuse
             # solution from previous time. - Unused currently.
