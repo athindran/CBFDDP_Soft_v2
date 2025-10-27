@@ -18,7 +18,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = " "
 jax.config.update('jax_platform_name', 'cpu')
 
 fig = plt.figure(layout='constrained', figsize=(7.0, 3.4))
-colorlist = [(0.0, 0, 1.0, 0.5), (0.0, 0.5, 0.2, 0.5), (1.0, 0.0, 0.0, 0.5), (0, 0, 0, 0.5), (0.45, 0.0, 1.0, 0.5)]
+colorlist = [(0.0, 0, 1.0, 0.5), (0.0, 0.6, 0.3, 0.5), (1.0, 0.0, 0.0, 0.5), (0, 0, 0, 0.5), (0.45, 0.0, 1.0, 0.5)]
 labellist = ['Reach-avoid (only obs)', 'Reach-avoid (reinitialize)', 'Reachability (only obs)', 'Reach-avoid (cons)', 'Reach-avoid (slow down)']
 stylelist = ['solid', 'solid', 'dashed', 'solid', 'dashed']
 legend_fontsize = 6.5
@@ -247,11 +247,11 @@ for idx, controls_data in enumerate(plot_actions_list):
     fillarray = np.zeros(maxsteps)
     fillarray[np.array(plot_obses_barrier_filter_list[idx], dtype=np.int64)] = 1
     axes[0].plot(x_times, controls_data[:, 0], label=labellist[int(idx)], c=colorlist[int(idx)], 
-                    alpha = 1.0, linewidth=1.0, linestyle=stylelist[idx])
+                    alpha = 0.5, linewidth=1.0, linestyle=stylelist[idx])
     axes[1].plot(x_times, controls_data[:, 1], label=labellist[int(idx)], c=colorlist[int(idx)], 
-                    alpha = 1.0, linewidth=1.0, linestyle=stylelist[idx])
+                    alpha = 0.5, linewidth=1.0, linestyle=stylelist[idx])
     axes[2].plot(x_times, plot_values_list[idx], label=labellist[int(idx)], c=colorlist[int(idx)], 
-                    alpha = 1.0, linewidth=1.0, linestyle=stylelist[idx])
+                    alpha = 0.5, linewidth=1.0, linestyle=stylelist[idx])
     if idx==4:
         axes[0].fill_between(x_times, action_space[0, 0], action_space[0, 1], 
                                 where=fillarray[0:nsteps], color=colorlist[int(idx)], alpha=0.15)
