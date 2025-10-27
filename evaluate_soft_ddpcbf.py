@@ -51,22 +51,22 @@ def main(config_file, road_boundary, filter_type, is_task_ilqr, line_search):
             np.asarray(kwargs['complete_filter_indices']),
             fig_prog_folder)
 
-        # if config_solver.FILTER_TYPE == "none":
-        #     print(
-        #         "[{}]: solver returns status {}, cost {:.1e}, and uses {:.3f}.".format(
-        #             states.shape[1] - 1,
-        #             solver_info['status'],
-        #             solver_info['Vopt'],
-        #             solver_info['t_process']),
-        #         end=' -> ')
-        # else:
-        #     print(
-        #         "[{}]: solver returns status {}, margin {:.1e}, future margin {:.1e}, and uses {:.3f}.".format(
-        #             states.shape[1] - 1,
-        #             solver_info['status'],
-        #             solver_info['marginopt'],
-        #             solver_info['marginopt_next'],
-        #             solver_info['process_time']))
+        if config_solver.FILTER_TYPE == "none":
+            print(
+                "[{}]: solver returns status {}, cost {:.1e}, and uses {:.3f}.".format(
+                    states.shape[1] - 1,
+                    solver_info['status'],
+                    solver_info['Vopt'],
+                    solver_info['t_process']),
+                end=' -> ')
+        else:
+            print(
+                "[{}]: solver returns status {}, value {:.1e}, future value {:.1e}, and uses {:.3f}.".format(
+                    states.shape[1] - 1,
+                    solver_info['status'],
+                    solver_info['Vopt'],
+                    solver_info['Vopt_next'],
+                    solver_info['process_time']))
     
     # Callback after episode for plotting and summarizing evaluation
     def rollout_episode_callback(
@@ -271,7 +271,7 @@ def main(config_file, road_boundary, filter_type, is_task_ilqr, line_search):
     # Warms up jit again
     env.agent.get_action(obs=x_cur, state=x_cur, warmup=True)
 
-    should_animate = False
+    should_animate = True
     nominal_states, result, traj_info = env.simulate_one_trajectory(
         T_rollout=max_iter_receding, end_criterion=end_criterion,
         reset_kwargs=dict(state=x_cur),
@@ -336,7 +336,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    filters=['CBF', 'SoftCBF']
+    filters=['SoftCBF']
     
     out_folder, plot_tag, config_agent = None, None, None
     for filter_type in filters:

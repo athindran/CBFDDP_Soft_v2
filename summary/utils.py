@@ -687,10 +687,33 @@ def make_bicycle_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", 
         #     bbox_inches='tight', transparent=hide_label
         # )
 
-    subfigs_col2 = subfigs[1].subfigures(2, 1)
-    ax_v = subfigs_col2[0].subplots(1, 1)
-    max_value = 2.5
-    for idx, values_data in enumerate(plot_values_list):
+    subfigs_col2 = subfigs[1].subplots(3, 1, sharex=True)
+
+    axes_x = subfigs_col2[0]
+    maxsteps = 0
+    for idx, obses_data in enumerate(plot_obses_list):
+        nsteps = obses_data.shape[0]
+        maxsteps = np.maximum(maxsteps, nsteps)
+        x_times = dt*np.arange(nsteps)
+        fillarray = np.zeros(maxsteps)
+        fillarray[np.array(plot_obses_barrier_filter_list[idx], dtype=np.int64)] = 1
+        axes_x.plot(x_times, obses_data[:, 0], label=labellist[int(idx)], c=colorlist[int(idx)], 
+                        alpha = 1.0, linewidth=1.0, linestyle=styles[idx])
+        axes_x.fill_between(x_times, 0, env.visual_extent[1], 
+                                where=fillarray[0:nsteps], color=colorlist[int(idx)], alpha=0.15)
+    axes_x.set_xticks(ticks=[0, round(dt*maxsteps, 2)], labels=[0, round(dt*maxsteps, 2)], fontsize=legend_fontsize)
+    axes_x.set_yticks(ticks=[0, env.visual_extent[1]], 
+                               labels=[0, env.visual_extent[1]], 
+                               fontsize=legend_fontsize)
+    axes_x.set_ylim([0, env.visual_extent[1]])
+    axes_x.yaxis.set_label_coords(-0.04, 0.5)
+    axes_x.xaxis.set_label_coords(0.5, -0.04)
+    axes_x.set_xlabel('Time (s)', fontsize=legend_fontsize)
+    axes_x.set_ylabel('X position $(m)$', fontsize=legend_fontsize)
+
+    ax_v = subfigs_col2[1]
+    max_value = 1.0
+    for idx, safety_metrics_data in enumerate(plot_values_list):
         if showcontrollist[idx]:
             max_value = max(max_value, 1.2*safety_metrics_data.max())
             x_times = dt*np.arange(safety_metrics_data.size)
