@@ -61,11 +61,11 @@ def main(config_file, road_boundary, filter_type, is_task_ilqr, line_search):
         #         end=' -> ')
         # else:
         #     print(
-        #         "[{}]: solver returns status {}, margin {:.1e}, future margin {:.1e}, and uses {:.3f}.".format(
+        #         "[{}]: solver returns status {}, Vopt {:.1e}, future Vopt {:.1e}, and uses {:.3f}.".format(
         #             states.shape[1] - 1,
         #             solver_info['status'],
-        #             solver_info['marginopt'],
-        #             solver_info['marginopt_next'],
+        #             solver_info['Vopt'],
+        #             solver_info['Vopt_next'],
         #             solver_info['process_time']))
     
     # Callback after episode for plotting and summarizing evaluation
