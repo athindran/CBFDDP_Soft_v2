@@ -23,9 +23,10 @@ class PointMass4D(BaseDynamics):
         self.dim_x = 4  # [x, y, vx, vy].
 
         # load parameters
-        self.v_min = 0
+        self.v_min = 0.0
         self.v_max = config.V_MAX
         self.noise_var = jnp.array([0.001, 0.001, 0.001, 0.001])
+        self.stopping_ctrl = jnp.array([self.ctrl_space[0, 0], 0.0])
 
     @partial(jax.jit, static_argnames='self')
     def apply_rear_offset_correction(self, state: DeviceArray):
@@ -35,6 +36,19 @@ class PointMass4D(BaseDynamics):
     def get_batched_rear_offset_correction(self, nominal_states):
         jac = jax.jit(jax.vmap(self.apply_rear_offset_correction, in_axes=(1), out_axes=(1)))
         return jac(nominal_states)
+
+    @partial(jax.jit, static_argnames='self')
+    def check_stopped(
+        self, state: DeviceArray
+    ):
+        vx_not_stopped = (state[2] > self.v_min)
+        return vx_not_stopped
+
+    @partial(jax.jit, static_argnames='self')
+    def get_stopping_ctrl(
+        self, state: DeviceArray
+    ):
+        return self.stopping_ctrl
 
     @partial(jax.jit, static_argnames='self')
     def integrate_forward_jax(

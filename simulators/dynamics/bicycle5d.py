@@ -31,6 +31,7 @@ class Bicycle5D(BaseDynamics):
         self.v_max = config.V_MAX
         self.rear_wheel_offset = 0.4 * self.wheelbase
         self.noise_var = jnp.array([0.001, 0.001, 0.001, 0.001, 0.001])
+        self.stopping_ctrl = jnp.array([self.ctrl_space[0, 0], 0.])
 
     @partial(jax.jit, static_argnames='self')
     def apply_rear_offset_correction(self, state: DeviceArray):
@@ -71,6 +72,19 @@ class Bicycle5D(BaseDynamics):
     def get_batched_reverse_rear_offset_correction(self, nominal_states):
         jac = jax.jit(jax.vmap(self.revert_rear_offset_correction, in_axes=(1), out_axes=(1)))
         return jac(nominal_states)
+
+    @partial(jax.jit, static_argnames='self')
+    def check_stopped(
+        self, state: DeviceArray
+    ):
+        return (state[2]>self.v_min)
+
+    @partial(jax.jit, static_argnames='self')
+    def get_stopping_ctrl(
+        self, state: DeviceArray
+    ):
+        stopping_ctrl = jnp.array(self.stopping_ctrl)
+        return stopping_ctrl
 
     @partial(jax.jit, static_argnames='self')
     def integrate_forward_jax(
