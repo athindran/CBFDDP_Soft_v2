@@ -91,23 +91,23 @@ class Bicycle4D(BaseDynamics):
         stopping_ctrl = stopping_ctrl.at[0].set(self.ctrl_space[0, 0])
 
         # Calculate maximum of each.
-        max_num_steps_to_stop = 200
+        max_num_steps_to_stop = 250
         stopping_states = jnp.zeros((self.dim_x, max_num_steps_to_stop))
         dt_steps_to_stop = jnp.arange(0, max_num_steps_to_stop)*self.dt
 
-        vx_to_stop = jnp.maximum(state[2] + stopping_ctrl[0]*dt_steps_to_stop, 0.0)
-        vx_not_stopped = (vx_to_stop!=0)
+        vel_to_stop = jnp.maximum(state[2] + stopping_ctrl[0]*dt_steps_to_stop, 0.0)
+        vel_not_stopped = (vel_to_stop!=0)
         time_to_stop = jnp.abs(state[2]/stopping_ctrl[0])
-        dx_to_stop = state[2]*dt_steps_to_stop + 0.5*stopping_ctrl[0]*dt_steps_to_stop**2
+        disp_to_stop = state[2]*dt_steps_to_stop + 0.5*stopping_ctrl[0]*dt_steps_to_stop**2
         stopping_distance = state[2]*time_to_stop + 0.5*stopping_ctrl[0]*time_to_stop**2
-        dx_to_stop = vx_not_stopped*dx_to_stop + (1 - vx_not_stopped)*stopping_distance
+        disp_to_stop = vel_not_stopped*disp_to_stop + (1 - vel_not_stopped)*stopping_distance
 
-        thetax_to_stop = state[3]*jnp.ones((max_num_steps_to_stop,))
+        theta_to_stop = state[3]*jnp.ones((max_num_steps_to_stop,))
 
-        stopping_states = stopping_states.at[0, :].set(state[0] + dx_to_stop*jnp.cos(thetax_to_stop))
-        stopping_states = stopping_states.at[1, :].set(state[1] + dx_to_stop*jnp.sin(thetax_to_stop))
-        stopping_states = stopping_states.at[2, :].set(vx_to_stop)
-        stopping_states = stopping_states.at[3, :].set(thetax_to_stop)
+        stopping_states = stopping_states.at[0, :].set(state[0] + disp_to_stop*jnp.cos(theta_to_stop))
+        stopping_states = stopping_states.at[1, :].set(state[1] + disp_to_stop*jnp.sin(theta_to_stop))
+        stopping_states = stopping_states.at[2, :].set(vel_to_stop)
+        stopping_states = stopping_states.at[3, :].set(theta_to_stop)
 
         stopping_ctrls = jnp.repeat(stopping_ctrl[:, jnp.newaxis], max_num_steps_to_stop, axis=1)
 
