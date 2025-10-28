@@ -57,6 +57,8 @@ while current_state[2]>0:
 
 rollout_stopping_states = jp.array(rollout_stopping_states).T
 
+assert jp.max(jp.linalg.norm(rollout_stopping_states - stopping_states[:, 0:rollout_stopping_states.shape[1]], axis=0), axis=0)<1e-4
+
 fig = plt.figure()
 sc = plt.scatter(
     rollout_stopping_states[0, :-1], rollout_stopping_states[1, :-1], s=10, c=rollout_stopping_states[2, :-1], cmap=cm.jet,
@@ -98,6 +100,8 @@ while env.agent.dyn.check_stopped(current_state):
     current_state, _ = env.agent.dyn.integrate_forward_jax(current_state, stopping_ctrl)
 
 rollout_stopping_states = jp.array(rollout_stopping_states).T
+
+assert jp.max(jp.linalg.norm(rollout_stopping_states - stopping_states[:, 0:rollout_stopping_states.shape[1]], axis=0), axis=0)<1e-4
 
 fig = plt.figure()
 sc = plt.scatter(
