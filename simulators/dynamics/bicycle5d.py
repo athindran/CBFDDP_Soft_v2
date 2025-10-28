@@ -115,7 +115,7 @@ class Bicycle5D(BaseDynamics):
         disp_to_stop = vel_not_stopped*disp_no_stop + (1 - vel_not_stopped)*stopping_distance
 
         delta_to_stop = state[4]*jnp.ones((max_num_steps_to_stop,))
-        curvature_inv = jnp.tan(state[4]/self.wheelbase)
+        curvature_inv = jnp.tan(state[4])/self.wheelbase
         theta_to_stop = state[3] + disp_to_stop*curvature_inv
 
         stopping_states = stopping_states.at[2, :].set(vel_to_stop)
@@ -169,6 +169,16 @@ class Bicycle5D(BaseDynamics):
         state_nxt = self._integrate_forward(state, ctrl_clip, add_disturbance=True, key=jax.random.PRNGKey(seed))
 
         return state_nxt, ctrl_clip
+
+    def disc_deriv_numpy(self, t, state: np.ndarray, control: np.ndarray):
+        deriv = np.zeros((self.dim_x,))
+        deriv[0] = (state[2] * jnp.cos(state[3]))
+        deriv[1] = (state[2] * jnp.sin(state[3]))
+        deriv[2] = (control[0])
+        deriv[3] = (state[2] * jnp.tan(state[4]) / self.wheelbase)
+        deriv[4] = (control[1])
+
+        return deriv
 
     @partial(jax.jit, static_argnames='self')
     def disc_deriv(

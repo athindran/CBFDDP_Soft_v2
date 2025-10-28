@@ -39,10 +39,12 @@ class PointMass4D(BaseDynamics):
 
     @partial(jax.jit, static_argnames='self')
     def check_stopped(
-        self, state: DeviceArray
+        self, state: DeviceArray, stopping_ctrl: DeviceArray
     ):
-        vx_not_stopped = (state[2] > self.v_min)
-        return vx_not_stopped
+        vx_has_crossed_zero = (state[2]*stopping_ctrl[0])>0
+        vy_has_crossed_zero = (state[3]*stopping_ctrl[1])>0
+
+        return ~(vx_has_crossed_zero & vy_has_crossed_zero)
 
     @partial(jax.jit, static_argnames='self')
     def compute_stopping_path(self, state):
@@ -57,7 +59,8 @@ class PointMass4D(BaseDynamics):
         stopping_states = jnp.zeros((self.dim_x, max_num_steps_to_stop,))
         dt_steps_to_stop = jnp.arange(0, max_num_steps_to_stop)*self.dt
 
-        vx_to_stop = jnp.maximum(state[2] + stopping_ctrl[0]*dt_steps_to_stop, 0.0)
+        vx_to_stop = jnp.maximum((state[2] + stopping_ctrl[0]*dt_steps_to_stop)*jnp.sign(state[2]), 0.0)
+        vx_to_stop = vx_to_stop*jnp.sign(state[2])
         vx_not_stopped = (vx_to_stop != 0.0)
         dx_to_stop = state[0] + state[2]*dt_steps_to_stop + 0.5*stopping_ctrl[0]*dt_steps_to_stop**2
         vx_to_stop = vx_to_stop*vx_not_stopped
@@ -85,9 +88,20 @@ class PointMass4D(BaseDynamics):
 
     @partial(jax.jit, static_argnames='self')
     def get_stopping_ctrl(
-        self, state: DeviceArray
-    ):
-        return self.stopping_ctrl
+        self, state: DeviceArray, stopping_ctrl: DeviceArray
+    ):  
+        # Check whether previous stopping policy has caused the velocity to change sign
+        vx_has_crossed_zero = (state[2]*stopping_ctrl[0])>0
+        vy_has_crossed_zero = (state[3]*stopping_ctrl[1])>0
+        # Derive new stopping policy
+        stopping_ctrl = jnp.zeros((2,))
+        stopping_ctrl = stopping_ctrl.at[0].set(-jnp.sign(state[2])*self.ctrl_space[0, 1])
+        stopping_ctrl = stopping_ctrl.at[1].set(-jnp.sign(state[3])*self.ctrl_space[1, 1])
+        # Zero out the corresponding acceleration if velocity has already crossed zero.
+        stopping_ctrl = stopping_ctrl.at[0].set(stopping_ctrl[0]*(1 - vx_has_crossed_zero))
+        stopping_ctrl = stopping_ctrl.at[1].set(stopping_ctrl[1]*(1 - vy_has_crossed_zero))
+
+        return stopping_ctrl
 
     @partial(jax.jit, static_argnames='self')
     def integrate_forward_jax(
