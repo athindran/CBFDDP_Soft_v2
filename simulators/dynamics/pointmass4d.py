@@ -45,6 +45,45 @@ class PointMass4D(BaseDynamics):
         return vx_not_stopped
 
     @partial(jax.jit, static_argnames='self')
+    def compute_stopping_path(self, state):
+        # Choose stopping control based on initial sign of vx and vy.
+        # If vx>0, ax<0 and vice versa. 
+        stopping_ctrl = jnp.zeros((2,))
+        stopping_ctrl = stopping_ctrl.at[0].set(-jnp.sign(state[2])*self.ctrl_space[0, 1])
+        stopping_ctrl = stopping_ctrl.at[1].set(-jnp.sign(state[3])*self.ctrl_space[1, 1])
+
+        # Calculate maximum of each.
+        max_num_steps_to_stop = 200
+        stopping_states = jnp.zeros((self.dim_x, max_num_steps_to_stop,))
+        dt_steps_to_stop = jnp.arange(0, max_num_steps_to_stop)*self.dt
+
+        vx_to_stop = jnp.maximum(state[2] + stopping_ctrl[0]*dt_steps_to_stop, 0.0)
+        vx_stopped = (vx_to_stop != 0.0)
+        dx_to_stop = state[0] + (state[2]*dt_steps_to_stop + 0.5*stopping_ctrl[0]*dt_steps_to_stop**2)*vx_stopped
+        vx_to_stop = vx_to_stop*vx_stopped
+        tx_stop = jnp.abs(state[2]/stopping_ctrl[0])
+        dx_stopping_distance = state[0] + state[2]*tx_stop + 0.5*stopping_ctrl[0]*tx_stop**2
+        dx_to_stop = vx_stopped*dx_to_stop + (1 - vx_stopped)*dx_stopping_distance
+
+        vy_to_stop = jnp.maximum((state[3] + stopping_ctrl[1]*dt_steps_to_stop)*jnp.sign(state[3]), 0.0)
+        vy_to_stop = vy_to_stop*jnp.sign(state[3])
+        vy_stopped = (vy_to_stop != 0.0)
+        dy_to_stop = state[1] + (state[3]*dt_steps_to_stop + 0.5*stopping_ctrl[1]*dt_steps_to_stop**2)*vy_stopped
+        vy_to_stop = vy_to_stop*vx_stopped
+        ty_stop = jnp.abs(state[3]/stopping_ctrl[1])
+        dy_stopping_distance = state[1] + state[3]*ty_stop + 0.5*stopping_ctrl[1]*ty_stop**2
+        dy_to_stop = vy_stopped*dy_to_stop + (1 - vy_stopped)*dy_stopping_distance
+
+        stopping_states = stopping_states.at[0, :].set(dx_to_stop)
+        stopping_states = stopping_states.at[2, :].set(vx_to_stop)
+        stopping_states = stopping_states.at[1, :].set(dy_to_stop)
+        stopping_states = stopping_states.at[3, :].set(vy_to_stop)
+
+        stopping_ctrls = jnp.repeat(stopping_ctrl[:, jnp.newaxis], max_num_steps_to_stop, axis=1)
+
+        return stopping_states, stopping_ctrls
+
+    @partial(jax.jit, static_argnames='self')
     def get_stopping_ctrl(
         self, state: DeviceArray
     ):

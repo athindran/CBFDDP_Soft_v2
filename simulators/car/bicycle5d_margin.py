@@ -121,8 +121,8 @@ class Bicycle5DCost(BaseMargin):
         # soft constraint cost
         # cost += self.vel_max_barrier_cost.get_stage_margin(state, ctrl)
         # cost += self.vel_min_barrier_cost.get_stage_margin(state, ctrl)
-        cost += self.yaw_max_barrier_cost.get_stage_margin(state, ctrl)
-        cost += self.yaw_min_barrier_cost.get_stage_margin(state, ctrl)
+        # cost += self.yaw_max_barrier_cost.get_stage_margin(state, ctrl)
+        # cost += self.yaw_min_barrier_cost.get_stage_margin(state, ctrl)
 
         return cost
 
@@ -370,29 +370,29 @@ class Bicycle5DConstraintMargin(BaseMargin):
 
         return cost
 
-    # @partial(jax.jit, static_argnames='self')
-    # def get_target_stage_margin(
-    #     self, state: DeviceArray, ctrl: DeviceArray
-    # ) -> DeviceArray:
-    #     """
-    #     Args:
-    #         state (DeviceArray, vector shape)
-    #         ctrl (DeviceArray, vector shape)
-
-    #     Returns:
-    #         DeviceArray: scalar.
-    #     """
-    #     stopping_ctrl = jnp.array([self.plan_dyn.ctrl_space[0, 0], 0.])
-    #     stopping_states, stopping_ctrls = self.compute_stopping_path(state, stopping_ctrl)
-    #     failure_margins = self.get_mapped_margin(
-    #         states, controls
-    #     )
-    #     target_margin = jnp.min(failure_margins, axis=0)
-
-    #     return target_margin
-
     @partial(jax.jit, static_argnames='self')
     def get_target_stage_margin(
+        self, state: DeviceArray, ctrl: DeviceArray
+    ) -> DeviceArray:
+        """
+        Args:
+            state (DeviceArray, vector shape)
+            ctrl (DeviceArray, vector shape)
+
+        Returns:
+            DeviceArray: scalar.
+        """
+        #jax.debug.print("state: {}", state)
+        stopping_states, stopping_ctrls = self.plan_dyn.compute_stopping_path(state)
+        #jax.debug.print("stopping states: {}, {}", stopping_states, stopping_ctrls)
+        failure_margins = self.get_mapped_margin(
+            stopping_states, stopping_ctrls
+        )
+        target_margin = jnp.min(failure_margins)
+        return target_margin
+
+    @partial(jax.jit, static_argnames='self')
+    def get_target_stage_margin_old(
         self, state: DeviceArray, ctrl: DeviceArray
     ) -> DeviceArray:
         """
@@ -719,29 +719,28 @@ class Bicycle5DSoftConstraintMargin(Bicycle5DConstraintMargin):
 
         return cost
 
-    # @partial(jax.jit, static_argnames='self')
-    # def get_target_stage_margin(
-    #     self, state: DeviceArray, ctrl: DeviceArray
-    # ) -> DeviceArray:
-    #     """
-    #     Args:
-    #         state (DeviceArray, vector shape)
-    #         ctrl (DeviceArray, vector shape)
-
-    #     Returns:
-    #         DeviceArray: scalar.
-    #     """
-    #     stopping_ctrl = jnp.array([self.plan_dyn.ctrl_space[0, 0], 0.])
-    #     stopping_states, stopping_ctrls = self.plan_dyn.compute_stopping_path(state, stopping_ctrl)
-    #     failure_margins = self.get_mapped_margin(
-    #         states, controls
-    #     )
-    #     target_margin = jnp.min(failure_margins, axis=0)
-
-    #     return target_margin
-
     @partial(jax.jit, static_argnames='self')
     def get_target_stage_margin(
+        self, state: DeviceArray, ctrl: DeviceArray
+    ) -> DeviceArray:
+        """
+        Args:
+            state (DeviceArray, vector shape)
+            ctrl (DeviceArray, vector shape)
+
+        Returns:
+            DeviceArray: scalar.
+        """
+        stopping_states, stopping_ctrls = self.plan_dyn.compute_stopping_path(state)
+        failure_margins = self.get_mapped_margin(
+            stopping_states, stopping_ctrls
+        )
+        target_margin = jnp.min(failure_margins)
+
+        return target_margin
+
+    @partial(jax.jit, static_argnames='self')
+    def get_target_stage_margin_old(
         self, state: DeviceArray, ctrl: DeviceArray
     ) -> DeviceArray:
         """
