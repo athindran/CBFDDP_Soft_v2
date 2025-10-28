@@ -121,8 +121,10 @@ class Bicycle5DCost(BaseMargin):
         # soft constraint cost
         # cost += self.vel_max_barrier_cost.get_stage_margin(state, ctrl)
         # cost += self.vel_min_barrier_cost.get_stage_margin(state, ctrl)
-        # cost += self.yaw_max_barrier_cost.get_stage_margin(state, ctrl)
-        # cost += self.yaw_min_barrier_cost.get_stage_margin(state, ctrl)
+        # May be turned off for point mass depending on common sense. For point mass, this is
+        # a constraint on y velocity.
+        cost += self.yaw_max_barrier_cost.get_stage_margin(state, ctrl)
+        cost += self.yaw_min_barrier_cost.get_stage_margin(state, ctrl)
 
         return cost
 
