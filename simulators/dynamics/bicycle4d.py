@@ -96,7 +96,7 @@ class Bicycle4D(BaseDynamics):
         dt_steps_to_stop = jnp.arange(0, max_num_steps_to_stop)*self.dt
 
         vel_to_stop = jnp.maximum(state[2] + stopping_ctrl[0]*dt_steps_to_stop, 0.0)
-        vel_not_stopped = (vel_to_stop!=0)
+        vel_not_stopped = (vel_to_stop>0)
         time_to_stop = jnp.abs(state[2]/stopping_ctrl[0])
         disp_to_stop = state[2]*dt_steps_to_stop + 0.5*stopping_ctrl[0]*dt_steps_to_stop**2
         stopping_distance = state[2]*time_to_stop + 0.5*stopping_ctrl[0]*time_to_stop**2
