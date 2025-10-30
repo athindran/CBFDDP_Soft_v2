@@ -88,6 +88,20 @@ class Bicycle5D(BaseDynamics):
 
     @partial(jax.jit, static_argnames='self')
     def compute_stopping_path(self, state):
+        @jax.jit
+        def true_func(args):
+            state, disp_to_stop, theta_to_stop, curvature_inv, stopping_states = args
+            stopping_states = stopping_states.at[0, :].set(state[0] + ((jnp.sin(disp_to_stop*curvature_inv + state[3]) - jnp.sin(state[3]))/curvature_inv))
+            stopping_states = stopping_states.at[1, :].set(state[1] - ((jnp.cos(disp_to_stop*curvature_inv + state[3]) - jnp.cos(state[3]))/curvature_inv))
+            return stopping_states
+
+        @jax.jit
+        def false_func(args):
+            state, disp_to_stop, theta_to_stop, curvature_inv, stopping_states = args
+            stopping_states = stopping_states.at[0, :].set(state[0] + disp_to_stop*jnp.cos(theta_to_stop))
+            stopping_states = stopping_states.at[1, :].set(state[1] + disp_to_stop*jnp.sin(theta_to_stop))
+            return stopping_states
+
         # Choose stopping control as braking control with zero steering.
         stopping_ctrl = jnp.zeros((2,))
         stopping_ctrl = stopping_ctrl.at[0].set(self.ctrl_space[0, 0])
@@ -106,17 +120,13 @@ class Bicycle5D(BaseDynamics):
 
         delta_to_stop = state[4]*jnp.ones((max_num_steps_to_stop,))
         curvature_inv = jnp.tan(state[4])/self.wheelbase
-        # Clip to non-zero
-        is_curvature_inv_near_zero = (jnp.abs(curvature_inv) <= 1e-6)
-        curvature_inv = (1 - is_curvature_inv_near_zero) * curvature_inv + is_curvature_inv_near_zero * 1e-6 * jnp.sign(curvature_inv)
+        epsilon = 1e-4
         theta_to_stop = state[3] + disp_to_stop*curvature_inv
 
         stopping_states = stopping_states.at[2, :].set(vel_to_stop)
         stopping_states = stopping_states.at[3, :].set(theta_to_stop)
         stopping_states = stopping_states.at[4, :].set(delta_to_stop)
-        #stopping_states = jax.lax.cond(jnp.abs(curvature_inv)>1e-3, true_func, false_func, (state, disp_to_stop, theta_to_stop, curvature_inv, stopping_states))
-        stopping_states = stopping_states.at[0, :].set(state[0] + ((jnp.sin(disp_to_stop*curvature_inv + state[3]) - jnp.sin(state[3]))/curvature_inv))
-        stopping_states = stopping_states.at[1, :].set(state[1] - ((jnp.cos(disp_to_stop*curvature_inv + state[3]) - jnp.cos(state[3]))/curvature_inv))
+        stopping_states = jax.lax.cond(jnp.abs(curvature_inv)>epsilon, true_func, false_func, (state, disp_to_stop, theta_to_stop, curvature_inv, stopping_states))
 
         stopping_ctrls = jnp.repeat(stopping_ctrl[:, jnp.newaxis], max_num_steps_to_stop, axis=1)
 

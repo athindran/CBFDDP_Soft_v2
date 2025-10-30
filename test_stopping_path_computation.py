@@ -42,7 +42,7 @@ config_agent.FILTER_TYPE = 'SoftCBF'
 
 env = CarSingle5DEnv(config_env, config_agent, config_cost)
 
-initial_state = jp.array([0.1, 0.2, 2.5, -0.96, 0.95])
+initial_state = jp.array([0.1, 0.2, 2.5, -0.96, 1e-7])
 stopping_states, stopping_ctrls = env.agent.dyn.compute_stopping_path(initial_state)
 
 rollout_stopping_states = []
@@ -57,7 +57,8 @@ while current_state[2]>0:
 
 rollout_stopping_states = jp.array(rollout_stopping_states).T
 
-assert jp.max(jp.linalg.norm(rollout_stopping_states - stopping_states[:, 0:rollout_stopping_states.shape[1]], axis=0), axis=0)<1e-4
+discrepancy_in_states = jp.max(jp.linalg.norm(rollout_stopping_states - stopping_states[:, 0:rollout_stopping_states.shape[1]], axis=0), axis=0)
+assert discrepancy_in_states<1e-4, f"discrepancy: {discrepancy_in_states}"
 
 fig = plt.figure()
 sc = plt.scatter(
