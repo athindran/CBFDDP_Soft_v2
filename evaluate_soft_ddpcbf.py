@@ -271,7 +271,7 @@ def main(config_file, road_boundary, filter_type, is_task_ilqr, line_search):
     # Warms up jit again
     env.agent.get_action(obs=x_cur, state=x_cur, warmup=True)
 
-    should_animate = True
+    should_animate = False
     nominal_states, result, traj_info = env.simulate_one_trajectory(
         T_rollout=max_iter_receding, end_criterion=end_criterion,
         reset_kwargs=dict(state=x_cur),

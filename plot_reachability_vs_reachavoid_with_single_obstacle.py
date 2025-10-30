@@ -169,36 +169,42 @@ plot_obses_list = []
 plot_obses_complete_filter_list = []
 plot_obses_barrier_filter_list = []
 plot_values_list = []
+plot_safeopts_list = []
 
 plot_actions_list.append( np.array(plot_softcbf_data_reachavoid_only_obstacle['actions']) )
 plot_obses_list.append( np.array(plot_softcbf_data_reachavoid_only_obstacle['obses'] ) )
 plot_obses_complete_filter_list.append( np.array(plot_softcbf_data_reachavoid_only_obstacle['complete_indices'] ) )
 plot_obses_barrier_filter_list.append( np.array(plot_softcbf_data_reachavoid_only_obstacle['barrier_indices'] ) )
 plot_values_list.append( np.array(plot_softcbf_data_reachavoid_only_obstacle['values'] ) )
+plot_safeopts_list.append( np.array(plot_softcbf_data_reachavoid_only_obstacle['safe_opt_history']) )
 
 plot_actions_list.append( np.array(plot_softcbf_data_reachavoid_only_obstacle_reiterate['actions']) )
 plot_obses_list.append( np.array(plot_softcbf_data_reachavoid_only_obstacle_reiterate['obses'] ) )
 plot_obses_complete_filter_list.append( np.array(plot_softcbf_data_reachavoid_only_obstacle_reiterate['complete_indices'] ) )
 plot_obses_barrier_filter_list.append( np.array(plot_softcbf_data_reachavoid_only_obstacle_reiterate['barrier_indices'] ) )
 plot_values_list.append( np.array(plot_softcbf_data_reachavoid_only_obstacle_reiterate['values'] ) )
+plot_safeopts_list.append( np.array(plot_softcbf_data_reachavoid_only_obstacle_reiterate['safe_opt_history']) )
 
 plot_actions_list.append( np.array(plot_softcbf_data_reachability['actions']) )
 plot_obses_list.append( np.array(plot_softcbf_data_reachability['obses'] ) )
 plot_obses_complete_filter_list.append( np.array(plot_softcbf_data_reachability['complete_indices'] ) )
 plot_obses_barrier_filter_list.append( np.array(plot_softcbf_data_reachability['barrier_indices'] ) )
 plot_values_list.append( np.array(plot_softcbf_data_reachability['values'] ) )
+plot_safeopts_list.append( np.array(plot_softcbf_data_reachability['safe_opt_history']) )
 
 plot_actions_list.append( np.array(plot_softcbf_data_reachavoid_constraints['actions']) )
 plot_obses_list.append( np.array(plot_softcbf_data_reachavoid_constraints['obses'] ) )
 plot_obses_complete_filter_list.append( np.array(plot_softcbf_data_reachavoid_constraints['complete_indices'] ) )
 plot_obses_barrier_filter_list.append( np.array(plot_softcbf_data_reachavoid_constraints['barrier_indices'] ) )
 plot_values_list.append( np.array(plot_softcbf_data_reachavoid_constraints['values'] ) )
+plot_safeopts_list.append( np.array(plot_softcbf_data_reachavoid_constraints['safe_opt_history']) )
 
 plot_actions_list.append( np.array(plot_softcbf_data_reachavoid_reducedvelocity['actions']) )
 plot_obses_list.append( np.array(plot_softcbf_data_reachavoid_reducedvelocity['obses'] ) )
 plot_obses_complete_filter_list.append( np.array(plot_softcbf_data_reachavoid_reducedvelocity['complete_indices'] ) )
 plot_obses_barrier_filter_list.append( np.array(plot_softcbf_data_reachavoid_reducedvelocity['barrier_indices'] ) )
 plot_values_list.append( np.array(plot_softcbf_data_reachavoid_reducedvelocity['values'] ) )
+plot_safeopts_list.append( np.array(plot_softcbf_data_reachavoid_reducedvelocity['safe_opt_history']) )
 
 for idx, obs_data in enumerate(plot_obses_list):
     sc = ax.plot(
@@ -252,6 +258,10 @@ for idx, controls_data in enumerate(plot_actions_list):
                     alpha = 0.5, linewidth=1.0, linestyle=stylelist[idx])
     axes[2].plot(x_times, plot_values_list[idx], label=labellist[int(idx)], c=colorlist[int(idx)], 
                     alpha = 0.5, linewidth=1.0, linestyle=stylelist[idx])
+    # if idx==1:
+    #     axes[0].plot(x_times, plot_safeopts_list[idx][:, 0], 'k-')
+    #     axes[1].plot(x_times, plot_safeopts_list[idx][:, 1], 'k-')
+
     if idx==4:
         axes[0].fill_between(x_times, action_space[0, 0], action_space[0, 1], 
                                 where=fillarray[0:nsteps], color=colorlist[int(idx)], alpha=0.15)
