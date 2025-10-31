@@ -17,8 +17,8 @@ environment:
     - [9.1, -2.0, 0.3]
     - [9.1, -1.5, 0.3]
     - [9.5, -2.3, 0.3]
-    - [14.5, 1.2, 0.3]
-    - [14.5, -1.2, 0.3]
+    - [14.5, 1.5, 0.3]
+    - [14.5, -1.5, 0.3]
   RESET_SPACE:
     - [0., 8.0]
     - [-0.4, 0.4]
@@ -32,14 +32,14 @@ cost:
   WT_OMEGA: 0.01
   W_TRACK: 0.01
   W_VEL: 0.01
-  YAWT_MIN: -1.1
-  YAWT_MAX: 1.1
+  YAWT_MIN: -1.8
+  YAWT_MAX: 1.8
   V_REF: 2.0
   VT_MIN: 0.0
   VT_MAX: 10.0
   Q1_V: 0.1
   Q2_V: 0.3
-  Q1_YAW: 0.1
+  Q1_YAW: 0.001
   Q2_YAW: 0.3
   BARRIER_CLIP_MIN: -0.25
   BARRIER_CLIP_MAX: 5.0
