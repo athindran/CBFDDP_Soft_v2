@@ -106,7 +106,7 @@ class Bicycle5D(BaseDynamics):
         stopping_ctrl = jnp.zeros((2,))
         stopping_ctrl = stopping_ctrl.at[0].set(self.ctrl_space[0, 0])
 
-        # Calculate maximum of each.
+        # CAUTION: Assume a upper limit on maximum number of steps to stop to JIT this function.
         max_num_steps_to_stop = 280
         stopping_states = jnp.zeros((self.dim_x, max_num_steps_to_stop))
         dt_steps_to_stop = jnp.arange(0, max_num_steps_to_stop)*self.dt

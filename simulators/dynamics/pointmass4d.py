@@ -54,7 +54,7 @@ class PointMass4D(BaseDynamics):
         stopping_ctrl = stopping_ctrl.at[0].set(-jnp.sign(state[2])*self.ctrl_space[0, 1])
         stopping_ctrl = stopping_ctrl.at[1].set(-jnp.sign(state[3])*self.ctrl_space[1, 1])
 
-        # Calculate maximum of each.
+        # CAUTION: Assume a upper limit on maximum number of steps to stop to JIT this function.
         max_num_steps_to_stop = 200
         stopping_states = jnp.zeros((self.dim_x, max_num_steps_to_stop,))
         dt_steps_to_stop = jnp.arange(0, max_num_steps_to_stop)*self.dt
