@@ -170,7 +170,6 @@ class Bicycle5DConstraintMargin(BaseMargin):
         self.yaw_max = getattr(config, 'YAW_MAX', 1.8)
         self.delta_min = getattr(config, 'DELTA_MIN', -1.6)
         self.delta_max = getattr(config, 'DELTA_MAX', 1.6)
-        self.stopping_computation = getattr(config, 'STOPPING_COMPUTATION_TYPE', 'rollout')
 
         self.obs_spec = config.OBS_SPEC
         self.obsc_type = config.OBSC_TYPE
@@ -374,50 +373,8 @@ class Bicycle5DConstraintMargin(BaseMargin):
 
         return cost
 
-
     @partial(jax.jit, static_argnames='self')
     def get_target_stage_margin(
-        self, state: DeviceArray, ctrl: DeviceArray
-    ) -> DeviceArray:
-        """
-        This is a target margin that uses stopping path computation.
-        Args:
-            state (DeviceArray, vector shape)
-            ctrl (DeviceArray, vector shape)
-
-        Returns:
-            DeviceArray: scalar.
-        """
-        if self.stopping_computation=='analytic':
-            return self.get_target_stage_margin_analytic(state, ctrl)
-        elif self.stopping_computation=='rollout':
-            return self.get_target_stage_margin_rollout(state, ctrl)
-        else:
-            return self.get_target_stage_margin_rollout(state, ctrl)
-
-    @partial(jax.jit, static_argnames='self')
-    def get_target_stage_margin_analytic(
-        self, state: DeviceArray, ctrl: DeviceArray
-    ) -> DeviceArray:
-        """
-        Args:
-            state (DeviceArray, vector shape)
-            ctrl (DeviceArray, vector shape)
-
-        Returns:
-            DeviceArray: scalar.
-        """
-        #jax.debug.print("state: {}", state)
-        stopping_states, stopping_ctrls = self.plan_dyn.compute_stopping_path(state)
-        #jax.debug.print("stopping states: {}, {}", stopping_states, stopping_ctrls)
-        failure_margins = self.get_mapped_margin(
-            stopping_states, stopping_ctrls
-        )
-        target_margin = jnp.min(failure_margins)
-        return target_margin
-
-    @partial(jax.jit, static_argnames='self')
-    def get_target_stage_margin_rollout(
         self, state: DeviceArray, ctrl: DeviceArray
     ) -> DeviceArray:
         """
@@ -753,47 +710,6 @@ class Bicycle5DSoftConstraintMargin(Bicycle5DConstraintMargin):
         self, state: DeviceArray, ctrl: DeviceArray
     ) -> DeviceArray:
         """
-        Soft target margin with stopping path computation.
-
-        Args:
-            state (DeviceArray, vector shape)
-            ctrl (DeviceArray, vector shape)
-
-        Returns:
-            DeviceArray: scalar.
-        """
-        if self.stopping_computation=='analytic':
-            return self.get_target_stage_margin_analytic(state, ctrl)
-        elif self.stopping_computation=='rollout':
-            return self.get_target_stage_margin_rollout(state, ctrl)
-        else:
-            return self.get_target_stage_margin_rollout(state, ctrl)
-
-    @partial(jax.jit, static_argnames='self')
-    def get_target_stage_margin_analytic(
-        self, state: DeviceArray, ctrl: DeviceArray
-    ) -> DeviceArray:
-        """
-        Args:
-            state (DeviceArray, vector shape)
-            ctrl (DeviceArray, vector shape)
-
-        Returns:
-            DeviceArray: scalar.
-        """
-        stopping_states, stopping_ctrls = self.plan_dyn.compute_stopping_path(state)
-        failure_margins = self.get_mapped_margin(
-            stopping_states, stopping_ctrls
-        )
-        target_margin = jnp.min(failure_margins)
-
-        return target_margin
-
-    @partial(jax.jit, static_argnames='self')
-    def get_target_stage_margin_rollout(
-        self, state: DeviceArray, ctrl: DeviceArray
-    ) -> DeviceArray:
-        """
         Args:
             state (DeviceArray, vector shape)
             ctrl (DeviceArray, vector shape)
@@ -865,6 +781,49 @@ class Bicycle5DSoftConstraintMargin(Bicycle5DConstraintMargin):
 
         return target_cost
 
+class Bicycle5DSoftConstraintMarginAnalytic(Bicycle5DSoftConstraintMargin):
+    @partial(jax.jit, static_argnames='self')
+    def get_target_stage_margin(
+        self, state: DeviceArray, ctrl: DeviceArray
+    ) -> DeviceArray:
+        """
+        Args:
+            state (DeviceArray, vector shape)
+            ctrl (DeviceArray, vector shape)
+
+        Returns:
+            DeviceArray: scalar.
+        """
+        stopping_states, stopping_ctrls = self.plan_dyn.compute_stopping_path(state)
+        failure_margins = self.get_mapped_margin(
+            stopping_states, stopping_ctrls
+        )
+        target_margin = jnp.min(failure_margins)
+
+        return target_margin
+
+class Bicycle5DConstraintMarginAnalytic(Bicycle5DConstraintMargin):
+    @partial(jax.jit, static_argnames='self')
+    def get_target_stage_margin(
+        self, state: DeviceArray, ctrl: DeviceArray
+    ) -> DeviceArray:
+        """
+        Args:
+            state (DeviceArray, vector shape)
+            ctrl (DeviceArray, vector shape)
+
+        Returns:
+            DeviceArray: scalar.
+        """
+        stopping_states, stopping_ctrls = self.plan_dyn.compute_stopping_path(state)
+        failure_margins = self.get_mapped_margin(
+            stopping_states, stopping_ctrls
+        )
+        target_margin = jnp.min(failure_margins)
+
+        return target_margin
+
+
 class Bicycle5DTargetConstraintMargin(Bicycle5DSoftConstraintMargin):
     
     @partial(jax.jit, static_argnames='self')
@@ -886,10 +845,17 @@ class BicycleReachAvoid5DMargin(BaseMargin):
     def __init__(self, config, plan_dyn, filter_type):
         super().__init__()
         # Removing the square
+        stopping_computation = getattr(config, 'STOPPING_COMPUTATION_TYPE', 'rollout')
         if filter_type == 'SoftCBF' or filter_type=='SoftLR':
-            self.constraint = Bicycle5DSoftConstraintMargin(config, plan_dyn)
+            if stopping_computation=='analytic':
+                self.constraint = Bicycle5DSoftConstraintMarginAnalytic(config, plan_dyn)
+            else:
+                self.constraint = Bicycle5DSoftConstraintMargin(config, plan_dyn)
         else:
-            self.constraint = Bicycle5DConstraintMargin(config, plan_dyn)
+            if stopping_computation=='analytic':
+                self.constraint = Bicycle5DConstraintMarginAnalytic(config, plan_dyn)
+            else:
+                self.constraint = Bicycle5DConstraintMargin(config, plan_dyn)
 
         if plan_dyn.dim_u == 2:
             R = jnp.array([[config.W_ACCEL, 0.0], [0.0, config.W_OMEGA]])

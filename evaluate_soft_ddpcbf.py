@@ -25,7 +25,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = " "
 jax.config.update('jax_platform_name', 'cpu')
 
 
-def main(config_file, road_boundary, filter_type, is_task_ilqr, line_search):
+def main(config_file, road_boundary, filter_type, is_task_ilqr, line_search, stopping_computation='rollout'):
     # Callback after each timestep for plotting and summarizing evaluation
     def rollout_step_callback(
             env: CarSingle5DEnv,
@@ -148,6 +148,9 @@ def main(config_file, road_boundary, filter_type, is_task_ilqr, line_search):
     config_cost.TRACK_WIDTH_LEFT = road_boundary
     config_env.TRACK_WIDTH_RIGHT = road_boundary
     config_env.TRACK_WIDTH_LEFT = road_boundary
+    config_cost.STOPPING_COMPUTATION_TYPE = stopping_computation
+    if dyn_id=='PointMass4D':
+        config_cost.STOPPING_COMPUTATION_TYPE = 'analytic'
 
     env = CarSingle5DEnv(config_env, config_agent, config_cost)
     x_cur = np.array(
@@ -320,13 +323,16 @@ if __name__ == "__main__":
 
     parser.add_argument(
         "-rb", "--road_boundary", help="Choose road width", type=float,
-        default=2.0
+        default=3.5
     )
 
     parser.add_argument(
-        "-ls", "--line_search", help="Choose line search", type=str,
+        "-ls", "--line_search", help="Choose line search", type=str, default='baseline'
     )
 
+    parser.add_argument(
+        "-sc", "--stopping_computation", help="Choose stopping path as rollout or analytic", type=str, default='rollout'
+    )
     parser.add_argument('--naive_task', dest='naive_task', action='store_true')
     parser.add_argument(
         '--no-naive_task',
@@ -342,11 +348,12 @@ if __name__ == "__main__":
     for filter_type in filters:
         jax.clear_caches()
         out_folder, plot_tag, config_agent, config_solver = main(args.config_file, args.road_boundary, filter_type=filter_type, is_task_ilqr=(not args.naive_task),         
-                                                    line_search=args.line_search)
+                                                    line_search=args.line_search,
+                                                    stopping_computation=args.stopping_computation)
 
     make_bicycle_comparison_report(
         out_folder,
-        plot_folder='./plots_summary_' + args.line_search + '/',
+        plot_folder='./plots_summary_' + args.line_search + '-' + args.stopping_computation + '/',
         tag=plot_tag + "_" + str(args.road_boundary,),
         road_boundary=args.road_boundary,
         dt=config_agent.DT,
