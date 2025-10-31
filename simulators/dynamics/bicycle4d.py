@@ -37,7 +37,7 @@ class Bicycle4D(BaseDynamics):
         Correct for moving from the rear wheel to centroid.
 
         Args:
-            state (DeviceArray): [x, y, v, psi, delta].
+            state (DeviceArray): [x, y, v, psi].
         Returns:
             state_offset 
         """
@@ -49,10 +49,10 @@ class Bicycle4D(BaseDynamics):
     @partial(jax.jit, static_argnames='self')
     def revert_rear_offset_correction(self, state: DeviceArray):
         """
-        Correct for moving from the rear wheel to centroid.
+        Correct for moving from the centroid to rear wheel.
 
         Args:
-            state (DeviceArray): [x, y, v, psi, delta].
+            state (DeviceArray): [x, y, v, psi].
         Returns:
             state_offset 
         """
@@ -97,7 +97,7 @@ class Bicycle4D(BaseDynamics):
 
         vel_to_stop = jnp.maximum(state[2] + stopping_ctrl[0]*dt_steps_to_stop, 0.0)
         vel_not_stopped = (vel_to_stop>0)
-        time_to_stop = jnp.abs(state[2]/stopping_ctrl[0])
+        time_to_stop = jnp.maximum(-state[2]/stopping_ctrl[0], 0.0)
         disp_to_stop = state[2]*dt_steps_to_stop + 0.5*stopping_ctrl[0]*dt_steps_to_stop**2
         stopping_distance = state[2]*time_to_stop + 0.5*stopping_ctrl[0]*time_to_stop**2
         disp_to_stop = vel_not_stopped*disp_to_stop + (1 - vel_not_stopped)*stopping_distance
