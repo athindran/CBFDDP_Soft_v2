@@ -170,6 +170,7 @@ class Bicycle5DConstraintMargin(BaseMargin):
         self.yaw_max = getattr(config, 'YAW_MAX', 1.8)
         self.delta_min = getattr(config, 'DELTA_MIN', -1.6)
         self.delta_max = getattr(config, 'DELTA_MAX', 1.6)
+        self.stopping_computation = getattr(config, 'STOPPING_COMPUTATION_TYPE', 'rollout')
 
         self.obs_spec = config.OBS_SPEC
         self.obsc_type = config.OBSC_TYPE
@@ -228,78 +229,6 @@ class Bicycle5DConstraintMargin(BaseMargin):
 
         if self.use_track_exit:
             self.track_exit_cost = LowerHalfMargin(value=0.0, buffer=0, dim=0)
-
-    @partial(jax.jit, static_argnames='self')
-    def get_constraint_margin(
-        self, state: DeviceArray, ctrl: DeviceArray
-    ) -> DeviceArray:
-        """
-        Args:
-            state (DeviceArray, vector shape)
-            ctrl (DeviceArray, vector shape)
-
-        Returns:
-            DeviceArray: scalar.
-        """
-        cost = jnp.inf
-
-        state_offset = self.plan_dyn.apply_rear_offset_correction(state)
-
-        if self.use_road:
-            cost = jnp.minimum(
-                cost,
-                self.road_position_min_cost.get_stage_margin(
-                    state_offset, ctrl
-                )
-            )
-
-            cost = jnp.minimum(
-                cost,
-                self.road_position_max_cost.get_stage_margin(
-                    state_offset, ctrl
-                )
-            )
-
-        for _obs_constraint in self.obs_constraint:
-            _obs_constraint: BaseMargin
-            cost = jnp.minimum(
-                cost, _obs_constraint.get_stage_margin(
-                    state_offset, ctrl))
-
-        if self.use_yaw:
-            cost = jnp.minimum(cost, self.yaw_min_cost.get_stage_margin(
-                state_offset, ctrl
-            )
-            )
-
-            cost = jnp.minimum(cost, self.yaw_max_cost.get_stage_margin(
-                state_offset, ctrl
-            )
-            )
-
-        if self.use_delta:
-            cost = jnp.minimum(cost, self.delta_min_cost.get_stage_margin(
-                state_offset, ctrl
-            )
-            )
-
-            cost = jnp.minimum(cost, self.delta_max_cost.get_stage_margin(
-                state_offset, ctrl
-            )
-            )
-
-        if self.use_vel:
-            cost = jnp.minimum(cost, self.vel_min_cost.get_stage_margin(
-                state_offset, ctrl)
-            )
-
-        if self.use_track_exit:
-            cost = jnp.minimum(cost, self.track_exit_cost.get_stage_margin(
-                state_offset, ctrl)
-            )
-
-        return cost
-
 
     @partial(jax.jit, static_argnames='self')
     def get_stage_margin(
@@ -372,8 +301,28 @@ class Bicycle5DConstraintMargin(BaseMargin):
 
         return cost
 
+
     @partial(jax.jit, static_argnames='self')
     def get_target_stage_margin(
+        self, state: DeviceArray, ctrl: DeviceArray
+    ) -> DeviceArray:
+        """
+        Args:
+            state (DeviceArray, vector shape)
+            ctrl (DeviceArray, vector shape)
+
+        Returns:
+            DeviceArray: scalar.
+        """
+        if self.stopping_computation=='analytic':
+            return self.get_target_stage_margin_analytic(state, ctrl)
+        elif self.stopping_computation=='rollout':
+            return self.get_target_stage_margin_rollout(state, ctrl)
+        else:
+            return self.get_target_stage_margin_rollout(state, ctrl)
+
+    @partial(jax.jit, static_argnames='self')
+    def get_target_stage_margin_analytic(
         self, state: DeviceArray, ctrl: DeviceArray
     ) -> DeviceArray:
         """
@@ -394,7 +343,7 @@ class Bicycle5DConstraintMargin(BaseMargin):
         return target_margin
 
     @partial(jax.jit, static_argnames='self')
-    def get_target_stage_margin_old(
+    def get_target_stage_margin_rollout(
         self, state: DeviceArray, ctrl: DeviceArray
     ) -> DeviceArray:
         """
@@ -733,6 +682,25 @@ class Bicycle5DSoftConstraintMargin(Bicycle5DConstraintMargin):
         Returns:
             DeviceArray: scalar.
         """
+        if self.stopping_computation=='analytic':
+            return self.get_target_stage_margin_analytic(state, ctrl)
+        elif self.stopping_computation=='rollout':
+            return self.get_target_stage_margin_rollout(state, ctrl)
+        else:
+            return self.get_target_stage_margin_rollout(state, ctrl)
+
+    @partial(jax.jit, static_argnames='self')
+    def get_target_stage_margin_analytic(
+        self, state: DeviceArray, ctrl: DeviceArray
+    ) -> DeviceArray:
+        """
+        Args:
+            state (DeviceArray, vector shape)
+            ctrl (DeviceArray, vector shape)
+
+        Returns:
+            DeviceArray: scalar.
+        """
         stopping_states, stopping_ctrls = self.plan_dyn.compute_stopping_path(state)
         failure_margins = self.get_mapped_margin(
             stopping_states, stopping_ctrls
@@ -742,7 +710,7 @@ class Bicycle5DSoftConstraintMargin(Bicycle5DConstraintMargin):
         return target_margin
 
     @partial(jax.jit, static_argnames='self')
-    def get_target_stage_margin_old(
+    def get_target_stage_margin_rollout(
         self, state: DeviceArray, ctrl: DeviceArray
     ) -> DeviceArray:
         """
