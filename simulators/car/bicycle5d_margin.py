@@ -235,6 +235,7 @@ class Bicycle5DConstraintMargin(BaseMargin):
         self, state: DeviceArray, ctrl: DeviceArray
     ) -> DeviceArray:
         """
+        This is a hard constraint margin that can be retrieved from child classes.
         Args:
             state (DeviceArray, vector shape)
             ctrl (DeviceArray, vector shape)
@@ -301,12 +302,12 @@ class Bicycle5DConstraintMargin(BaseMargin):
 
         return cost
 
-    
     @partial(jax.jit, static_argnames='self')
     def get_stage_margin(
         self, state: DeviceArray, ctrl: DeviceArray
     ) -> DeviceArray:
         """
+        This is a stagewise constraint margin.
         Args:
             state (DeviceArray, vector shape)
             ctrl (DeviceArray, vector shape)
@@ -379,6 +380,7 @@ class Bicycle5DConstraintMargin(BaseMargin):
         self, state: DeviceArray, ctrl: DeviceArray
     ) -> DeviceArray:
         """
+        This is a target margin that uses stopping path computation.
         Args:
             state (DeviceArray, vector shape)
             ctrl (DeviceArray, vector shape)
@@ -494,6 +496,8 @@ class Bicycle5DConstraintMargin(BaseMargin):
         self, state: DeviceArray, ctrl: DeviceArray
     ) -> DeviceArray:
         """
+        Deprecated.
+
         Args:
             state (DeviceArray, vector shape)
             ctrl (DeviceArray, vector shape)
@@ -688,6 +692,8 @@ class Bicycle5DSoftConstraintMargin(Bicycle5DConstraintMargin):
         self, state: DeviceArray, ctrl: DeviceArray
     ) -> DeviceArray:
         """
+        Soft stage margin.
+
         Args:
             state (DeviceArray, vector shape)
             ctrl (DeviceArray, vector shape)
@@ -747,6 +753,8 @@ class Bicycle5DSoftConstraintMargin(Bicycle5DConstraintMargin):
         self, state: DeviceArray, ctrl: DeviceArray
     ) -> DeviceArray:
         """
+        Soft target margin with stopping path computation.
+
         Args:
             state (DeviceArray, vector shape)
             ctrl (DeviceArray, vector shape)
