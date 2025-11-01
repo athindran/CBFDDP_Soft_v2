@@ -847,15 +847,15 @@ class BicycleReachAvoidMargin(BaseMargin):
         # Removing the square
         stopping_computation = getattr(config, 'STOPPING_COMPUTATION_TYPE', 'rollout')
         if filter_type == 'SoftCBF' or filter_type=='SoftLR':
-            #if stopping_computation=='analytic':
-            self.constraint = BicycleSoftConstraintMarginAnalytic(config, plan_dyn)
-            # else:
-            #     self.constraint = BicycleSoftConstraintMargin(config, plan_dyn)
+            if stopping_computation=='analytic':
+                self.constraint = BicycleSoftConstraintMarginAnalytic(config, plan_dyn)
+            else:
+                 self.constraint = BicycleSoftConstraintMargin(config, plan_dyn)
         else:
-            #if stopping_computation=='analytic':
-            self.constraint = BicycleConstraintMarginAnalytic(config, plan_dyn)
-            # else:
-            #     self.constraint = BicycleConstraintMargin(config, plan_dyn)
+            if stopping_computation=='analytic':
+                self.constraint = BicycleConstraintMarginAnalytic(config, plan_dyn)
+            else:
+                self.constraint = BicycleConstraintMargin(config, plan_dyn)
 
         if plan_dyn.dim_u == 2:
             R = jnp.array([[config.W_ACCEL, 0.0], [0.0, config.W_OMEGA]])
