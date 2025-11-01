@@ -61,11 +61,13 @@ def main(config_file, road_boundary, filter_type, is_task_ilqr, line_search, sto
                 end=' -> ')
         else:
             print(
-                "[{}]: solver returns status {}, Vopt {:.1e}, future Vopt {:.1e}, and uses {:.3f}.".format(
+                "[{}]: solver returns status {}, Vopt {:.1e}, future Vopt {:.1e}, marginopt {:.1e}, future marginopt {:.1e}, and uses {:.3f}.".format(
                     states.shape[1] - 1,
                     solver_info['status'],
                     solver_info['Vopt'],
                     solver_info['Vopt_next'],
+                    solver_info['marginopt'],
+                    solver_info['marginopt_next'],
                     solver_info['process_time']))
     
     # Callback after episode for plotting and summarizing evaluation
@@ -342,6 +344,11 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    # The LR filters are relatively unsafe with the chattering at boundary. With reach-avoid, the recommended
+    # LR solutions should use smaller control cost (W_ACCEL, W_OMEGA) weighting such as 0.001 to be less conservative and not stop.
+    # Additionally, the user is recommended to plot the reach-avoid margin and not value and check that it does not become
+    # zero. With the control cost added, 0 is not a level set. The LR should work with these changes despite convergence inaccuracy.
+    # The options are ['SoftLR', 'LR', 'CBF', 'SoftCBF']. The best performing filter is 'SoftCBF'.
     filters=['SoftCBF']
     
     out_folder, plot_tag, config_agent = None, None, None
