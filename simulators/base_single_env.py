@@ -264,14 +264,14 @@ class BaseSingleEnv(BaseEnv):
 
                     reachavoid_plan = solver_info['states']
                     reachavoid_plan_ctrl = solver_info['controls']
+                    critical = solver_info['critical']
 
                     target_margins = self.cost.get_mapped_target_margin(
                         reachavoid_plan, reachavoid_plan_ctrl)
 
                     target_margins = np.array(target_margins)
 
-                    is_inside_target_index = np.argwhere(
-                        target_margins >= 0).ravel()
+                    is_inside_target_index = np.argwhere(critical!=0).ravel()
 
                     if is_inside_target_index.size == 0:
                         is_inside_target_index = 0
