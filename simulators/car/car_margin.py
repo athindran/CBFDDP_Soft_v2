@@ -12,7 +12,7 @@ from simulators.costs.half_space_margin import LowerHalfMargin, UpperHalfMargin
 
 
 # Task policy ILQR cost. This is a random ad-hoc policy that is not meant to be principled.
-class Bicycle5DCost(BaseMargin):
+class BicycleCost(BaseMargin):
 
     def __init__(self, config, plan_dyn):
         super().__init__()
@@ -147,7 +147,7 @@ class Bicycle5DCost(BaseMargin):
 
 
 # Hard constraint margin function.
-class Bicycle5DConstraintMargin(BaseMargin):
+class BicycleConstraintMargin(BaseMargin):
     def __init__(self, config, plan_dyn):
         super().__init__()
         # System parameters.
@@ -643,7 +643,7 @@ class Bicycle5DConstraintMargin(BaseMargin):
         return cost_dict
 
 
-class Bicycle5DSoftConstraintMargin(Bicycle5DConstraintMargin):
+class BicycleSoftConstraintMargin(BicycleConstraintMargin):
     @partial(jax.jit, static_argnames='self')
     def get_stage_margin(
         self, state: DeviceArray, ctrl: DeviceArray
@@ -781,7 +781,7 @@ class Bicycle5DSoftConstraintMargin(Bicycle5DConstraintMargin):
 
         return target_cost
 
-class Bicycle5DSoftConstraintMarginAnalytic(Bicycle5DSoftConstraintMargin):
+class BicycleSoftConstraintMarginAnalytic(BicycleSoftConstraintMargin):
     @partial(jax.jit, static_argnames='self')
     def get_target_stage_margin(
         self, state: DeviceArray, ctrl: DeviceArray
@@ -802,7 +802,7 @@ class Bicycle5DSoftConstraintMarginAnalytic(Bicycle5DSoftConstraintMargin):
 
         return target_margin
 
-class Bicycle5DConstraintMarginAnalytic(Bicycle5DConstraintMargin):
+class BicycleConstraintMarginAnalytic(BicycleConstraintMargin):
     @partial(jax.jit, static_argnames='self')
     def get_target_stage_margin(
         self, state: DeviceArray, ctrl: DeviceArray
@@ -824,7 +824,7 @@ class Bicycle5DConstraintMarginAnalytic(Bicycle5DConstraintMargin):
         return target_margin
 
 
-class Bicycle5DTargetConstraintMargin(Bicycle5DSoftConstraintMargin):
+class BicycleTargetConstraintMargin(BicycleSoftConstraintMargin):
     
     @partial(jax.jit, static_argnames='self')
     def get_target_stage_margin(
@@ -840,7 +840,7 @@ class Bicycle5DTargetConstraintMargin(Bicycle5DSoftConstraintMargin):
         """
         return -1*self.target_constraint.get_stage_margin(state, ctrl)
 
-class BicycleReachAvoid5DMargin(BaseMargin):
+class BicycleReachAvoidMargin(BaseMargin):
 
     def __init__(self, config, plan_dyn, filter_type):
         super().__init__()
@@ -848,14 +848,14 @@ class BicycleReachAvoid5DMargin(BaseMargin):
         stopping_computation = getattr(config, 'STOPPING_COMPUTATION_TYPE', 'rollout')
         if filter_type == 'SoftCBF' or filter_type=='SoftLR':
             if stopping_computation=='analytic':
-                self.constraint = Bicycle5DSoftConstraintMarginAnalytic(config, plan_dyn)
+                self.constraint = BicycleSoftConstraintMarginAnalytic(config, plan_dyn)
             else:
-                self.constraint = Bicycle5DSoftConstraintMargin(config, plan_dyn)
+                 self.constraint = BicycleSoftConstraintMargin(config, plan_dyn)
         else:
             if stopping_computation=='analytic':
-                self.constraint = Bicycle5DConstraintMarginAnalytic(config, plan_dyn)
+                self.constraint = BicycleConstraintMarginAnalytic(config, plan_dyn)
             else:
-                self.constraint = Bicycle5DConstraintMargin(config, plan_dyn)
+                self.constraint = BicycleConstraintMargin(config, plan_dyn)
 
         if plan_dyn.dim_u == 2:
             R = jnp.array([[config.W_ACCEL, 0.0], [0.0, config.W_OMEGA]])

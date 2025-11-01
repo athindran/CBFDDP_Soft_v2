@@ -1,25 +1,16 @@
-from summary.utils import(
-    make_animation_plots,
-    make_bicycle_comparison_report,
-    plot_run_summary)
 from simulators import(
     load_config,
-    CarSingle5DEnv,
-    BicycleReachAvoid5DMargin,
+    CarSingleEnv,
+    BicycleReachAvoidMargin,
     PrintLogger,
-    Bicycle5DCost)
+    BicycleCost)
 import jax
-from shutil import copyfile
 from jax import numpy as jp
 from matplotlib import cm
 from scipy.integrate import solve_ivp
-import argparse
-import imageio
 import numpy as np
 import copy
-from typing import Dict
 from matplotlib import pyplot as plt
-import os
 import sys
 from tqdm import tqdm
 sys.path.append(".")
@@ -43,12 +34,12 @@ def verify_bic5d_rollouts():
     config_env.TRACK_WIDTH_LEFT = 3.5
     config_agent.FILTER_TYPE = 'SoftCBF'
 
-    env = CarSingle5DEnv(config_env, config_agent, config_cost)
+    env = CarSingleEnv(config_env, config_agent, config_cost)
     config_cost.STOPPING_COMPUTATION_TYPE = 'rollout'
-    cost_rollout = BicycleReachAvoid5DMargin(
+    cost_rollout = BicycleReachAvoidMargin(
                     config_cost, copy.deepcopy(env.agent.dyn), 'SoftCBF')
     config_cost.STOPPING_COMPUTATION_TYPE = 'analytic'
-    cost_analytic = BicycleReachAvoid5DMargin(
+    cost_analytic = BicycleReachAvoidMargin(
                     config_cost, copy.deepcopy(env.agent.dyn), 'SoftCBF')
     plotting = False
     seed_state = jp.array([0.1, 0.2, 2.5, -0.96, 1e-12])
@@ -76,8 +67,8 @@ def verify_bic5d_rollouts():
             discrepancy_in_states = jp.max(jp.linalg.norm(rollout_stopping_states - stopping_states[:, 0:rollout_stopping_states.shape[1]], axis=0), axis=0)
             assert discrepancy_in_states<1e-4, f"discrepancy in states: {discrepancy_in_states}"
 
-            target_margin_rollout = cost_rollout.constraint.get_target_stage_margin_rollout(initial_state, stopping_ctrl_jp)
-            target_margin_analytic = cost_analytic.constraint.get_target_stage_margin_analytic(initial_state, stopping_ctrl_jp)
+            target_margin_rollout = cost_rollout.constraint.get_target_stage_margin(initial_state, stopping_ctrl_jp)
+            target_margin_analytic = cost_analytic.constraint.get_target_stage_margin(initial_state, stopping_ctrl_jp)
 
             discrepancy_in_target_margin = jp.abs(target_margin_analytic - target_margin_rollout)
             assert discrepancy_in_target_margin<5e-4, f"discrepancy in target margin: {discrepancy_in_target_margin}"
@@ -132,12 +123,12 @@ def verify_bic4d_rollouts():
     config_env.TRACK_WIDTH_LEFT = 3.5
     config_agent.FILTER_TYPE = 'SoftCBF'
 
-    env = CarSingle5DEnv(config_env, config_agent, config_cost)
+    env = CarSingleEnv(config_env, config_agent, config_cost)
     config_cost.STOPPING_COMPUTATION_TYPE = 'rollout'
-    cost_rollout = BicycleReachAvoid5DMargin(
+    cost_rollout = BicycleReachAvoidMargin(
                     config_cost, copy.deepcopy(env.agent.dyn), 'SoftCBF')
     config_cost.STOPPING_COMPUTATION_TYPE = 'analytic'
-    cost_analytic = BicycleReachAvoid5DMargin(
+    cost_analytic = BicycleReachAvoidMargin(
                     config_cost, copy.deepcopy(env.agent.dyn), 'SoftCBF')
     plotting = False
     seed_state = jp.array([0.1, 0.2, 1.5, 0.0])
@@ -162,8 +153,8 @@ def verify_bic4d_rollouts():
             assert discrepancy_in_states<1e-4, f"discrepancy in states: {discrepancy_in_states}"
 
             stopping_ctrl_jp = jp.array(env.agent.dyn.stopping_ctrl)
-            target_margin_rollout = cost_rollout.constraint.get_target_stage_margin_rollout(initial_state, stopping_ctrl_jp)
-            target_margin_analytic = cost_analytic.constraint.get_target_stage_margin_analytic(initial_state, stopping_ctrl_jp)
+            target_margin_rollout = cost_rollout.constraint.get_target_stage_margin(initial_state, stopping_ctrl_jp)
+            target_margin_analytic = cost_analytic.constraint.get_target_stage_margin(initial_state, stopping_ctrl_jp)
 
             discrepancy_in_target_margin = jp.abs(target_margin_analytic - target_margin_rollout)
             assert discrepancy_in_target_margin<1e-4, f"discrepancy in target margin: {discrepancy_in_target_margin}"
@@ -219,7 +210,7 @@ def verify_pm4d_rollouts():
     config_agent.FILTER_TYPE = 'SoftCBF'
 
     plotting = True
-    env = CarSingle5DEnv(config_env, config_agent, config_cost)
+    env = CarSingleEnv(config_env, config_agent, config_cost)
 
     # The rollout stopping path will not stop at zero velocity perfectly but will overshoot.
     initial_state = jp.array([0.1, 0.4, 2.0, -1.5])
