@@ -331,7 +331,7 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "-sc", "--stopping_computation", help="Choose stopping path as rollout or analytic", type=str, default='rollout'
+        "-sp", "--stopping_computation", help="Choose stopping path as rollout or analytic", type=str, default='rollout'
     )
     parser.add_argument('--naive_task', dest='naive_task', action='store_true')
     parser.add_argument(
