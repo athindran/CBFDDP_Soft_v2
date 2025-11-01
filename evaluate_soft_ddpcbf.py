@@ -25,7 +25,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = " "
 jax.config.update('jax_platform_name', 'cpu')
 
 
-def main(config_file, road_boundary, filter_type, is_task_ilqr, line_search, stopping_computation='rollout'):
+def main(config_file, road_boundary, filter_type, is_task_ilqr, line_search, stopping_computation='rollout', should_animate=False):
     # Callback after each timestep for plotting and summarizing evaluation
     def rollout_step_callback(
             env: CarSingleEnv,
@@ -276,7 +276,6 @@ def main(config_file, road_boundary, filter_type, is_task_ilqr, line_search, sto
     # Warms up jit again
     env.agent.get_action(obs=x_cur, state=x_cur, warmup=True)
 
-    should_animate = False
     nominal_states, result, traj_info = env.simulate_one_trajectory(
         T_rollout=max_iter_receding, end_criterion=end_criterion,
         reset_kwargs=dict(state=x_cur),
@@ -340,14 +339,15 @@ if __name__ == "__main__":
         '--no-naive_task',
         dest='naive_task',
         action='store_false')
+    parser.add_argument('--should_animate', dest='should_animate', action='store_true')
     parser.set_defaults(naive_task=False)
 
     args = parser.parse_args()
 
     # The LR filters are relatively unsafe with the chattering at boundary. With reach-avoid, the recommended
     # LR solutions should use smaller control cost (W_ACCEL, W_OMEGA) weighting such as 0.001 to be less conservative and not stop.
-    # Additionally, the user is recommended to plot the reach-avoid margin and not value and check that it does not become
-    # zero. With the control cost added, 0 is not a level set. The LR should work with these changes despite convergence inaccuracy.
+    # Additionally, the user is recommended to plot the reach-avoid margin and not value and check that it does not become less than
+    # zero. With the control cost added, 0 is not a level set. The reach-avoid LR should be safe with these changes despite convergence inaccuracy.
     # The options are ['SoftLR', 'LR', 'CBF', 'SoftCBF']. The best performing filter is 'SoftCBF'.
     filters=['SoftCBF']
     
@@ -356,7 +356,8 @@ if __name__ == "__main__":
         jax.clear_caches()
         out_folder, plot_tag, config_agent, config_solver = main(args.config_file, args.road_boundary, filter_type=filter_type, is_task_ilqr=(not args.naive_task),         
                                                     line_search=args.line_search,
-                                                    stopping_computation=args.stopping_computation)
+                                                    stopping_computation=args.stopping_computation,
+                                                    should_animate=args.should_animate,)
 
     make_bicycle_comparison_report(
         out_folder,
