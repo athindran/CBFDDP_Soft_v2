@@ -8,7 +8,7 @@ from gym import spaces
 
 from jax import numpy as jnp
 
-from .bicycle_margin import BicycleReachAvoidMargin
+from .car_margin import BicycleReachAvoidMargin
 from simulators.base_single_env import BaseSingleEnv
 
 

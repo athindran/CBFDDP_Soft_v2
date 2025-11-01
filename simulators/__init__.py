@@ -2,7 +2,7 @@ from .config.utils import load_config
 from .agent import Agent
 from .base_single_env import BaseSingleEnv
 
-from .car.bicycle_margin import (
+from .car.car_margin import (
     BicycleReachAvoidMargin, BicycleCost
 )
 from .car.car_single import CarSingleEnv
