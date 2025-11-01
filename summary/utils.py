@@ -1,4 +1,4 @@
-from simulators import(load_config, CarSingle5DEnv, Pvtol6DEnv)
+from simulators import(load_config, CarSingleEnv, Pvtol6DEnv)
 
 from matplotlib import pyplot as plt
 from matplotlib import cm

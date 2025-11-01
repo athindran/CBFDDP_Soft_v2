@@ -4,10 +4,10 @@ from summary.utils import(
     plot_run_summary)
 from simulators import(
     load_config,
-    CarSingle5DEnv,
-    BicycleReachAvoid5DMargin,
+    CarSingleEnv,
+    BicycleReachAvoidMargin,
     PrintLogger,
-    Bicycle5DCost)
+    BicycleCost)
 import jax
 from shutil import copyfile
 import argparse
@@ -28,7 +28,7 @@ jax.config.update('jax_platform_name', 'cpu')
 def main(config_file, road_boundary, filter_type, is_task_ilqr, line_search, stopping_computation='rollout'):
     # Callback after each timestep for plotting and summarizing evaluation
     def rollout_step_callback(
-            env: CarSingle5DEnv,
+            env: CarSingleEnv,
             state_history,
             obs_history,
             action_history,
@@ -51,22 +51,22 @@ def main(config_file, road_boundary, filter_type, is_task_ilqr, line_search, sto
             np.asarray(kwargs['complete_filter_indices']),
             fig_prog_folder)
 
-        # if config_solver.FILTER_TYPE == "none":
-        #     print(
-        #         "[{}]: solver returns status {}, cost {:.1e}, and uses {:.3f}.".format(
-        #             states.shape[1] - 1,
-        #             solver_info['status'],
-        #             solver_info['Vopt'],
-        #             solver_info['t_process']),
-        #         end=' -> ')
-        # else:
-        #     print(
-        #         "[{}]: solver returns status {}, Vopt {:.1e}, future Vopt {:.1e}, and uses {:.3f}.".format(
-        #             states.shape[1] - 1,
-        #             solver_info['status'],
-        #             solver_info['Vopt'],
-        #             solver_info['Vopt_next'],
-        #             solver_info['process_time']))
+        if config_solver.FILTER_TYPE == "none":
+            print(
+                "[{}]: solver returns status {}, cost {:.1e}, and uses {:.3f}.".format(
+                    states.shape[1] - 1,
+                    solver_info['status'],
+                    solver_info['Vopt'],
+                    solver_info['t_process']),
+                end=' -> ')
+        else:
+            print(
+                "[{}]: solver returns status {}, Vopt {:.1e}, future Vopt {:.1e}, and uses {:.3f}.".format(
+                    states.shape[1] - 1,
+                    solver_info['status'],
+                    solver_info['Vopt'],
+                    solver_info['Vopt_next'],
+                    solver_info['process_time']))
     
     # Callback after episode for plotting and summarizing evaluation
     def rollout_episode_callback(
@@ -152,7 +152,7 @@ def main(config_file, road_boundary, filter_type, is_task_ilqr, line_search, sto
     if dyn_id=='PointMass4D':
         config_cost.STOPPING_COMPUTATION_TYPE = 'analytic'
 
-    env = CarSingle5DEnv(config_env, config_agent, config_cost)
+    env = CarSingleEnv(config_env, config_agent, config_cost)
     x_cur = np.array(
         getattr(
             config_solver, "INIT_STATE", [
@@ -168,36 +168,36 @@ def main(config_file, road_boundary, filter_type, is_task_ilqr, line_search, sto
     if config_cost.COST_TYPE == "Reachavoid":
         if config_solver.FILTER_TYPE == "none":
             policy_type = "iLQRReachAvoid"
-            cost = BicycleReachAvoid5DMargin(
+            cost = BicycleReachAvoidMargin(
                 config_ilqr_cost, copy.deepcopy(env.agent.dyn), filter_type)
             env.cost = cost  # ! hacky
         else:
             policy_type = "iLQRSafetyFilter"
-            task_cost = Bicycle5DCost(
+            task_cost = BicycleCost(
                 config_ilqr_cost, copy.deepcopy(
                     env.agent.dyn))
-            cost = BicycleReachAvoid5DMargin(
+            cost = BicycleReachAvoidMargin(
                 config_ilqr_cost, copy.deepcopy(env.agent.dyn), filter_type)
             # we use soft margin for an apples-to-apples comparison of the margin
-            evaluation_cost = BicycleReachAvoid5DMargin(
+            evaluation_cost = BicycleReachAvoidMargin(
                 config_ilqr_cost, copy.deepcopy(env.agent.dyn), 'SoftCBF')
             env.cost = cost  # ! hacky
     # Not supported
     elif config_cost.COST_TYPE == "Reachability":
         if config_solver.FILTER_TYPE == "none":
             policy_type = "iLQRReachability"
-            cost = BicycleReachAvoid5DMargin(
+            cost = BicycleReachAvoidMargin(
                 config_ilqr_cost, copy.deepcopy(env.agent.dyn), filter_type)
             env.cost = cost  # ! hacky
         else:
             policy_type = "iLQRSafetyFilter"
-            task_cost = Bicycle5DCost(
+            task_cost = BicycleCost(
                 config_ilqr_cost, copy.deepcopy(
                     env.agent.dyn))
-            cost = BicycleReachAvoid5DMargin(
+            cost = BicycleReachAvoidMargin(
                 config_ilqr_cost, copy.deepcopy(env.agent.dyn), filter_type)
             # we use soft margin for an apples-to-apples comparison of the margin
-            evaluation_cost = BicycleReachAvoid5DMargin(
+            evaluation_cost = BicycleReachAvoidMargin(
                 config_ilqr_cost, copy.deepcopy(env.agent.dyn), 'SoftCBF')
             env.cost = cost
 
@@ -262,7 +262,7 @@ def main(config_file, road_boundary, filter_type, is_task_ilqr, line_search, sto
     # config_current_cost.TRACK_WIDTH_LEFT = road_boundary
     # env.visual_extent[2] = -road_boundary
     # env.visual_extent[3] = road_boundary
-    # cost = BicycleReachAvoid5DMargin(
+    # cost = BicycleReachAvoidMargin(
     #     config_current_cost, copy.deepcopy(
     #         env.agent.dyn), filter_type=filter_type)
     # env.cost = cost
@@ -342,7 +342,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    filters=['CBF', 'SoftCBF']
+    filters=['SoftCBF']
     
     out_folder, plot_tag, config_agent = None, None, None
     for filter_type in filters:

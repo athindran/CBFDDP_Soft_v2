@@ -8,11 +8,11 @@ from gym import spaces
 
 from jax import numpy as jnp
 
-from .bicycle5d_margin import BicycleReachAvoid5DMargin
+from .bicycle5d_margin import BicycleReachAvoidMargin
 from simulators.base_single_env import BaseSingleEnv
 
 
-class CarSingle5DEnv(BaseSingleEnv):
+class CarSingleEnv(BaseSingleEnv):
     # region: init
     def __init__(self, config_env, config_agent, config_constraint) -> None:
         super().__init__(config_env, config_agent)
@@ -33,10 +33,10 @@ class CarSingle5DEnv(BaseSingleEnv):
         self.cost_type = getattr(config_constraint, "COST_TYPE", "Lagrange")
         filter_type = getattr(config_agent, "FILTER_TYPE", "CBF")
         if self.cost_type == "Reachavoid":
-            self.cost = BicycleReachAvoid5DMargin(
+            self.cost = BicycleReachAvoidMargin(
                 config_constraint, self.agent.dyn, filter_type)
         elif self.cost_type == "Reachability":
-            self.cost = BicycleReachAvoid5DMargin(
+            self.cost = BicycleReachAvoidMargin(
                 config_constraint, self.agent.dyn, filter_type)
 
         self.g_x_fail = config_env.G_X_FAIL
