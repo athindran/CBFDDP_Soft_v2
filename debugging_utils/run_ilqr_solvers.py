@@ -1,10 +1,9 @@
 from simulators import(
     load_config,
-    CarSingle5DEnv,
-    BicycleReachAvoid5DMargin)
+    CarSingleEnv,
+    BicycleReachAvoidMargin)
 import jax
 import argparse
-import imageio
 import numpy as np
 import copy
 import time
@@ -43,7 +42,7 @@ def main(config_file, road_boundary, filter_type):
     config_env.TRACK_WIDTH_LEFT = road_boundary
     plot_tag = config_env.tag + '-' + str(filter_type)
 
-    env = CarSingle5DEnv(config_env, config_agent, config_cost)
+    env = CarSingleEnv(config_env, config_agent, config_cost)
     x_cur = np.array(getattr(
             config_solver, "INIT_STATE", [
                 0., 0., 0.5, 0., 0.]))
@@ -57,13 +56,13 @@ def main(config_file, road_boundary, filter_type):
     config_solver.COST_TYPE = config_cost.COST_TYPE
     if config_cost.COST_TYPE == "Reachavoid":
         policy_type = "iLQRReachAvoid"
-        cost = BicycleReachAvoid5DMargin(
+        cost = BicycleReachAvoidMargin(
             config_ilqr_cost, copy.deepcopy(env.agent.dyn), filter_type)
         env.cost = cost  # ! hacky
     # Not supported
     elif config_cost.COST_TYPE == "Reachability":
         policy_type = "iLQRReachability"
-        cost = BicycleReachAvoid5DMargin(
+        cost = BicycleReachAvoidMargin(
             config_ilqr_cost, copy.deepcopy(env.agent.dyn), filter_type)
         env.cost = cost  # ! hacky
 

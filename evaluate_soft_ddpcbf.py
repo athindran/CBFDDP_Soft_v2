@@ -4,10 +4,10 @@ from summary.utils import(
     plot_run_summary)
 from simulators import(
     load_config,
-    CarSingle5DEnv,
-    BicycleReachAvoid5DMargin,
+    CarSingleEnv,
+    BicycleReachAvoidMargin,
     PrintLogger,
-    Bicycle5DCost)
+    BicycleCost)
 import jax
 from shutil import copyfile
 import argparse
@@ -25,10 +25,10 @@ os.environ["CUDA_VISIBLE_DEVICES"] = " "
 jax.config.update('jax_platform_name', 'cpu')
 
 
-def main(config_file, road_boundary, filter_type, is_task_ilqr, line_search):
+def main(config_file, road_boundary, filter_type, is_task_ilqr, line_search, stopping_computation='rollout'):
     # Callback after each timestep for plotting and summarizing evaluation
     def rollout_step_callback(
-            env: CarSingle5DEnv,
+            env: CarSingleEnv,
             state_history,
             obs_history,
             action_history,
@@ -61,7 +61,7 @@ def main(config_file, road_boundary, filter_type, is_task_ilqr, line_search):
                 end=' -> ')
         else:
             print(
-                "[{}]: solver returns status {}, value {:.1e}, future value {:.1e}, and uses {:.3f}.".format(
+                "[{}]: solver returns status {}, Vopt {:.1e}, future Vopt {:.1e}, and uses {:.3f}.".format(
                     states.shape[1] - 1,
                     solver_info['status'],
                     solver_info['Vopt'],
@@ -148,8 +148,11 @@ def main(config_file, road_boundary, filter_type, is_task_ilqr, line_search):
     config_cost.TRACK_WIDTH_LEFT = road_boundary
     config_env.TRACK_WIDTH_RIGHT = road_boundary
     config_env.TRACK_WIDTH_LEFT = road_boundary
+    config_cost.STOPPING_COMPUTATION_TYPE = stopping_computation
+    if dyn_id=='PointMass4D':
+        config_cost.STOPPING_COMPUTATION_TYPE = 'analytic'
 
-    env = CarSingle5DEnv(config_env, config_agent, config_cost)
+    env = CarSingleEnv(config_env, config_agent, config_cost)
     x_cur = np.array(
         getattr(
             config_solver, "INIT_STATE", [
@@ -165,36 +168,36 @@ def main(config_file, road_boundary, filter_type, is_task_ilqr, line_search):
     if config_cost.COST_TYPE == "Reachavoid":
         if config_solver.FILTER_TYPE == "none":
             policy_type = "iLQRReachAvoid"
-            cost = BicycleReachAvoid5DMargin(
+            cost = BicycleReachAvoidMargin(
                 config_ilqr_cost, copy.deepcopy(env.agent.dyn), filter_type)
             env.cost = cost  # ! hacky
         else:
             policy_type = "iLQRSafetyFilter"
-            task_cost = Bicycle5DCost(
+            task_cost = BicycleCost(
                 config_ilqr_cost, copy.deepcopy(
                     env.agent.dyn))
-            cost = BicycleReachAvoid5DMargin(
+            cost = BicycleReachAvoidMargin(
                 config_ilqr_cost, copy.deepcopy(env.agent.dyn), filter_type)
             # we use soft margin for an apples-to-apples comparison of the margin
-            evaluation_cost = BicycleReachAvoid5DMargin(
+            evaluation_cost = BicycleReachAvoidMargin(
                 config_ilqr_cost, copy.deepcopy(env.agent.dyn), 'SoftCBF')
             env.cost = cost  # ! hacky
     # Not supported
     elif config_cost.COST_TYPE == "Reachability":
         if config_solver.FILTER_TYPE == "none":
             policy_type = "iLQRReachability"
-            cost = BicycleReachAvoid5DMargin(
+            cost = BicycleReachAvoidMargin(
                 config_ilqr_cost, copy.deepcopy(env.agent.dyn), filter_type)
             env.cost = cost  # ! hacky
         else:
             policy_type = "iLQRSafetyFilter"
-            task_cost = Bicycle5DCost(
+            task_cost = BicycleCost(
                 config_ilqr_cost, copy.deepcopy(
                     env.agent.dyn))
-            cost = BicycleReachAvoid5DMargin(
+            cost = BicycleReachAvoidMargin(
                 config_ilqr_cost, copy.deepcopy(env.agent.dyn), filter_type)
             # we use soft margin for an apples-to-apples comparison of the margin
-            evaluation_cost = BicycleReachAvoid5DMargin(
+            evaluation_cost = BicycleReachAvoidMargin(
                 config_ilqr_cost, copy.deepcopy(env.agent.dyn), 'SoftCBF')
             env.cost = cost
 
@@ -259,7 +262,7 @@ def main(config_file, road_boundary, filter_type, is_task_ilqr, line_search):
     # config_current_cost.TRACK_WIDTH_LEFT = road_boundary
     # env.visual_extent[2] = -road_boundary
     # env.visual_extent[3] = road_boundary
-    # cost = BicycleReachAvoid5DMargin(
+    # cost = BicycleReachAvoidMargin(
     #     config_current_cost, copy.deepcopy(
     #         env.agent.dyn), filter_type=filter_type)
     # env.cost = cost
@@ -320,13 +323,16 @@ if __name__ == "__main__":
 
     parser.add_argument(
         "-rb", "--road_boundary", help="Choose road width", type=float,
-        default=2.0
+        default=3.5
     )
 
     parser.add_argument(
-        "-ls", "--line_search", help="Choose line search", type=str,
+        "-ls", "--line_search", help="Choose line search", type=str, default='baseline'
     )
 
+    parser.add_argument(
+        "-sc", "--stopping_computation", help="Choose stopping path as rollout or analytic", type=str, default='rollout'
+    )
     parser.add_argument('--naive_task', dest='naive_task', action='store_true')
     parser.add_argument(
         '--no-naive_task',
@@ -342,11 +348,12 @@ if __name__ == "__main__":
     for filter_type in filters:
         jax.clear_caches()
         out_folder, plot_tag, config_agent, config_solver = main(args.config_file, args.road_boundary, filter_type=filter_type, is_task_ilqr=(not args.naive_task),         
-                                                    line_search=args.line_search)
+                                                    line_search=args.line_search,
+                                                    stopping_computation=args.stopping_computation)
 
     make_bicycle_comparison_report(
         out_folder,
-        plot_folder='./plots_summary_' + args.line_search + '/',
+        plot_folder='./plots_summary_' + args.line_search + '-' + args.stopping_computation + '/',
         tag=plot_tag + "_" + str(args.road_boundary,),
         road_boundary=args.road_boundary,
         dt=config_agent.DT,

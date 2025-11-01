@@ -1,12 +1,11 @@
 from simulators import(
     load_config,
-    CarSingle5DEnv,
-    BicycleReachAvoid5DMargin)
+    CarSingleEnv,
+    BicycleReachAvoidMargin)
 import jax
 import argparse
-import imageio
 import numpy as np
-from jax import numpy as jnp
+from jax import numpy as jp
 import copy
 import time
 from matplotlib import pyplot as plt
@@ -44,7 +43,7 @@ def main(config_file, road_boundary, filter_type):
     config_env.TRACK_WIDTH_LEFT = road_boundary
     plot_tag = config_env.tag + '-' + str(filter_type)
 
-    env = CarSingle5DEnv(config_env, config_agent, config_cost)
+    env = CarSingleEnv(config_env, config_agent, config_cost)
     x_cur = np.array([3.0, 0., 2.0, 0.1])
     env.reset(x_cur)
 
@@ -56,13 +55,13 @@ def main(config_file, road_boundary, filter_type):
     config_solver.COST_TYPE = config_cost.COST_TYPE
     if config_cost.COST_TYPE == "Reachavoid":
         policy_type = "iLQRReachAvoid"
-        cost = BicycleReachAvoid5DMargin(
+        cost = BicycleReachAvoidMargin(
             config_ilqr_cost, copy.deepcopy(env.agent.dyn), filter_type)
         env.cost = cost  # ! hacky
     # Not supported
     elif config_cost.COST_TYPE == "Reachability":
         policy_type = "iLQRReachability"
-        cost = BicycleReachAvoid5DMargin(
+        cost = BicycleReachAvoidMargin(
             config_ilqr_cost, copy.deepcopy(env.agent.dyn), filter_type)
         env.cost = cost  # ! hacky
 
@@ -83,11 +82,11 @@ def main(config_file, road_boundary, filter_type):
     os.makedirs(fig_anim_folder, exist_ok=True)
 
     controls = np.random.rand(env.agent.policy.dim_u, env.agent.policy.N)
-    controls = jnp.array(controls)
+    controls = jp.array(controls)
 
     # Rolls out the nominal trajectory and gets the initial cost.
     states, controls = env.agent.policy.rollout_nominal(
-        jnp.array(x_cur), controls
+        jp.array(x_cur), controls
     )
 
     failure_margins = env.agent.policy.cost.constraint.get_mapped_margin(
@@ -104,7 +103,7 @@ def main(config_file, road_boundary, filter_type):
     critical, reachavoid_margin = env.agent.policy.get_critical_points(
         failure_margins, target_margins)
 
-    J = (reachavoid_margin + jnp.sum(ctrl_costs)).astype(float)
+    J = (reachavoid_margin + jp.sum(ctrl_costs)).astype(float)
 
     converged = False
     time0 = time.time()

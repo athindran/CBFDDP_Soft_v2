@@ -1,4 +1,4 @@
-from simulators import(load_config, CarSingle5DEnv, Pvtol6DEnv)
+from simulators import(load_config, CarSingleEnv, Pvtol6DEnv)
 
 from matplotlib import pyplot as plt
 from matplotlib import cm
@@ -529,7 +529,7 @@ def make_bicycle_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", 
             filter_params.append(config_solver.SHIELD_THRESHOLD) 
 
         c_obs = 'k'
-        env = CarSingle5DEnv(config_env, config_agent, config_cost)
+        env = CarSingleEnv(config_env, config_agent, config_cost)
 
         fig = plt.figure(layout='constrained', figsize=(5.5, 4.7))
         title_string = config_cost.COST_TYPE + " - " + config_agent.DYN
@@ -748,11 +748,11 @@ def make_bicycle_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", 
     ax_v.set_xlabel('Time $(s)$', 
                         fontsize=legend_fontsize)
     if config_cost.COST_TYPE == 'Reachability':
-        ax_v.set_ylabel('Reachability Value (SM)', 
-                            fontsize=6.3)
+        ax_v.set_ylabel('Reachability Margin (SM)', 
+                            fontsize=6.1)
     else:
-        ax_v.set_ylabel('ReachAvoid Value (SM)', 
-                    fontsize=6.3)
+        ax_v.set_ylabel('ReachAvoid Margin (SM)', 
+                    fontsize=6.1)
     ax_v.legend(framealpha=0, fontsize=legend_fontsize, loc='upper left', 
                            ncol=1, bbox_to_anchor=(0.05, 1.2))        
     # fig_v.savefig(

@@ -29,6 +29,7 @@ class Bicycle4D(BaseDynamics):
         self.v_max = config.V_MAX
         self.rear_wheel_offset = 0.4 * self.wheelbase
         self.noise_var = jnp.array([0.01, 0.01, 0.01, 0.01])
+        self.stopping_ctrl = jnp.array([self.ctrl_space[0, 0], 0.])
 
     @partial(jax.jit, static_argnames='self')
     def apply_rear_offset_correction(self, state: DeviceArray):
@@ -36,7 +37,7 @@ class Bicycle4D(BaseDynamics):
         Correct for moving from the rear wheel to centroid.
 
         Args:
-            state (DeviceArray): [x, y, v, psi, delta].
+            state (DeviceArray): [x, y, v, psi].
         Returns:
             state_offset 
         """
@@ -48,10 +49,10 @@ class Bicycle4D(BaseDynamics):
     @partial(jax.jit, static_argnames='self')
     def revert_rear_offset_correction(self, state: DeviceArray):
         """
-        Correct for moving from the rear wheel to centroid.
+        Correct for moving from the centroid to rear wheel.
 
         Args:
-            state (DeviceArray): [x, y, v, psi, delta].
+            state (DeviceArray): [x, y, v, psi].
         Returns:
             state_offset 
         """
@@ -69,6 +70,48 @@ class Bicycle4D(BaseDynamics):
     def get_batched_reverse_rear_offset_correction(self, nominal_states):
         jac = jax.jit(jax.vmap(self.revert_rear_offset_correction, in_axes=(1), out_axes=(1)))
         return jac(nominal_states)
+
+    @partial(jax.jit, static_argnames='self')
+    def check_stopped(
+        self, state: DeviceArray
+    ):
+        return (state[2]>self.v_min)
+
+    @partial(jax.jit, static_argnames='self')
+    def get_stopping_ctrl(
+        self, state: DeviceArray
+    ):
+        stopping_ctrl = jnp.array(self.stopping_ctrl)
+        return stopping_ctrl
+
+    @partial(jax.jit, static_argnames='self')
+    def compute_stopping_path(self, state):
+        # Choose stopping control as braking control with zero steering.
+        stopping_ctrl = jnp.zeros((2,))
+        stopping_ctrl = stopping_ctrl.at[0].set(self.ctrl_space[0, 0])
+
+        # CAUTION: Assume a upper limit on maximum number of steps to stop to JIT this function.
+        max_num_steps_to_stop = 280
+        stopping_states = jnp.zeros((self.dim_x, max_num_steps_to_stop))
+        dt_steps_to_stop = jnp.arange(0, max_num_steps_to_stop)*self.dt
+
+        vel_to_stop = jnp.maximum(state[2] + stopping_ctrl[0]*dt_steps_to_stop, 0.0)
+        vel_not_stopped = (vel_to_stop>0)
+        time_to_stop = jnp.maximum(-state[2]/stopping_ctrl[0], 0.0)
+        disp_to_stop = state[2]*dt_steps_to_stop + 0.5*stopping_ctrl[0]*dt_steps_to_stop**2
+        stopping_distance = state[2]*time_to_stop + 0.5*stopping_ctrl[0]*time_to_stop**2
+        disp_to_stop = vel_not_stopped*disp_to_stop + (1 - vel_not_stopped)*stopping_distance
+
+        theta_to_stop = state[3]*jnp.ones((max_num_steps_to_stop,))
+
+        stopping_states = stopping_states.at[0, :].set(state[0] + disp_to_stop*jnp.cos(theta_to_stop))
+        stopping_states = stopping_states.at[1, :].set(state[1] + disp_to_stop*jnp.sin(theta_to_stop))
+        stopping_states = stopping_states.at[2, :].set(vel_to_stop)
+        stopping_states = stopping_states.at[3, :].set(theta_to_stop)
+
+        stopping_ctrls = jnp.repeat(stopping_ctrl[:, jnp.newaxis], max_num_steps_to_stop, axis=1)
+
+        return stopping_states, stopping_ctrls
 
     @partial(jax.jit, static_argnames='self')
     def integrate_forward_jax(
