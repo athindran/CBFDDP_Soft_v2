@@ -529,7 +529,7 @@ def make_bicycle_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", 
             filter_params.append(config_solver.SHIELD_THRESHOLD) 
 
         c_obs = 'k'
-        env = CarSingle5DEnv(config_env, config_agent, config_cost)
+        env = CarSingleEnv(config_env, config_agent, config_cost)
 
         fig = plt.figure(layout='constrained', figsize=(5.5, 4.7))
         title_string = config_cost.COST_TYPE + " - " + config_agent.DYN
