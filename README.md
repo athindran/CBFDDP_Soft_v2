@@ -1,6 +1,6 @@
 # Soft-DDPCBF
 
-This is a repository for using CBF-DDP with soft minimum and maximum operators in place of the hard operators that were originally used. All changes are contained in the main branch. For public release, the code will go through another iteration of cleaning.
+This is a repository for using CBF-DDP with soft minimum and maximum operators in place of the hard operators that were originally used. All changes are contained in the main branch.
 
 ### Reachability Rollout with CBFDDP-SM on the Bicycle 5D dynamics.
 <p align="center">
@@ -17,13 +17,14 @@ This is a repository for using CBF-DDP with soft minimum and maximum operators i
 <img src="./videos/pvtol_softddpcbf.gif" width="480" height="300" />
 </p>
 
-### MJX-Brax with Barkour
+### MJX-Brax Barkour with CBF-DDP
 <p align="center">
-<img src="./videos/barkour_reachability_ddpcbf_policy.gif" width="480" height="300" />
+<img src="./videos/barkour_reachability_ddpcbf_policy.gif" width="380" height="200" />
 </p>
 
+### MJX-Brax Barkour with LR-DDP
 <p align="center">
-<img src="./videos/barkour_reachability_ddplr_policy.gif" width="480" height="300" />
+<img src="./videos/barkour_reachability_ddplr_policy.gif" width="380" height="200" />
 </p>
 
 ## Usage intructions
