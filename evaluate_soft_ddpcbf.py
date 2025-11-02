@@ -69,6 +69,8 @@ def main(config_file, road_boundary, filter_type, is_task_ilqr, line_search, sto
                     solver_info['marginopt'],
                     solver_info['marginopt_next'],
                     solver_info['process_time']))
+            # Turn off QCQP solver if it stalls.
+            #assert solver_info['process_time']<0.09
     
     # Callback after episode for plotting and summarizing evaluation
     def rollout_episode_callback(
@@ -101,7 +103,9 @@ def main(config_file, road_boundary, filter_type, is_task_ilqr, line_search, sto
             'safety_metrics': kwargs['safety_metric_history'],
             'safe_opt_history': kwargs['safe_opt_history'],
             'task_ctrl_history': kwargs['task_ctrl_history']}
-        np.save(os.path.join(fig_folder, "save_data.npy"), save_dict)
+        save_dict_str = os.path.join(fig_folder, "save_data.npy")
+        print(f"Saving to: {save_dict_str}")
+        np.save(save_dict_str, save_dict)
 
         solver_info = plan_history[-1]
         if config_solver.FILTER_TYPE != "none":
@@ -221,7 +225,7 @@ def main(config_file, road_boundary, filter_type, is_task_ilqr, line_search, sto
     out_folder = config_solver.OUT_FOLDER
 
     if not config_agent.is_task_ilqr:
-        out_folder = os.path.join(out_folder, "naivetask")
+        out_folder = os.path.join(out_folder, "naivetask/")
 
     yaw_constraint = None
     print(f"Road boundary: {road_boundary}")
@@ -348,8 +352,9 @@ if __name__ == "__main__":
     # LR solutions should use smaller control cost (W_ACCEL, W_OMEGA) weighting such as 0.001 to be less conservative and not stop.
     # Additionally, the user is recommended to plot the reach-avoid margin and not value and check that it does not become less than
     # zero. With the control cost added, 0 is not a level set. The reach-avoid LR should be safe with these changes despite convergence inaccuracy.
+    # Also, turn off noise for LR filters in agent code.
     # The options are ['SoftLR', 'LR', 'CBF', 'SoftCBF']. The best performing filter is 'SoftCBF'.
-    filters=['SoftCBF']
+    filters=['CBF', 'SoftCBF']
     
     out_folder, plot_tag, config_agent = None, None, None
     for filter_type in filters:

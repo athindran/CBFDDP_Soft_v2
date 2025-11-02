@@ -385,7 +385,7 @@ def make_animation_plots(env, obs_history, action_history, solver_info, safety_p
                          config_agent,
                          barrier_filter_indices, complete_filter_indices,
                          fig_prog_folder="./"):
-    if env.agent.dyn.id == "Bicycle4D" or env.agent.dyn.id == "Bicycle5D":
+    if env.agent.dyn.id == "Bicycle4D" or env.agent.dyn.id == "Bicycle5D" or env.agent.dyn.id == "PointMass4D":
         make_bic_animation_plots(env, obs_history, action_history, solver_info, safety_plan, config_solver, 
                          config_agent, barrier_filter_indices, complete_filter_indices,
                          fig_prog_folder)
@@ -489,8 +489,8 @@ def make_bicycle_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", 
     filter_type = []
     filter_params = []
     for suffix in suffixlist:
-        print(prefix, suffix)
-        plot_data = np.load(prefix+"/"+suffix+"/figure/save_data.npy", allow_pickle=True)
+        print(str(prefix+suffix+"/figure/save_data.npy"))
+        plot_data = np.load(prefix+suffix+"/figure/save_data.npy", allow_pickle=True)
         plot_data = plot_data.ravel()[0]
         plot_obses_complete_filter_list.append( np.array(plot_data['complete_indices'] ) )
         plot_obses_barrier_filter_list.append( np.array(plot_data['barrier_indices'] ) )
@@ -602,6 +602,7 @@ def make_bicycle_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", 
 
             ax.plot(np.linspace(0, env.visual_extent[1], 100), np.array([rblist[idx]]*100), 'k--')
             ax.plot(np.linspace(0, env.visual_extent[1], 100), np.array([-1*rblist[idx]]*100), 'k--')
+            ax.set_ylim([env.visual_extent[2] - 0.5, env.visual_extent[3] + 0.5])
             if not hide_label:
                 ax.set_xlabel('X position $(m)$', fontsize=legend_fontsize)
                 ax.set_ylabel('Y position $(m)$', fontsize=legend_fontsize)
@@ -648,7 +649,10 @@ def make_bicycle_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", 
 
             if not hide_label:
                 #axes[0].set_xlabel('Time index', fontsize=legend_fontsize)
-                axes[0].set_ylabel(f'Accel $(m/s^2)$', fontsize=legend_fontsize)
+                if config_agent.DYN=='Bicycle5D' or config_agent.DYN=='Bicycle4D':
+                    axes[0].set_ylabel(f'Accel $(m/s^2)$', fontsize=legend_fontsize)
+                else:
+                    axes[0].set_ylabel(f'Accel x $(m/s^2)$', fontsize=legend_fontsize)
             #axes[0].grid(True)
             axes[0].set_xticks(ticks=[], labels=[], fontsize=5, labelsize=5)
             axes[0].set_yticks(ticks=[action_space[0, 0], action_space[0, 1]], 
@@ -664,7 +668,12 @@ def make_bicycle_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", 
 
             if not hide_label:
                 axes[1].set_xlabel('Time $(s)$', fontsize=legend_fontsize)
-                axes[1].set_ylabel(f'Steer $(rad/s)$', fontsize=legend_fontsize)
+                if config_agent.DYN=='Bicycle5D':
+                    axes[1].set_ylabel(f'Steer $(rad/s)$', fontsize=legend_fontsize)
+                elif config_agent.DYN=='Bicycle4D':
+                    axes[1].set_ylabel(f'Steer $(rad)$', fontsize=legend_fontsize)
+                elif config_agent.DYN=='PointMass4D':
+                    axes[1].set_ylabel(f'Accel y $(m/s^2)$', fontsize=legend_fontsize)
             #axes[1].grid(True)
             axes[1].set_xticks(ticks=[0, round(dt*maxsteps, 2)], labels=[0, round(dt*maxsteps, 2)], fontsize=legend_fontsize)
             axes[1].set_yticks(ticks=[action_space[1, 0], action_space[1, 1]], 
@@ -742,7 +751,7 @@ def make_bicycle_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", 
     ax_v.set_yticks(ticks=[0, max_value], 
                         labels=[0, max_value], 
                         fontsize=legend_fontsize)
-    ax_v.set_ylim([0.0, max_value])
+    ax_v.set_ylim([-0.1, max_value])
     ax_v.yaxis.set_label_coords(-0.04, 0.5)
     ax_v.xaxis.set_label_coords(0.5, -0.04)
     ax_v.set_xlabel('Time $(s)$', 
