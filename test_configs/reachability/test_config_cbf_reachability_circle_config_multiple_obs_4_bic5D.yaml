@@ -2,7 +2,7 @@ environment:
   SEED: 0
   NUM_AGENTS: 1
   # TRACK
-  TRACK_LEN: 20
+  TRACK_LEN: 12
   # LOOP: true
   TIMEOUT: 100
   # DONE FLAG PARAM
@@ -28,10 +28,6 @@ environment:
     - [7.7, -3.0, 0.5]
     - [8.6, -3.0, 0.5]
     - [9.5, -3.0, 0.5]
-    - [15.5, 0.0, 0.8]
-    - [16.5, 0.0, 0.8]
-    - [17.5, 0.0, 0.8]
-    - [18.5, 0.0, 0.8]
   RESET_SPACE:
     - [0., 8.0]
     - [-0.4, 0.4]
