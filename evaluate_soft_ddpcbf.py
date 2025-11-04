@@ -25,7 +25,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = " "
 jax.config.update('jax_platform_name', 'cpu')
 
 
-def main(config_file, road_boundary, filter_type, is_task_ilqr, line_search, stopping_computation='rollout'):
+def main(config_file, road_boundary, filter_type, is_task_ilqr, line_search, stopping_computation='rollout', should_animate=False):
     # Callback after each timestep for plotting and summarizing evaluation
     def rollout_step_callback(
             env: CarSingleEnv,
@@ -61,12 +61,16 @@ def main(config_file, road_boundary, filter_type, is_task_ilqr, line_search, sto
                 end=' -> ')
         else:
             print(
-                "[{}]: solver returns status {}, Vopt {:.1e}, future Vopt {:.1e}, and uses {:.3f}.".format(
+                "[{}]: solver returns status {}, Vopt {:.1e}, future Vopt {:.1e}, marginopt {:.1e}, future marginopt {:.1e}, and uses {:.3f}.".format(
                     states.shape[1] - 1,
                     solver_info['status'],
                     solver_info['Vopt'],
                     solver_info['Vopt_next'],
+                    solver_info['marginopt'],
+                    solver_info['marginopt_next'],
                     solver_info['process_time']))
+            # Turn off QCQP solver if it stalls.
+            #assert solver_info['process_time']<0.09
     
     # Callback after episode for plotting and summarizing evaluation
     def rollout_episode_callback(
@@ -99,7 +103,9 @@ def main(config_file, road_boundary, filter_type, is_task_ilqr, line_search, sto
             'safety_metrics': kwargs['safety_metric_history'],
             'safe_opt_history': kwargs['safe_opt_history'],
             'task_ctrl_history': kwargs['task_ctrl_history']}
-        np.save(os.path.join(fig_folder, "save_data.npy"), save_dict)
+        save_dict_str = os.path.join(fig_folder, "save_data.npy")
+        print(f"Saving to: {save_dict_str}")
+        np.save(save_dict_str, save_dict)
 
         solver_info = plan_history[-1]
         if config_solver.FILTER_TYPE != "none":
@@ -219,7 +225,7 @@ def main(config_file, road_boundary, filter_type, is_task_ilqr, line_search, sto
     out_folder = config_solver.OUT_FOLDER
 
     if not config_agent.is_task_ilqr:
-        out_folder = os.path.join(out_folder, "naivetask")
+        out_folder = os.path.join(out_folder, "naivetask/")
 
     yaw_constraint = None
     print(f"Road boundary: {road_boundary}")
@@ -274,7 +280,6 @@ def main(config_file, road_boundary, filter_type, is_task_ilqr, line_search, sto
     # Warms up jit again
     env.agent.get_action(obs=x_cur, state=x_cur, warmup=True)
 
-    should_animate = False
     nominal_states, result, traj_info = env.simulate_one_trajectory(
         T_rollout=max_iter_receding, end_criterion=end_criterion,
         reset_kwargs=dict(state=x_cur),
@@ -331,25 +336,33 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "-sc", "--stopping_computation", help="Choose stopping path as rollout or analytic", type=str, default='rollout'
+        "-sp", "--stopping_computation", help="Choose stopping path as rollout or analytic", type=str, default='rollout'
     )
     parser.add_argument('--naive_task', dest='naive_task', action='store_true')
     parser.add_argument(
         '--no-naive_task',
         dest='naive_task',
         action='store_false')
+    parser.add_argument('--should_animate', dest='should_animate', action='store_true')
     parser.set_defaults(naive_task=False)
 
     args = parser.parse_args()
 
-    filters=['SoftCBF']
+    # The LR filters are relatively unsafe with the chattering at boundary. With reach-avoid, the recommended
+    # LR solutions should use smaller control cost (W_ACCEL, W_OMEGA) weighting such as 0.001 to be less conservative and not stop.
+    # Additionally, the user is recommended to plot the reach-avoid margin and not value and check that it does not become less than
+    # zero. With the control cost added, 0 is not a level set. The reach-avoid LR should be safe with these changes despite convergence inaccuracy.
+    # Also, turn off noise for LR filters in agent code.
+    # The options are ['SoftLR', 'LR', 'CBF', 'SoftCBF']. The best performing filter is 'SoftCBF'.
+    filters=['CBF', 'SoftCBF']
     
     out_folder, plot_tag, config_agent = None, None, None
     for filter_type in filters:
         jax.clear_caches()
         out_folder, plot_tag, config_agent, config_solver = main(args.config_file, args.road_boundary, filter_type=filter_type, is_task_ilqr=(not args.naive_task),         
                                                     line_search=args.line_search,
-                                                    stopping_computation=args.stopping_computation)
+                                                    stopping_computation=args.stopping_computation,
+                                                    should_animate=args.should_animate,)
 
     make_bicycle_comparison_report(
         out_folder,

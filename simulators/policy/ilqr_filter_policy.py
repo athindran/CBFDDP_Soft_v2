@@ -258,8 +258,11 @@ class iLQRSafetyFilter(BasePolicy):
                     # Controls improvement direction
                     # limits = np.array( [[self.dyn.ctrl_space[0, 0] - control_cbf_cand[0], self.dyn.ctrl_space[0, 1] - control_cbf_cand[0]],
                     #          [self.dyn.ctrl_space[1, 0] - control_cbf_cand[1], self.dyn.ctrl_space[1, 1] - control_cbf_cand[1]]] )
+                    #qcqp_start_time = time.time()
                     control_correction = barrier_filter_quadratic_two(
-                        P, p, scaled_c, initialize=solver_initial, control_bias_term=control_bias_term)  
+                        P, p, scaled_c, initialize=solver_initial, control_bias_term=control_bias_term)
+                    #qcqp_end_time = time.time()
+                    #print(f"QCQP solver time: {qcqp_end_time - qcqp_start_time}")
                 elif self.constraint_type == 'linear':
                     control_correction = barrier_filter_linear(
                         grad_x, B0[:, :, 0], scaled_c)
