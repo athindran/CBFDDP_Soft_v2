@@ -1,7 +1,7 @@
 from simulators import(
     load_config,
-    CarSingle5DEnv,
-    BicycleReachAvoid5DMargin)
+    CarSingleEnv,
+    BicycleReachAvoidMargin)
 import jax
 from matplotlib import pyplot as plt
 import numpy as np
@@ -44,7 +44,7 @@ config_env.TRACK_WIDTH_RIGHT = road_boundary
 config_env.TRACK_WIDTH_LEFT = road_boundary
 config_agent.FILTER_TYPE = 'SoftCBF'
 
-env = CarSingle5DEnv(config_env, config_agent, config_cost)
+env = CarSingleEnv(config_env, config_agent, config_cost)
 
 subfigs = fig.subfigures(1, 2, wspace=0.05, width_ratios=[1.3, 1])
 ax = subfigs[0].subplots(1, 1)
@@ -76,7 +76,7 @@ config_env.TRACK_WIDTH_RIGHT = road_boundary
 config_env.TRACK_WIDTH_LEFT = road_boundary
 config_agent.FILTER_TYPE = 'SoftCBF'
 
-env = CarSingle5DEnv(config_env, config_agent, config_cost)
+env = CarSingleEnv(config_env, config_agent, config_cost)
 out_folder, plot_tag, config_agent, config_solver = run_ddp_cbf(config_file, road_boundary, filter_type='SoftCBF', is_task_ilqr=True, line_search='baseline')
 plot_softcbf_data_reachavoid_only_obstacle_reiterate = np.load(os.path.join(out_folder, f"road_boundary={road_boundary}/SoftCBF/figure/save_data.npy"), allow_pickle=True)
 plot_softcbf_data_reachavoid_only_obstacle_reiterate = plot_softcbf_data_reachavoid_only_obstacle_reiterate.ravel()[0]
@@ -101,7 +101,7 @@ config_env.TRACK_WIDTH_RIGHT = road_boundary
 config_env.TRACK_WIDTH_LEFT = road_boundary
 config_agent.FILTER_TYPE = 'SoftCBF'
 
-env = CarSingle5DEnv(config_env, config_agent, config_cost)
+env = CarSingleEnv(config_env, config_agent, config_cost)
 env.render_obs(ax=ax, c='k')
 
 out_folder, plot_tag, config_agent, config_solver = run_ddp_cbf(config_file, road_boundary, filter_type='SoftCBF', is_task_ilqr=True, line_search='baseline')
@@ -129,7 +129,7 @@ config_env.TRACK_WIDTH_LEFT = road_boundary
 config_agent.FILTER_TYPE = 'SoftCBF'
 action_space = np.array(config_agent.ACTION_RANGE, dtype=np.float32)
 
-env = CarSingle5DEnv(config_env, config_agent, config_cost)
+env = CarSingleEnv(config_env, config_agent, config_cost)
 env.render_obs(ax=ax, c='k')
 
 out_folder, plot_tag, config_agent, config_solver = run_ddp_cbf(config_file, road_boundary, filter_type='SoftCBF', is_task_ilqr=True, line_search='baseline')
@@ -156,7 +156,7 @@ config_env.TRACK_WIDTH_RIGHT = road_boundary
 config_env.TRACK_WIDTH_LEFT = road_boundary
 config_agent.FILTER_TYPE = 'SoftCBF'
 
-env = CarSingle5DEnv(config_env, config_agent, config_cost)
+env = CarSingleEnv(config_env, config_agent, config_cost)
 env.render_obs(ax=ax, c='k')
 
 out_folder, plot_tag, config_agent, config_solver = run_ddp_cbf(config_file, road_boundary, filter_type='SoftCBF', is_task_ilqr=True, line_search='baseline')

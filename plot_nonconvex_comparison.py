@@ -1,7 +1,7 @@
 from simulators import(
     load_config,
-    CarSingle5DEnv,
-    BicycleReachAvoid5DMargin)
+    CarSingleEnv,
+    BicycleReachAvoidMargin)
 import jax
 from matplotlib import pyplot as plt
 import numpy as np
@@ -43,7 +43,7 @@ config_env.TRACK_WIDTH_RIGHT = road_boundary
 config_env.TRACK_WIDTH_LEFT = road_boundary
 config_agent.FILTER_TYPE = 'SoftCBF'
 
-env = CarSingle5DEnv(config_env, config_agent, config_cost)
+env = CarSingleEnv(config_env, config_agent, config_cost)
 
 subfigs = fig.subfigures(1, 2, wspace=0.05, width_ratios=[1.6, 1])
 ax = subfigs[0].subplots(1, 1)
@@ -80,7 +80,7 @@ ellipse_config_cost.TRACK_WIDTH_LEFT = road_boundary
 ellipse_config_env.TRACK_WIDTH_RIGHT = road_boundary
 ellipse_config_env.TRACK_WIDTH_LEFT = road_boundary
 ellipse_config_agent.FILTER_TYPE = 'CBF'
-ellipse_env = CarSingle5DEnv(ellipse_config_env, ellipse_config_agent, ellipse_config_cost)
+ellipse_env = CarSingleEnv(ellipse_config_env, ellipse_config_agent, ellipse_config_cost)
 ellipse_env.render_obs(ax=ax, c='b')
 
 # Extract ellipse obstacle data.
