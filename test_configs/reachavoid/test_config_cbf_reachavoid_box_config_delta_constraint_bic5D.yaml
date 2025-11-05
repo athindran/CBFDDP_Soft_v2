@@ -92,6 +92,6 @@ solver:
   OUT_FOLDER: exps/ilqr/bic5D/reachavoid_experiment_delta_constraint_mulobs_box_config1/
   DEVICE: cpu
   # options: 'ILQR', 'DDP'.
-  ORDER: 'ILQR'
+  ORDER: 'DDP'
   FIG_SIZE_X: 6.0
   FIG_SIZE_Y: 5.0

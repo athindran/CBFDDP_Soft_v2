@@ -662,7 +662,7 @@ class iLQRReachAvoid(iLQR):
             Q_u = c_u_t[:, idx] + fu[:, :, idx].T @ V_x
             Q_uu_append = jnp.einsum('i, ijk->jk', V_x, fuu[:, :, :, idx])
             Q_uu_reg = (c_uu_t[:, :, idx] + \
-                fu[:, :, idx].T @ (V_xx + reg_mat) @ fu[:, :, idx])
+                fu[:, :, idx].T @ (V_xx + reg_mat) @ fu[:, :, idx] + Q_uu_append)
 
             Q_uu_inv = jnp.linalg.inv(Q_uu_reg)
             Ks = Ks.at[:, :, idx].set(-Q_uu_inv @ Q_ux_reg)
