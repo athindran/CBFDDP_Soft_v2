@@ -27,21 +27,21 @@ This is a repository for using CBF-DDP with soft minimum and maximum operators i
 <img src="./videos/barkour_reachability_ddplr_policy.gif" width="380" height="200" />
 </p>
 
-## Usage intructions
+## Usage instructions
 
-There are two minor variations, one intended to work with our own environments and one intended to work with the Brax-MJX interface. We rely on Anaconda for the python environment setup. The `bicycle_jax_supported_env.yml` is best suited for our own simulators. The `brax_env.yml` is best uited for the MJX simulations. The user is free to mix the versions but the code may not be reproducible perfectly.
+There are two minor variations of the same methods, one intended to work with our own environments and one intended to work with the Brax-MJX interface. We rely on Anaconda for the Python environment setup. The `bicycle_jax_supported_env.yml` is best suited for our own simulators. The `brax_env.yml` is best suited for the MJX simulations. The user is free to mix the versions, but the code may not be reproducible perfectly.
 
 ### RaceCar 
 
-The race-car is based on the setup in `simulators/car/*.py` with the dynamics implemented in `simulators/dynamics/*.py`. We provide the option for `Bicycle4D`, `Bicycle5D` and `PointMass4D` dynamics for the racecar setup. The point mass dynamics re-purposes the same configs and costs for the pointmass with mixing of the terms used to refer to the state variables. 
+The race car is based on the setup in `simulators/car/*.py`, with the dynamics implemented in `simulators/dynamics/*.py`. We provide the option for `Bicycle4D`, `Bicycle5D`, and `PointMass4D` dynamics for the racecar setup. The point mass dynamics repurposes the same configurations and costs for the point mass, with a mixing of the terms used to refer to the state variables. 
 
-In order to run the race-car setup, examples are provided in `test_scripts_ilqr_task.sh` and `test_scripts_naive_task.sh`.
+To run the race-car setup, examples are provided in `test_scripts_ilqr_task.sh` and `test_scripts_naive_task.sh`.
 
 ```
-# Bicycle 4D reachavoid - baseline line search, road boundary 2.5 in each direction, rollout stopping path.
+# Bicycle 4D reach-avoid - baseline line search, road boundary 2.5 in each direction, rollout stopping path.
 python evaluate_soft_ddpcbf.py -cf ./test_configs/reachavoid/test_config_cbf_reachavoid_circle_config_multiple_obs_1_bic4D.yaml -rb 2.5 -ls 'baseline' -sp 'rollout'
 
-# Bicycle 5D reachavoid - baseline line search, road boundary 3.0 in each direction, analytic stopping path.
+# Bicycle 5D reach-avoid - baseline line search, road boundary 3.0 in each direction, analytic stopping path.
 python evaluate_soft_ddpcbf.py -cf ./test_configs/reachavoid/test_config_cbf_reachavoid_circle_config_multiple_obs_1_bic5D.yaml -rb 3.0 -ls 'baseline' -sp 'analytic'
 
 # Bicycle 5D reachability - trust region line search, road boundary 3.5 in each direction.
@@ -53,15 +53,15 @@ python evaluate_soft_ddpcbf.py -cf ./test_configs/reachability/test_config_cbf_r
 
 Provided are:
 
-* four options for line search - baseline, armijo, trust_region_constant_margin, trust_region_tune_margin. We did not need anything more than the baseline method as we initialize the solver with the solutions from the previous time at each time.
+* four options for line search - `baseline`, `armijo`, `trust_region_constant_margin`, `trust_region_tune_margin`. We did not need anything more than the baseline method, as we initialized the solver with the solutions from the previous time.
 
 * Naive task or ILQR task policy
 
 * `analytic` stopping path or `rollout` stopping path based on reach-avoid
 
-The test configs in `./test_configs/` provide the config options needed for tuning the filters. Tuning needs to done as explained in the supporting document for obtaining desired results. The environment provides the option to provide `Circle`, `Box` and `Ellipse`.
+The test configs in `./test_configs/` provide the config options needed for tuning the filters. Tuning needs to be performed as explained in the supporting document to achieve the desired results. The environment offers the option to provide `Circle`, `Box` and `Ellipse` obstacles.
 
-The choice of safety filter is hard-coded in `evaluate_soft_ddpcbf.py` with the options [`SoftCBF`, `CBF`, `LR`, `SoftLR`]. More instructions on how to setup each safety filter will be provided. The safety filter option may be provided as a command line argument later.
+The choice of safety filter is hard-coded in `evaluate_soft_ddpcbf.py` with the options [`SoftCBF`, `CBF`, `LR`, `SoftLR`]—more instructions on how to setup each safety filter will be provided. The safety filter option may be provided as a command-line argument in a future release.
 
 ### 2D Planar vertical takeoff and landing
 
