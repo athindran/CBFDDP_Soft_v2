@@ -12,7 +12,7 @@ from jax import numpy as jnp
 @jax.jit
 def barrier_filter_linear(grad_x, B0, c):
     p = grad_x.T @ B0
-    return -c * p / (jnp.dot(p, p))
+    return -c * p / (jnp.dot(p, p) + 1e-8)
 
 
 def barrier_filter_quadratic_two(P, p, c, initialize, control_bias_term=np.zeros((2,))):
