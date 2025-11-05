@@ -2,31 +2,6 @@
 
 This is a repository for using CBF-DDP with soft minimum and maximum operators in place of the hard operators that were originally used. All changes are contained in the main branch. The branch `singular_point_reproduction` is being used for exploration for local minima and singular phenomena for reach-avoid DDP.
 
-### Reachability Rollout with CBFDDP-SM on the Bicycle 5D dynamics.
-<p align="center">
-<img src="./videos/bic5d_reachability_softddpcbf.gif" width="480" height="400" />
-</p>
-
-### Reach-avoid Rollout with CBFDDP-SM on the Bicycle 5D dynamics.
-<p align="center">
-<img src="./videos/bic5d_reachavoid_softddpcbf.gif" width="480" height="400" />
-</p>
-
-### Reachability Rollout with CBFDDP-SM on the PVTOL 6D dynamics.
-<p align="center">
-<img src="./videos/pvtol_softddpcbf.gif" width="480" height="300" />
-</p>
-
-### MJX-Brax Barkour with CBF-DDP
-<p align="center">
-<img src="./videos/barkour_reachability_ddpcbf_policy.gif" width="380" height="200" />
-</p>
-
-### MJX-Brax Barkour with LR-DDP
-<p align="center">
-<img src="./videos/barkour_reachability_ddplr_policy.gif" width="380" height="200" />
-</p>
-
 ## Usage instructions
 
 There are two minor variations of the same methods, one intended to work with our own environments and one intended to work with the Brax-MJX interface. We rely on Anaconda for the Python environment setup. The `bicycle_jax_supported_env.yml` is best suited for our own simulators. The `brax_env.yml` is best suited for the MJX simulations. The user is free to mix the versions, but the code may not be reproducible perfectly.
@@ -50,6 +25,15 @@ python evaluate_soft_ddpcbf.py -cf ./test_configs/reachability/test_config_cbf_r
 # Bicycle 5D reachability - trust region line search, road boundary 3.5 in each direction, use naive task instead of default ILQR task policy.
 python evaluate_soft_ddpcbf.py -cf ./test_configs/reachability/test_config_cbf_reachability_circle_config_multiple_obs_2_bic5D.yaml -rb 3.5 -ls 'trust_region_tune_margin' --naive_task
 ```
+#### Reachability Rollout with CBFDDP-SM on the Bicycle 5D dynamics.
+<p align="center">
+<img src="./videos/bic5d_reachability_softddpcbf.gif" width="480" height="400" />
+</p>
+
+#### Reach-avoid Rollout with CBFDDP-SM on the Bicycle 5D dynamics.
+<p align="center">
+<img src="./videos/bic5d_reachavoid_softddpcbf.gif" width="480" height="400" />
+</p>
 
 Provided are:
 
@@ -67,6 +51,10 @@ The choice of safety filter is hard-coded in `evaluate_soft_ddpcbf.py` with the 
 
 The PVTOL6D is based on the setup in `simulators/aerialV/*.py` with the dynamics implemented in `simulators/dynamics/*.py`. We perform the following test for the PVTOL
 
+#### Reachability Rollout with CBFDDP-SM on the PVTOL 6D dynamics.
+<p align="center">
+<img src="./videos/pvtol_softddpcbf.gif" width="480" height="300" />
+</p>
 
 ```
 python evaluate_soft_ddpcbf_pvtol.py -cf ./test_configs/pvtol/test_config_circle_reach_obs1_pvtol6D.yaml
@@ -74,4 +62,12 @@ python evaluate_soft_ddpcbf_pvtol.py -cf ./test_configs/pvtol/test_config_circle
 
 ### Brax Reacher and MJX Barkour
 
-TBD
+#### MJX-Brax Barkour with CBF-DDP
+<p align="center">
+<img src="./videos/barkour_reachability_ddpcbf_policy.gif" width="380" height="200" />
+</p>
+
+#### MJX-Brax Barkour with LR-DDP
+<p align="center">
+<img src="./videos/barkour_reachability_ddplr_policy.gif" width="380" height="200" />
+</p>
