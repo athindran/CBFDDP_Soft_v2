@@ -1,4 +1,4 @@
-# Soft-DDPCBF
+# CBF-DDP V2 with Soft Operators
 
 This is a repository for using CBF-DDP with soft minimum and maximum operators in place of the hard operators that were originally used. All changes are contained in the main branch. The branch `singular_point_reproduction` is being used for exploration for local minima and singular phenomena for reach-avoid DDP.
 
