@@ -153,7 +153,7 @@ def main(seed: int, env_name='reacher', policy_type="neural"):
       # Warmup
       policy.get_action(obs=state, state=state, controls=None)
       T = config_solver.MAX_ITER_RECEDING
-    elif policy_type=="ilqr_filter_with_neural_policy":
+    elif policy_type=="cbfilqr_filter_with_neural_policy":
       config = load_config(f'./brax_utils/configs/{env_name}.yaml')
       config_solver = config['solver']
       config_cost = config['cost']
@@ -183,7 +183,7 @@ def main(seed: int, env_name='reacher', policy_type="neural"):
       prev_sol = None
       prev_ctrl = jp.zeros((brax_env.dim_u, ))
       T = config_solver.MAX_ITER_RECEDING
-    elif policy_type=="lr_filter_with_neural_policy":
+    elif policy_type=="cbflr_filter_with_neural_policy":
       config = load_config(f'./brax_utils/configs/{env_name}.yaml')
       config_solver = config['solver']
       config_cost = config['cost']
@@ -272,7 +272,7 @@ def main(seed: int, env_name='reacher', policy_type="neural"):
         act = jax.block_until_ready(act)
         control_cycle_times = control_cycle_times.at[idx].set(time.time() - time0)
         controls_init = jp.array(solver_dict['reinit_controls'])
-      elif policy_type=="ilqr_filter_with_neural_policy" or policy_type=="lr_filter_with_neural_policy":
+      elif policy_type=="cbfilqr_filter_with_neural_policy" or policy_type=="cbflr_filter_with_neural_policy":
         prev_ctrl = jp.array(prev_ctrl)
         time0 = time.time()
         task_ctrl, _ = task_policy(state.obs, act_rng)
@@ -341,7 +341,7 @@ if __name__ == "__main__":
         "-env", "--environment", help="Choose environment", type=str, default='reacher'
     )
     args = parser.parse_args()
-    for seed in range(0, 10):
+    for seed in range(0, 5):
       jax.clear_caches()
       for policy_type in ["ilqr_filter_with_neural_policy", "neural", "lr_filter_with_neural_policy"]:
         print(seed, policy_type)
