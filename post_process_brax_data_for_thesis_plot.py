@@ -21,8 +21,8 @@ def get_brax_env(env_name, backend):
 
 
 def make_barkour_reachability_plot():
-    barkour_cbfddp_save_folder = './brax_videos/barkour/seed_0/ilqr_filter_with_neural_policy_Reachability_save_data.npy'
-    barkour_lrddp_save_folder = './brax_videos/barkour/seed_0/lr_filter_with_neural_policy_Reachability_save_data.npy'
+    barkour_cbfddp_save_folder = './brax_videos/barkour/seed_0/cbfilqr_filter_with_neural_policy_Reachability_save_data.npy'
+    barkour_lrddp_save_folder = './brax_videos/barkour/seed_0/cbflr_filter_with_neural_policy_Reachability_save_data.npy'
     barkour_neural_save_folder = './brax_videos/barkour/seed_0/neural_Reachability_save_data.npy'
 
     barkour_cbfddp_data = np.load(barkour_cbfddp_save_folder, allow_pickle=True)
@@ -122,9 +122,9 @@ def make_barkour_reachability_plot():
     plt.savefig('./plots_summary/barkour_summary.png', bbox_inches='tight', dpi=500)
 
 
-def make_reacher_plot(seed):
-    reacher_cbfddp_save_folder = f'./brax_videos/reacher/seed_{seed}/ilqr_filter_with_neural_policy_Reachability_save_data.npy'
-    reacher_lrddp_save_folder = f'./brax_videos/reacher/seed_{seed}/lr_filter_with_neural_policy_Reachability_save_data.npy'
+def make_reacher_plot(seed=0):
+    reacher_cbfddp_save_folder = f'./brax_videos/reacher/seed_{seed}/cbfilqr_filter_with_neural_policy_Reachability_save_data.npy'
+    reacher_lrddp_save_folder = f'./brax_videos/reacher/seed_{seed}/cbflr_filter_with_neural_policy_Reachability_save_data.npy'
     reacher_neural_save_folder = f'./brax_videos/reacher/seed_{seed}/neural_Reachability_save_data.npy'
 
     reacher_cbfddp_data = np.load(reacher_cbfddp_save_folder, allow_pickle=True)
@@ -248,5 +248,6 @@ def make_reacher_plot(seed):
     plt.savefig(f'./plots_summary/reacher_summary_{seed}.pdf', bbox_inches='tight', dpi=500)
     plt.savefig(f'./plots_summary/reacher_summary_{seed}.png', bbox_inches='tight', dpi=500)
 
-make_reacher_plot()
+for seed in range(10):
+    make_reacher_plot(seed=seed)
 make_barkour_reachability_plot()
