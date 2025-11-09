@@ -277,7 +277,7 @@ def main(seed: int, env_name='reacher', policy_type="neural"):
         time0 = time.time()
         task_ctrl, _ = task_policy(state.obs, act_rng)
         act, solver_dict = safety_filter.get_action(obs=state, state=state, task_ctrl=task_ctrl, prev_sol=prev_sol, prev_ctrl=prev_ctrl)
-        #act = jax.block_until_ready(act)
+        act = jax.block_until_ready(act)
         control_cycle_times = control_cycle_times.at[idx].set(time.time() - time0)
         prev_sol = copy.deepcopy(solver_dict)
         controls_init = jp.array(solver_dict['reinit_controls'])
