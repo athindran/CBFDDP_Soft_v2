@@ -122,10 +122,10 @@ def make_barkour_reachability_plot():
     plt.savefig('./plots_summary/barkour_summary.png', bbox_inches='tight', dpi=500)
 
 
-def make_reacher_plot():
-    reacher_cbfddp_save_folder = './brax_videos/reacher/seed_0/ilqr_filter_with_neural_policy_Reachability_save_data.npy'
-    reacher_lrddp_save_folder = './brax_videos/reacher/seed_0/lr_filter_with_neural_policy_Reachability_save_data.npy'
-    reacher_neural_save_folder = './brax_videos/reacher/seed_0/neural_Reachability_save_data.npy'
+def make_reacher_plot(seed):
+    reacher_cbfddp_save_folder = f'./brax_videos/reacher/seed_{seed}/ilqr_filter_with_neural_policy_Reachability_save_data.npy'
+    reacher_lrddp_save_folder = f'./brax_videos/reacher/seed_{seed}/lr_filter_with_neural_policy_Reachability_save_data.npy'
+    reacher_neural_save_folder = f'./brax_videos/reacher/seed_{seed}/neural_Reachability_save_data.npy'
 
     reacher_cbfddp_data = np.load(reacher_cbfddp_save_folder, allow_pickle=True)
     reacher_lrddp_data = np.load(reacher_lrddp_save_folder, allow_pickle=True)
@@ -245,8 +245,8 @@ def make_reacher_plot():
     col1_axes[1].set_ylim([-0.3, 0.3])
     col1_axes[0].legend(fontsize=9, loc='upper left', bbox_to_anchor=(-0.05, 1.48), ncol=1, framealpha=0)
 
-    plt.savefig('./plots_summary/reacher_summary.pdf', bbox_inches='tight', dpi=500)
-    plt.savefig('./plots_summary/reacher_summary.png', bbox_inches='tight', dpi=500)
+    plt.savefig(f'./plots_summary/reacher_summary_{seed}.pdf', bbox_inches='tight', dpi=500)
+    plt.savefig(f'./plots_summary/reacher_summary_{seed}.png', bbox_inches='tight', dpi=500)
 
 make_reacher_plot()
 make_barkour_reachability_plot()

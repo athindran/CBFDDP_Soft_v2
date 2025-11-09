@@ -6,7 +6,7 @@ cost:
   W_2: 0.01
   MAX_ANGULAR_VELOCITY: [5.0, 5.0]
   MAX_TARGET_ANGULAR_VELOCITY: [5.0, 5.0]
-  SMOOTHING_TEMP: 2.0
+  SMOOTHING_TEMP: 0.5
 
 solver:
   N: 20
@@ -16,7 +16,7 @@ solver:
   # Baseline seems to be good enough for most cases.
   LINE_SEARCH: 'baseline'
   # Filter options: 'none', 'LR', 'CBF'
-  FILTER_TYPE: 'CBF'
+  FILTER_TYPE: 'SoftCBF'
   CONSTRAINT_TYPE: 'quadratic'
   CBF_GAMMA: 0.9
   SOFT_CBF_GAMMA: 0.9

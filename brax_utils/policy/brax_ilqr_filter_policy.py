@@ -133,7 +133,7 @@ class iLQRBraxSafetyFilter(BasePolicy):
         scaled_c = constraint_violation
 
         # Scaling parameter
-        scaling_factor = 1.2
+        scaling_factor = 0.8
 
         # Exit loop once CBF constraint satisfied or maximum iterations
         # violated

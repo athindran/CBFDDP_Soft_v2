@@ -161,7 +161,7 @@ def main(seed: int, env_name='reacher', policy_type="neural"):
       config_solver.COST_TYPE = config_cost.COST_TYPE
       
       if env_name=="reacher":
-        reachability_cost = ReacherReachabilityMargin(config=config_cost, env=get_brax_env(env_name, backend))
+        reachability_cost = ReacherReachabilityMargin(config=config_cost, env=get_brax_env(env_name, backend), filter_type=config_solver.FILTER_TYPE)
       elif env_name=="ant":
         # NOTE: DOES NOT WORK
         reachability_cost = AntReachabilityMargin(config=config_cost, env=get_brax_env(env_name, backend))
@@ -341,8 +341,8 @@ if __name__ == "__main__":
         "-env", "--environment", help="Choose environment", type=str, default='reacher'
     )
     args = parser.parse_args()
-    for seed in range(0, 1):
-      for policy_type in ["ilqr_filter_with_neural_policy", "neural_policy", "lr_filter_with_neural_policy"]:
+    for seed in [8]:
+      for policy_type in ["ilqr_filter_with_neural_policy"]:
         print(seed, policy_type)
         device = jax.devices()[0]
         print(device)
