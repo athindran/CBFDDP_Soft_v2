@@ -341,8 +341,9 @@ if __name__ == "__main__":
         "-env", "--environment", help="Choose environment", type=str, default='reacher'
     )
     args = parser.parse_args()
-    for seed in [8]:
-      for policy_type in ["ilqr_filter_with_neural_policy"]:
+    for seed in range(0, 10):
+      jax.clear_caches()
+      for policy_type in ["ilqr_filter_with_neural_policy", "neural", "lr_filter_with_neural_policy"]:
         print(seed, policy_type)
         device = jax.devices()[0]
         print(device)
