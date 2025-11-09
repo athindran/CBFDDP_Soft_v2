@@ -24,6 +24,7 @@ from brax_utils import ( WrappedBraxEnv,
       AntReachabilityMargin, 
       BarkourReachabilityMargin,
       )
+from post_process_brax_data_for_summary_plot import make_reacher_plot, make_barkour_reachability_plot
 
 from simulators import load_config
 sys.path.append(".")
@@ -183,7 +184,7 @@ def main(seed: int, env_name='reacher', policy_type="neural"):
       prev_sol = None
       prev_ctrl = jp.zeros((brax_env.dim_u, ))
       T = config_solver.MAX_ITER_RECEDING
-    elif policy_type=="cbflr_filter_with_neural_policy":
+    elif policy_type=="lrilqr_filter_with_neural_policy":
       config = load_config(f'./brax_utils/configs/{env_name}.yaml')
       config_solver = config['solver']
       config_cost = config['cost']
@@ -272,7 +273,7 @@ def main(seed: int, env_name='reacher', policy_type="neural"):
         act = jax.block_until_ready(act)
         control_cycle_times = control_cycle_times.at[idx].set(time.time() - time0)
         controls_init = jp.array(solver_dict['reinit_controls'])
-      elif policy_type=="cbfilqr_filter_with_neural_policy" or policy_type=="cbflr_filter_with_neural_policy":
+      elif policy_type=="cbfilqr_filter_with_neural_policy" or policy_type=="lrilqr_filter_with_neural_policy":
         prev_ctrl = jp.array(prev_ctrl)
         time0 = time.time()
         task_ctrl, _ = task_policy(state.obs, act_rng)
@@ -334,6 +335,7 @@ def main(seed: int, env_name='reacher', policy_type="neural"):
                   }
     brax_env.plot_states_and_controls(save_dict, save_folder)
     jp.save(os.path.join(save_folder, f'{policy_type}_{config_cost.COST_TYPE}_save_data'), save_dict)
+    return save_dict
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -341,13 +343,20 @@ if __name__ == "__main__":
         "-env", "--environment", help="Choose environment", type=str, default='reacher'
     )
     args = parser.parse_args()
-    for seed in range(0, 1):
+    for seed in range(0, 5):
       jax.clear_caches()
-      for policy_type in ["cbfilqr_filter_with_neural_policy"]:
+      summary_dicts = {}
+      for policy_type in ["cbfilqr_filter_with_neural_policy", "lrilqr_filter_with_neural_policy", "neural"]:
         print(seed, policy_type)
         device = jax.devices()[0]
         print(device)
         with jax.default_device(device):
-          main(seed, env_name=args.environment, policy_type=policy_type)
+          summary_dicts[policy_type] = main(seed, env_name=args.environment, policy_type=policy_type)
+
+      if args.environment == 'reacher':
+        make_reacher_plot(summary_dicts, seed=seed)
+      elif args.environment == 'barkour':
+        make_barkour_plot(summary_dicts, seed=seed)      
+
 
 

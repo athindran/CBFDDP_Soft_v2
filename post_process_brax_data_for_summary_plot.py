@@ -1,6 +1,7 @@
 import numpy as np
 import time
 import jax
+import math
 
 from matplotlib import pyplot as plt
 from brax_utils import ( WrappedBraxEnv, 
@@ -20,17 +21,10 @@ def get_brax_env(env_name, backend):
         return WrappedBraxEnv(env_name, backend)
 
 
-def make_barkour_reachability_plot():
-    barkour_cbfddp_save_folder = './brax_videos/barkour/seed_0/cbfilqr_filter_with_neural_policy_Reachability_save_data.npy'
-    barkour_lrddp_save_folder = './brax_videos/barkour/seed_0/cbflr_filter_with_neural_policy_Reachability_save_data.npy'
-    barkour_neural_save_folder = './brax_videos/barkour/seed_0/neural_Reachability_save_data.npy'
-
-    barkour_cbfddp_data = np.load(barkour_cbfddp_save_folder, allow_pickle=True)
-    barkour_lrddp_data = np.load(barkour_lrddp_save_folder, allow_pickle=True)
-    barkour_neural_data = np.load(barkour_neural_save_folder, allow_pickle=True)
-    barkour_cbfddp_data = barkour_cbfddp_data.ravel()[0]
-    barkour_lrddp_data = barkour_lrddp_data.ravel()[0]
-    barkour_neural_data = barkour_neural_data.ravel()[0]
+def make_barkour_reachability_plot(summary_dicts, seed=0):
+    barkour_cbfddp_data = summary_dicts['cbfilqr_filter_with_neural_policy']
+    barkour_lrddp_data = summary_dicts['lrilqr_filter_with_neural_policy']
+    barkour_neural_data = summary_dicts['neural']
 
     fig = plt.figure(layout='constrained', figsize=(5.5, 4.5))
     title_string = 'Barkour 36D'
@@ -118,21 +112,14 @@ def make_barkour_reachability_plot():
     ax.set_ylabel('Filter time $(s)$')
     ax.set_xlabel('Time (s)')
 
-    plt.savefig('./plots_summary/barkour_summary.pdf', bbox_inches='tight', dpi=500)
-    plt.savefig('./plots_summary/barkour_summary.png', bbox_inches='tight', dpi=500)
+    plt.savefig(f'./plots_summary/barkour_summary_{seed}.pdf', bbox_inches='tight', dpi=500)
+    plt.savefig(f'./plots_summary/barkour_summary_{seed}.png', bbox_inches='tight', dpi=500)
 
 
-def make_reacher_plot(seed=0):
-    reacher_cbfddp_save_folder = f'./brax_videos/reacher/seed_{seed}/cbfilqr_filter_with_neural_policy_Reachability_save_data.npy'
-    reacher_lrddp_save_folder = f'./brax_videos/reacher/seed_{seed}/cbflr_filter_with_neural_policy_Reachability_save_data.npy'
-    reacher_neural_save_folder = f'./brax_videos/reacher/seed_{seed}/neural_Reachability_save_data.npy'
-
-    reacher_cbfddp_data = np.load(reacher_cbfddp_save_folder, allow_pickle=True)
-    reacher_lrddp_data = np.load(reacher_lrddp_save_folder, allow_pickle=True)
-    reacher_neural_data = np.load(reacher_neural_save_folder, allow_pickle=True)
-    reacher_cbfddp_data = reacher_cbfddp_data.ravel()[0]
-    reacher_lrddp_data = reacher_lrddp_data.ravel()[0]
-    reacher_neural_data = reacher_neural_data.ravel()[0]
+def make_reacher_plot(summary_dicts, seed=0):
+    reacher_cbfddp_data = summary_dicts['cbfilqr_filter_with_neural_policy']
+    reacher_lrddp_data = summary_dicts['lrilqr_filter_with_neural_policy']
+    reacher_neural_data = summary_dicts['neural']
 
     fig = plt.figure(layout='constrained', figsize=(5.5, 4.5))
     title_string = 'Reacher 4D'
@@ -201,10 +188,12 @@ def make_reacher_plot(seed=0):
     # ax.plot(range_space, reacher_lrddp_control_cycle_times, label='LRDDP (HM)', color='r')
     ax.plot(range_space, reacher_cbfddp_control_cycle_times, label='CBFDDP (HM)', color='b')
     ax.set_xticks(ticks=[0, round(brax_env.dt*nsteps, 2)], labels=[0, round(brax_env.dt*nsteps, 2)], fontsize=legend_fontsize)
-    ax.set_yticks(ticks=[round(reacher_cbfddp_control_cycle_times.min(), 2), round(reacher_cbfddp_control_cycle_times.max(), 2)], 
-                    labels=[round(reacher_cbfddp_control_cycle_times.min(), 2), round(reacher_cbfddp_control_cycle_times.max(), 2)], 
+    cycle_times_min = math.ceil(reacher_cbfddp_control_cycle_times.min() * 100.0) / 100.0
+    cycle_times_max = math.ceil(reacher_cbfddp_control_cycle_times.max() * 100.0) / 100.0
+    ax.set_yticks(ticks=[round(cycle_times_min, 2), round(cycle_times_max, 2)], 
+                    labels=[round(cycle_times_min, 2), round(cycle_times_max, 2)], 
                     fontsize=legend_fontsize)
-    ax.set_ylim([round(reacher_cbfddp_control_cycle_times.min(), 2), round(reacher_cbfddp_control_cycle_times.max(), 2)])
+    ax.set_ylim([round(cycle_times_min, 2), round(cycle_times_max, 2)])
     ax.yaxis.set_label_coords(-0.04, 0.5)
     ax.xaxis.set_label_coords(0.5, -0.04)
     ax.set_xlabel('Time $(s)$', 
@@ -247,7 +236,3 @@ def make_reacher_plot(seed=0):
 
     plt.savefig(f'./plots_summary/reacher_summary_{seed}.pdf', bbox_inches='tight', dpi=500)
     plt.savefig(f'./plots_summary/reacher_summary_{seed}.png', bbox_inches='tight', dpi=500)
-
-for seed in range(10):
-    make_reacher_plot(seed=seed)
-make_barkour_reachability_plot()
