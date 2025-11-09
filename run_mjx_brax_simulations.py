@@ -356,7 +356,7 @@ if __name__ == "__main__":
       if args.environment == 'reacher':
         make_reacher_plot(summary_dicts, seed=seed)
       elif args.environment == 'barkour':
-        make_barkour_plot(summary_dicts, seed=seed)      
+        make_barkour_reachability_plot(summary_dicts, seed=seed)      
 
 
 

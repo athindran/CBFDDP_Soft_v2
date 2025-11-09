@@ -32,7 +32,7 @@ def make_barkour_reachability_plot(summary_dicts, seed=0):
     subfigs = fig.subfigures(1, 2, wspace=0.05, width_ratios=[0.8, 1.2])
 
     brax_env = get_brax_env('barkour', backend='mjx')
-    rng = jax.random.PRNGKey(seed=0)
+    rng = jax.random.PRNGKey(seed=seed)
     state = brax_env.reset(rng=rng)
 
     barkour_cbfddp_controls = barkour_cbfddp_data['actions']
@@ -127,7 +127,7 @@ def make_reacher_plot(summary_dicts, seed=0):
     subfigs = fig.subfigures(1, 2, wspace=0.05, width_ratios=[1.3, 1])
 
     brax_env = get_brax_env('reacher', backend='mjx')
-    rng = jax.random.PRNGKey(seed=0)
+    rng = jax.random.PRNGKey(seed=seed)
     state = brax_env.reset(rng=rng)
 
     reacher_cbfddp_controls = reacher_cbfddp_data['actions']
