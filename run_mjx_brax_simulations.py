@@ -6,6 +6,7 @@ import sys
 import functools
 import os
 import time
+import argparse
 
 from brax.training.agents.ppo import train as ppo
 from brax.training.agents.ppo import networks as ppo_networks
@@ -276,7 +277,7 @@ def main(seed: int, env_name='reacher', policy_type="neural"):
         time0 = time.time()
         task_ctrl, _ = task_policy(state.obs, act_rng)
         act, solver_dict = safety_filter.get_action(obs=state, state=state, task_ctrl=task_ctrl, prev_sol=prev_sol, prev_ctrl=prev_ctrl)
-        act = jax.block_until_ready(act)
+        #act = jax.block_until_ready(act)
         control_cycle_times = control_cycle_times.at[idx].set(time.time() - time0)
         prev_sol = copy.deepcopy(solver_dict)
         controls_init = jp.array(solver_dict['reinit_controls'])
@@ -335,12 +336,17 @@ def main(seed: int, env_name='reacher', policy_type="neural"):
     jp.save(os.path.join(save_folder, f'{policy_type}_{config_cost.COST_TYPE}_save_data'), save_dict)
 
 if __name__ == "__main__":
-    for seed in range(1):
-      for policy_type in ["ilqr_filter_with_neural_policy", "lr_filter_with_neural_policy", "neural"]:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-env", "--environment", help="Choose environment", type=str, default='reacher'
+    )
+    args = parser.parse_args()
+    for seed in range(0, 1):
+      for policy_type in ["ilqr_filter_with_neural_policy", "neural_policy", "lr_filter_with_neural_policy"]:
         print(seed, policy_type)
-        env_name = 'reacher'
         device = jax.devices()[0]
         print(device)
         with jax.default_device(device):
-          main(seed, env_name=env_name, policy_type=policy_type)
+          main(seed, env_name=args.environment, policy_type=policy_type)
+
 
