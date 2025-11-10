@@ -84,6 +84,10 @@ There may be hardwired changes required in `./brax_utils/configs/barkour.yaml` i
 
 The brax setup was not entirely conducive to retrieving a sufficient state and the derivative flow along this adequate state. The author projects the generalized pipeline state down to generalized coordinates and performs intricate maneuvers to retrieve the derivative flow of this reduced state.
 
+# Acknowledgements
+
+This code is based upon the previous codebase of Safe Robotics Lab in Princeton ( https://saferobotics.princeton.edu/ )
+
 # Citation
 
 TBD
