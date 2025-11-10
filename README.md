@@ -62,6 +62,14 @@ python evaluate_soft_ddpcbf_pvtol.py -cf ./test_configs/pvtol/test_config_circle
 
 ### Brax Reacher and MJX Barkour
 
+In order to run reacher, use `python run_mjx_brax_simulations.py --env 'reacher'`. 
+
+The seed is hardwired inside the code. Use it to your convenience to test solutions and compare with ours. The reacher setup is dependent on whether the 'linear' mode QP solver or the 'quadratic' mode QCQP constraint solver is used. There may be hardwired changes needed in `./brax_utils/configs/reacher.yaml`. The $\gamma$ factor is tuned to convenience and may beed to be re-tuned. The margin functions used are described in `brax_utils/costs/reacher_margin.py` 
+
+In order to run barkour, use `python run_mjx_brax_simulations.py --env 'barkour'`. 
+
+There may be hardwired changes needed in `./brax_utils/configs/barkour.yaml`. The margin functions used are described in `brax_utils/costs/barkour_margin.py` 
+
 #### MJX-Brax Barkour with CBF-DDP
 <p align="center">
 <img src="./videos/barkour_reachability_ddpcbf_policy.gif" width="380" height="200" />
@@ -71,3 +79,11 @@ python evaluate_soft_ddpcbf_pvtol.py -cf ./test_configs/pvtol/test_config_circle
 <p align="center">
 <img src="./videos/barkour_reachability_ddplr_policy.gif" width="380" height="200" />
 </p>
+
+#### Remark
+
+The brax setup was not entirely conducive to retrieving a sufficient state and the derivative flow along this sufficient state. The author is projecting down the generalized pipeline state to generalized coordinates and performing uneasy maneuvers to retrieve the derivative flow of this reduced state.
+
+# Citation
+
+TBD

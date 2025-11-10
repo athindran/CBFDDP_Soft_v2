@@ -346,7 +346,7 @@ if __name__ == "__main__":
         "-env", "--environment", help="Choose environment", type=str, default='reacher'
     )
     args = parser.parse_args()
-    for seed in range(10):
+    for seed in range(1):
       jax.clear_caches()
       summary_dicts = {}
       for policy_type in ["cbfilqr_filter_with_neural_policy", "lrilqr_filter_with_neural_policy", "neural"]:
