@@ -146,11 +146,66 @@ class ReacherAngularVelocityConstraintCost(BaseMargin):
         return cost
 
 
+class ReacherSoftAngularVelocityConstraintCost(BaseMargin):
+    def __init__(self, config, env: WrappedBraxEnv):
+        super().__init__()
+        self.dim_x = env.dim_x
+        self.dim_u = env.dim_u
+        self.max_angular_velocity = config.MAX_ANGULAR_VELOCITY
+        self.max_target_angular_velocity = config.MAX_TARGET_ANGULAR_VELOCITY
+        self.kappa = config.SMOOTHING_TEMP
+
+    @partial(jax.jit, static_argnames='self')
+    def get_stage_margin(
+        self, state: Array, ctrl: Array
+    ) -> Array:
+        """
+        Args:
+            state (Array, vector shape)
+            ctrl (Array, vector shape)
+
+        Returns:
+            Array: scalar.
+        """
+        cost = 0.0
+        cost += jnp.exp(-1 * self.kappa * jnp.clip(self.max_angular_velocity[0]**2 - state[2]**2, min=-10.0))
+        cost += jnp.exp(-1 * self.kappa * jnp.clip(self.max_angular_velocity[1]**2 - state[3]**2, min=-10.0))
+
+        cost = -jnp.log(cost)/self.kappa
+
+        return cost
+
+    @partial(jax.jit, static_argnames='self')
+    def get_target_stage_margin(
+        self, state: Array, ctrl: Array
+    ) -> Array:
+        """
+        Args:
+            state (Array, vector shape)
+            ctrl (Array, vector shape)
+
+        Returns:
+            Array: scalar.
+        """
+        cost = 0.0
+        cost += jnp.exp(-1 * self.kappa * jnp.clip(self.max_angular_velocity[0]**2 - state[2]**2, min=-10.0))
+        cost += jnp.exp(-1 * self.kappa * jnp.clip(self.max_angular_velocity[1]**2 - state[3]**2, min=-10.0))
+
+        cost = -jnp.log(cost)/self.kappa
+
+        return cost
+
+
 class ReacherReachabilityMargin(BaseMargin):
 
     def __init__(self, config, env: WrappedBraxEnv, filter_type: str ='CBF'):
         super().__init__()
-        self.constraint = ReacherAngularVelocityConstraintCost(config, env)
+
+        if filter_type=='SoftCBF':
+            self.constraint = ReacherSoftAngularVelocityConstraintCost(config, env)
+        else:
+            self.constraint = ReacherAngularVelocityConstraintCost(config, env)
+
         R = jnp.array([[config.W_1, 0.0], [0.0, config.W_2]])
         self.ctrl_cost = QuadraticControlCost(R=R, r=jnp.zeros(env.dim_u))
         self.constraint.ctrl_cost = QuadraticControlCost(
