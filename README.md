@@ -14,16 +14,16 @@ To run the race-car setup, examples are provided in `test_scripts_ilqr_task.sh` 
 
 ```
 # Bicycle 4D reach-avoid - baseline line search, road boundary 2.5 in each direction, rollout stopping path.
-python evaluate_soft_ddpcbf.py -cf ./test_configs/reachavoid/test_config_cbf_reachavoid_circle_config_multiple_obs_1_bic4D.yaml -rb 2.5 -ls 'baseline' -sp 'rollout'
+python evaluate_soft_ddpcbf_bic.py -cf ./test_configs/reachavoid/test_config_cbf_reachavoid_circle_config_multiple_obs_1_bic4D.yaml -rb 2.5 -ls 'baseline' -sp 'rollout'
 
 # Bicycle 5D reach-avoid - baseline line search, road boundary 3.0 in each direction, analytic stopping path.
-python evaluate_soft_ddpcbf.py -cf ./test_configs/reachavoid/test_config_cbf_reachavoid_circle_config_multiple_obs_1_bic5D.yaml -rb 3.0 -ls 'baseline' -sp 'analytic'
+python evaluate_soft_ddpcbf_bic.py -cf ./test_configs/reachavoid/test_config_cbf_reachavoid_circle_config_multiple_obs_1_bic5D.yaml -rb 3.0 -ls 'baseline' -sp 'analytic'
 
 # Bicycle 5D reachability - trust region line search, road boundary 3.5 in each direction.
-python evaluate_soft_ddpcbf.py -cf ./test_configs/reachability/test_config_cbf_reachability_circle_config_multiple_obs_2_bic5D.yaml -rb 3.5 -ls 'trust_region_tune_margin'
+python evaluate_soft_ddpcbf_bic.py -cf ./test_configs/reachability/test_config_cbf_reachability_circle_config_multiple_obs_2_bic5D.yaml -rb 3.5 -ls 'trust_region_tune_margin'
 
 # Bicycle 5D reachability - trust region line search, road boundary 3.5 in each direction, use naive task instead of default ILQR task policy.
-python evaluate_soft_ddpcbf.py -cf ./test_configs/reachability/test_config_cbf_reachability_circle_config_multiple_obs_2_bic5D.yaml -rb 3.5 -ls 'trust_region_tune_margin' --naive_task
+python evaluate_soft_ddpcbf_bic.py -cf ./test_configs/reachability/test_config_cbf_reachability_circle_config_multiple_obs_2_bic5D.yaml -rb 3.5 -ls 'trust_region_tune_margin' --naive_task
 ```
 #### Reachability Rollout with CBFDDP-SM on the Bicycle 5D dynamics.
 <p align="center">
@@ -45,7 +45,7 @@ Provided are:
 
 The test configs in `./test_configs/` provide the config options needed for tuning the filters. Tuning needs to be performed as explained in the supporting document to achieve the desired results. The environment offers the option to provide `Circle`, `Box` and `Ellipse` obstacles.
 
-The choice of safety filter is hard-coded in `evaluate_soft_ddpcbf.py` with the options [`SoftCBF`, `CBF`, `LR`, `SoftLR`] — more instructions on how to operate each safety filter will be provided. The safety filter option may be provided as a command-line argument in a future release.
+The choice of safety filter is hard-coded in `evaluate_soft_ddpcbf_bic.py` with the options [`SoftCBF`, `CBF`, `LR`, `SoftLR`] — more instructions on how to operate each safety filter will be provided. The safety filter option may be provided as a command-line argument in a future release.
 
 ### 2D Planar vertical takeoff and landing
 
