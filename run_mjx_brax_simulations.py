@@ -24,7 +24,7 @@ from brax_utils import ( WrappedBraxEnv,
       AntReachabilityMargin, 
       BarkourReachabilityMargin,
       )
-from post_process_brax_data_for_summary_plot import make_reacher_plot, make_barkour_reachability_plot
+from summary.post_process_brax_data_for_summary_plot import make_reacher_plot, make_barkour_reachability_plot
 from tqdm import tqdm
 
 from simulators import load_config
