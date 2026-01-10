@@ -6,6 +6,7 @@ import sys
 import functools
 import os
 import time
+import argparse
 
 from brax.training.agents.ppo import train as ppo
 from brax.training.agents.ppo import networks as ppo_networks
@@ -23,10 +24,12 @@ from brax_utils import ( WrappedBraxEnv,
       AntReachabilityMargin, 
       BarkourReachabilityMargin,
       )
+from summary.post_process_brax_data_for_summary_plot import make_reacher_plot, make_barkour_reachability_plot
+from tqdm import tqdm
 
 from simulators import load_config
 sys.path.append(".")
-#os.environ["CUDA_VISIBLE_DEVICES"] = " "
+os.environ["CUDA_VISIBLE_DEVICES"] = " "
 
 # RL trained policy
 def get_neural_policy(env_name, backend):
@@ -51,6 +54,7 @@ def warmup_jit_with_task_policy_rollout(rng, state, brax_env, task_policy, safet
     Warmup safety filter by running a few time along the task policy rollout. 
     This is a substitute for the rejection sampling that was used in the bicycle dynamics.
     """
+    print("Warmup safety filter in-order to utilize offline jitting....")
     act_rng, rng = jax.random.split(rng)
     task_ctrl, _ = task_policy(state.obs, act_rng)
     safety_filter.get_action(obs=state, state=state, task_ctrl=task_ctrl, prev_ctrl = jp.zeros((brax_env.dim_u, )), warmup=True)
@@ -152,7 +156,7 @@ def main(seed: int, env_name='reacher', policy_type="neural"):
       # Warmup
       policy.get_action(obs=state, state=state, controls=None)
       T = config_solver.MAX_ITER_RECEDING
-    elif policy_type=="ilqr_filter_with_neural_policy":
+    elif policy_type=="cbfilqr_filter_with_neural_policy":
       config = load_config(f'./brax_utils/configs/{env_name}.yaml')
       config_solver = config['solver']
       config_cost = config['cost']
@@ -160,7 +164,7 @@ def main(seed: int, env_name='reacher', policy_type="neural"):
       config_solver.COST_TYPE = config_cost.COST_TYPE
       
       if env_name=="reacher":
-        reachability_cost = ReacherReachabilityMargin(config=config_cost, env=get_brax_env(env_name, backend))
+        reachability_cost = ReacherReachabilityMargin(config=config_cost, env=get_brax_env(env_name, backend), filter_type=config_solver.FILTER_TYPE)
       elif env_name=="ant":
         # NOTE: DOES NOT WORK
         reachability_cost = AntReachabilityMargin(config=config_cost, env=get_brax_env(env_name, backend))
@@ -182,7 +186,7 @@ def main(seed: int, env_name='reacher', policy_type="neural"):
       prev_sol = None
       prev_ctrl = jp.zeros((brax_env.dim_u, ))
       T = config_solver.MAX_ITER_RECEDING
-    elif policy_type=="lr_filter_with_neural_policy":
+    elif policy_type=="lrilqr_filter_with_neural_policy":
       config = load_config(f'./brax_utils/configs/{env_name}.yaml')
       config_solver = config['solver']
       config_cost = config['cost']
@@ -212,7 +216,7 @@ def main(seed: int, env_name='reacher', policy_type="neural"):
       prev_sol = None
       prev_ctrl = jp.zeros((brax_env.dim_u, ))
       T = config_solver.MAX_ITER_RECEDING
-    elif policy_type=="ilqr_filter_with_ilqr_policy":
+    elif policy_type=="cbfilqr_filter_with_ilqr_policy":
       assert env_name=="reacher"
       config = load_config(f'./brax_utils/configs/{env_name}.yaml')
       config_solver = config['solver']
@@ -244,81 +248,82 @@ def main(seed: int, env_name='reacher', policy_type="neural"):
     filter_failed = jp.full_like(values_sys, False)
     filter_iters = jp.full_like(values_sys, -1)
     control_cycle_times = jp.zeros((T, ))
-    for idx in range(T):
-      print(f"Starting time {idx}")
-      rollout.append(state.pipeline_state)
-      act = None
-      if policy_type=="neural":
-        # act_rng, rng = jax.random.split(rng)
-        time0 = time.time()
-        act, _ = policy(state.obs, act_rng)
-        act = jax.block_until_ready(act)
-        control_cycle_times = control_cycle_times.at[idx].set(time.time() - time0)
+    with tqdm(total=T, position=0, leave=True) as pbar:
+      for idx in range(T):
+        pbar.update()
+        rollout.append(state.pipeline_state)
+        act = None
+        if policy_type=="neural":
+          # act_rng, rng = jax.random.split(rng)
+          time0 = time.time()
+          act, _ = policy(state.obs, act_rng)
+          act = jax.block_until_ready(act)
+          control_cycle_times = control_cycle_times.at[idx].set(time.time() - time0)
 
-        # Run safety filter to get value function
-        _, solver_dict = safe_policy.get_action(obs=state, state=state, controls=controls_init)
-        values_sys = values_sys.at[idx].set(solver_dict['Vopt'])
-        controls_init = jp.array(solver_dict['reinit_controls'])
-      elif policy_type=="ilqr":
-        time0 = time.time()
-        act, solver_dict = policy.get_action(state, controls=controls_init)
-        act = jax.block_until_ready(act)
-        control_cycle_times = control_cycle_times.at[idx].set(time.time() - time0)
-        controls_init = jp.array(solver_dict['controls'])
-      elif policy_type=="ilqr_reachability":
-        time0 = time.time()
-        act, solver_dict = policy.get_action(obs=state, state=state, controls=controls_init)
-        act = jax.block_until_ready(act)
-        control_cycle_times = control_cycle_times.at[idx].set(time.time() - time0)
-        controls_init = jp.array(solver_dict['reinit_controls'])
-      elif policy_type=="ilqr_filter_with_neural_policy" or policy_type=="lr_filter_with_neural_policy":
-        prev_ctrl = jp.array(prev_ctrl)
-        time0 = time.time()
-        task_ctrl, _ = task_policy(state.obs, act_rng)
-        act, solver_dict = safety_filter.get_action(obs=state, state=state, task_ctrl=task_ctrl, prev_sol=prev_sol, prev_ctrl=prev_ctrl)
-        act = jax.block_until_ready(act)
-        control_cycle_times = control_cycle_times.at[idx].set(time.time() - time0)
-        prev_sol = copy.deepcopy(solver_dict)
-        controls_init = jp.array(solver_dict['reinit_controls'])
-        # act_rng, rng = jax.random.split(rng)
-        values_sys = values_sys.at[idx].set(solver_dict['Vopt'])
-        filter_active = filter_active.at[idx].set(solver_dict['mark_barrier_filter'])
-        filter_failed = filter_failed.at[idx].set(solver_dict['mark_complete_filter'])
-        filter_iters = filter_iters.at[idx].set(solver_dict["num_iters"])
-      elif policy_type=="ilqr_filter_with_ilqr_policy":
-        time0 = time.time()
-        task_ctrl, solver_dict_task = task_policy.get_action(state, controls=controls_init_task)
-        controls_init_task = jp.array(solver_dict_task['controls'])
-        act, solver_dict = safety_filter.get_action(obs=state, state=state, task_ctrl=task_ctrl, prev_sol=prev_sol, prev_ctrl=prev_ctrl)
-        act = jax.block_until_ready(act)
-        prev_sol = copy.deepcopy(solver_dict)
-        # act_rng, rng = jax.random.split(rng)
-        control_cycle_times = control_cycle_times.at[idx].set(time.time() - time0)
-        controls_init = jp.array(solver_dict['reinit_controls'])
-        values_sys = values_sys.at[idx].set(solver_dict['Vopt'])  
-        filter_active = filter_active.at[idx].set(solver_dict['mark_barrier_filter'])
-        filter_failed = filter_failed.at[idx].set(solver_dict['mark_complete_filter'])
-        filter_iters = filter_iters.at[idx].set(solver_dict["num_iters"])
-        #print(f"value: {solver_dict['marginopt']}")
-        #print(f"Gc coord: {brax_env.get_generalized_coordinates(state)}")
+          # Run safety filter to get value function
+          _, solver_dict = safe_policy.get_action(obs=state, state=state, controls=controls_init)
+          values_sys = values_sys.at[idx].set(solver_dict['Vopt'])
+          controls_init = jp.array(solver_dict['reinit_controls'])
+        elif policy_type=="ilqr":
+          time0 = time.time()
+          act, solver_dict = policy.get_action(state, controls=controls_init)
+          act = jax.block_until_ready(act)
+          control_cycle_times = control_cycle_times.at[idx].set(time.time() - time0)
+          controls_init = jp.array(solver_dict['controls'])
+        elif policy_type=="ilqr_reachability":
+          time0 = time.time()
+          act, solver_dict = policy.get_action(obs=state, state=state, controls=controls_init)
+          act = jax.block_until_ready(act)
+          control_cycle_times = control_cycle_times.at[idx].set(time.time() - time0)
+          controls_init = jp.array(solver_dict['reinit_controls'])
+        elif policy_type=="cbfilqr_filter_with_neural_policy" or policy_type=="lrilqr_filter_with_neural_policy":
+          prev_ctrl = jp.array(prev_ctrl)
+          time0 = time.time()
+          task_ctrl, _ = task_policy(state.obs, act_rng)
+          act, solver_dict = safety_filter.get_action(obs=state, state=state, task_ctrl=task_ctrl, prev_sol=prev_sol, prev_ctrl=prev_ctrl)
+          act = jax.block_until_ready(act)
+          control_cycle_times = control_cycle_times.at[idx].set(time.time() - time0)
+          prev_sol = copy.deepcopy(solver_dict)
+          controls_init = jp.array(solver_dict['reinit_controls'])
+          # act_rng, rng = jax.random.split(rng)
+          values_sys = values_sys.at[idx].set(solver_dict['Vopt'])
+          filter_active = filter_active.at[idx].set(solver_dict['mark_barrier_filter'])
+          filter_failed = filter_failed.at[idx].set(solver_dict['mark_complete_filter'])
+          filter_iters = filter_iters.at[idx].set(solver_dict["num_iters"])
+        elif policy_type=="ilqr_filter_with_ilqr_policy":
+          time0 = time.time()
+          task_ctrl, solver_dict_task = task_policy.get_action(state, controls=controls_init_task)
+          controls_init_task = jp.array(solver_dict_task['controls'])
+          act, solver_dict = safety_filter.get_action(obs=state, state=state, task_ctrl=task_ctrl, prev_sol=prev_sol, prev_ctrl=prev_ctrl)
+          act = jax.block_until_ready(act)
+          prev_sol = copy.deepcopy(solver_dict)
+          # act_rng, rng = jax.random.split(rng)
+          control_cycle_times = control_cycle_times.at[idx].set(time.time() - time0)
+          controls_init = jp.array(solver_dict['reinit_controls'])
+          values_sys = values_sys.at[idx].set(solver_dict['Vopt'])  
+          filter_active = filter_active.at[idx].set(solver_dict['mark_barrier_filter'])
+          filter_failed = filter_failed.at[idx].set(solver_dict['mark_complete_filter'])
+          filter_iters = filter_iters.at[idx].set(solver_dict["num_iters"])
+          #print(f"value: {solver_dict['marginopt']}")
+          #print(f"Gc coord: {brax_env.get_generalized_coordinates(state)}")
 
-      state = brax_env.step(state, act)
-      prev_ctrl = jp.array( act )
-      actions_to_sys = actions_to_sys.at[idx].set(jp.array(act))
-      gc_states_sys = gc_states_sys.at[idx].set(brax_env.get_generalized_coordinates(state))
-      print(f"Completed time {idx} with {control_cycle_times[idx]}s  control time")
+        state = brax_env.step(state, act)
+        prev_ctrl = jp.array( act )
+        actions_to_sys = actions_to_sys.at[idx].set(jp.array(act))
+        gc_states_sys = gc_states_sys.at[idx].set(brax_env.get_generalized_coordinates(state))
+        # print(f"Completed time {idx} with {control_cycle_times[idx]}s  control time")
 
-      #print("action", act)
-      # gc_from_state_grad, gc_from_action_grad = brax_env.get_generalized_coordinates_grad(state, act)
-      # obs_from_gc_grad = brax_env.get_obs_grad(state.pipeline_state)
-      # print(f"Gradients: {gc_from_state_grad}, {obs_from_gc_grad}, {gc_from_action_grad}")
-      #obs = brax_env._get_obs(state.pipeline_state)
-      #fingertip = brax_env.get_fingertip(brax_env.get_generalized_coordinates(state))
-      #current_state_cost = cost.get_stage_margin(brax_env.get_generalized_coordinates(state), act)
-      #print(state.pipeline_state)
-      #print(f"obs: {obs}")
-      #print(f"fingertip: {fingertip}, extracted fingertip: {obs[8:10] + obs[4:6]}")
-      #print(f"State cost: {current_state_cost}")
+        #print("action", act)
+        # gc_from_state_grad, gc_from_action_grad = brax_env.get_generalized_coordinates_grad(state, act)
+        # obs_from_gc_grad = brax_env.get_obs_grad(state.pipeline_state)
+        # print(f"Gradients: {gc_from_state_grad}, {obs_from_gc_grad}, {gc_from_action_grad}")
+        #obs = brax_env._get_obs(state.pipeline_state)
+        #fingertip = brax_env.get_fingertip(brax_env.get_generalized_coordinates(state))
+        #current_state_cost = cost.get_stage_margin(brax_env.get_generalized_coordinates(state), act)
+        #print(state.pipeline_state)
+        #print(f"obs: {obs}")
+        #print(f"fingertip: {fingertip}, extracted fingertip: {obs[8:10] + obs[4:6]}")
+        #print(f"State cost: {current_state_cost}")
 
     # Log results for inspection.
     render_every = 2
@@ -333,14 +338,25 @@ def main(seed: int, env_name='reacher', policy_type="neural"):
                   }
     brax_env.plot_states_and_controls(save_dict, save_folder)
     jp.save(os.path.join(save_folder, f'{policy_type}_{config_cost.COST_TYPE}_save_data'), save_dict)
+    return save_dict
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-env", "--environment", help="Choose environment", type=str, default='reacher'
+    )
+    args = parser.parse_args()
     for seed in range(1):
-      for policy_type in ["ilqr_filter_with_neural_policy", "lr_filter_with_neural_policy", "neural"]:
+      jax.clear_caches()
+      summary_dicts = {}
+      for policy_type in ["cbfilqr_filter_with_neural_policy", "lrilqr_filter_with_neural_policy", "neural"]:
         print(seed, policy_type)
-        env_name = 'reacher'
         device = jax.devices()[0]
-        print(device)
+        print(f"Seed = {seed}, Policy type = {policy_type}, Device = {device}")
         with jax.default_device(device):
-          main(seed, env_name=env_name, policy_type=policy_type)
+          summary_dicts[policy_type] = main(seed, env_name=args.environment, policy_type=policy_type)
 
+      if args.environment == 'reacher':
+        make_reacher_plot(summary_dicts, seed=seed)
+      elif args.environment == 'barkour':
+        make_barkour_reachability_plot(summary_dicts, seed=seed)
