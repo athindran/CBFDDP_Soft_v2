@@ -87,4 +87,4 @@ This code is based on the previous codebase of Safe Robotics Lab in Princeton ( 
 
 ## Citation
 
-TBD
+A. Ramesh Kumar, K. -C. Hsu, P. J. Ramadge and J. F. Fisac, "Fast, Smooth, and Safe: Implicit Control Barrier Functions Through Reach-Avoid Differential Dynamic Programming," in IEEE Control Systems Letters, vol. 7, pp. 2994-2999, 2023, doi: 10.1109/LCSYS.2023.3292132.
