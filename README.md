@@ -1,14 +1,14 @@
 # CBF-DDP V2 with Soft Operators
 
-This repository is for using CBF-DDP with soft minimum and maximum operators, replacing the hard operators used in the initial version (https://github.com/SafeRoboticsLab/CBF_DDP). All changes are contained in the main branch. The branch `singular_point_reproduction` is being used for exploration of local minima and singular phenomena for reach-avoid DDP.
+This repository provides CBF-DDP with soft minimum and maximum operators, replacing the hard operators used in the initial version (https://github.com/SafeRoboticsLab/CBF_DDP). All changes are contained in the main branch. The branch `singular_point_reproduction` is used to explore local minima and singular phenomena in reach-avoid DDP.
 
 ## Usage instructions
 
-There are two minor variations of the same methods, one intended to work with our own environments and one designed to work with the Brax-MJX interface. We rely on Anaconda for setting up our Python environment. The `bicycle_jax_supported_env.yml` is best suited for our own simulators. The `brax_env.yml` is best suited for the MJX simulations. The user is free to mix the versions, but the code may not be perfectly reproducible across versions.
+There are two minor variations of the same methods: one intended to work with our own simulators, and the other designed to work with the Brax-MJX simulation interface. We rely on Anaconda for setting up our Python environment. The `bicycle_jax_supported_env.yml` is best suited for our own simulators. The `brax_env.yml` is best suited for the MJX simulations. The user is free to mix the versions, but the code may not be perfectly reproducible across versions.
 
 ### RaceCar 
 
-The race car is based on the setup in `simulators/car/*.py`, with the dynamics implemented in `simulators/dynamics/*.py`. We provide the option for `Bicycle4D`, `Bicycle5D`, and `PointMass4D` dynamics for the racecar setup. The point mass dynamics re-purposes the same configurations and costs for the point mass, with mixing of the terms used to refer to the state variables. 
+The race car is based on the setup in `simulators/car/*.py`, with the dynamics implemented in `simulators/dynamics/*.py`. We provide the option for `Bicycle4D`, `Bicycle5D`, and `PointMass4D` dynamics for the racecar setup. Point-mass dynamics reuses the same configurations and costs for the point mass, mixing the terms used to denote the state variables. 
 
 To run the race-car setup, examples are provided in `test_scripts_ilqr_task.sh` and `test_scripts_naive_task.sh`.
 
@@ -40,9 +40,9 @@ Provided are:
 * Naive task or ILQR task policy
 * `analytic` stopping path or `rollout` stopping path based on reach-avoid
 
-The test configs in `./test_configs/` provide the config options needed for tuning the filters. Tuning needs to be performed as explained in the supporting document to achieve the desired results. The environment offers the option to provide `Circle`, `Box` and `Ellipse` obstacles.
+The test configs in `./test_configs/` contain the configuration options required to tune the filters. Tuning must be performed as described in the supporting document to achieve the desired results. The environment offers the option to provide `Circle`, `Box`, and `Ellipse` obstacles.
 
-The choice of safety filter is hard-coded in `evaluate_soft_ddpcbf_bic.py` with the options - `SoftCBF`, `CBF`, `LR`, `SoftLR`. More instructions on how to operate each safety filter will be provided. The safety filter option may be provided as a command-line argument in a future release.
+The choice of safety filter is hard-coded in `evaluate_soft_ddpcbf_bic.py` with the options - `SoftCBF`, `CBF`, `LR`, `SoftLR`. Additional instructions on operating each safety filter will be provided. The safety filter option may be provided as a command-line argument in a future release.
 
 ### 2D Planar vertical takeoff and landing
 
@@ -62,10 +62,10 @@ python evaluate_soft_ddpcbf_pvtol.py -cf ./test_configs/pvtol/test_config_circle
 We test our method on MJX baselines while using Brax to interface with the MJX backend.
 
 To run the Reacher experiment, use `python run_mjx_brax_simulations.py --env 'reacher'`. 
-The seed is hardwired inside the code. Please use it to your convenience to test solutions and compare with ours. The reacher setup is dependent on whether the `linear` mode QP solver (with an affine constraint) or the `quadratic` mode QCQP constraint solver is used. There may be hardwired changes needed in `./brax_utils/configs/reacher.yaml` depending on your experiment. The $\gamma$ factor is tuned to convenience. The margin functions used are described in `brax_utils/costs/reacher_margin.py` 
+The seed is hardwired inside the code. Please use it to your convenience to test solutions and compare with ours. The reacher setup is dependent on whether the `linear` mode QP solver (with an affine constraint) or the `quadratic` mode QCQP constraint solver is used. You may need to make hardwired changes in `./brax_utils/configs/reacher.yaml` depending on your experiment. The $\gamma$ factor is tuned to convenience. The margin functions used are described in `brax_utils/costs/reacher_margin.py` 
 
 To run barkour, use `python run_mjx_brax_simulations.py --env 'barkour'`. 
-There may be hardwired changes required in `./brax_utils/configs/barkour.yaml` if the experiment design differs from ours. The margin functions used are described in `brax_utils/costs/barkour_margin.py` 
+Hardwired changes may be required in `./brax_utils/configs/barkour.yaml` if the experiment design differs from ours. The margin functions used are described in `brax_utils/costs/barkour_margin.py` 
 
 #### MJX-Brax Barkour with CBF-DDP
 <p align="center">
@@ -79,7 +79,7 @@ There may be hardwired changes required in `./brax_utils/configs/barkour.yaml` i
 
 #### Remark
 
-The brax setup was not entirely conducive to retrieving a sufficient state and the derivative flow along this adequate state. The author projects the generalized pipeline state down to generalized coordinates and performs intricate maneuvers to retrieve the derivative flow of this reduced state.
+The Brax setup was not entirely conducive to retrieving a sufficient state and to retrieving the derivative flow along this adequate state. The author projects the generalized pipeline state to generalized coordinates and applies additional nuances to recover the derivative flow of the reduced state.
 
 ## Acknowledgements
 
