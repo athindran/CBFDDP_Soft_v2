@@ -29,9 +29,8 @@ class Bicycle5D(BaseDynamics):
         self.delta_max = config.DELTA_MAX
         self.v_min = 0
         self.v_max = config.V_MAX
-        self.rear_wheel_offset = 0.4 * self.wheelbase
-        self.noise_var = jnp.array([0.001, 0.001, 0.001, 0.001, 0.001])
-        self.stopping_ctrl = jnp.array([self.ctrl_space[0, 0], 0.])
+        self.rear_wheel_offset = 0.0 * self.wheelbase
+        self.noise_var = jnp.array([0.0, 0.0, 0.0, 0.0, 0.0])
 
     @partial(jax.jit, static_argnames='self')
     def apply_rear_offset_correction(self, state: DeviceArray):

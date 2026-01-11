@@ -30,6 +30,7 @@ class iLQRSafetyFilter(BasePolicy):
             self.gamma = None
 
         self.lr_threshold = config.LR_THRESHOLD
+        self.reiterate_solution = getattr(config, 'REITERATE', False)
 
         self.filter_steps = 0
         self.barrier_filter_steps = 0
@@ -84,6 +85,30 @@ class iLQRSafetyFilter(BasePolicy):
         if prev_sol is None or prev_sol['resolve']:
             control_0, solver_info_0 = self.solver_0.get_action(
                 obs=obs, controls=controls_initialize, state=state)
+            if self.reiterate_solution:
+                # Search with multiple different initialization.
+                state_delta = np.array(state)
+                boot_controls = np.zeros((self.dim_u, self.N))
+                control_delta_0, solver_info_delta_0 = self.solver_0.get_action(obs=state_delta, controls=boot_controls, state=state_delta)
+
+                if solver_info_delta_0['Vopt'] >= solver_info_0['Vopt']:
+                    control_0, solver_info_0 = control_delta_0, solver_info_delta_0
+                
+                boot_controls = np.zeros((self.dim_u, self.N))
+                boot_controls[0, :] = self.dyn.ctrl_space[0, 0]
+                boot_controls[1, :] = self.dyn.ctrl_space[1, 0]
+                control_delta_1, solver_info_delta_1 = self.solver_1.get_action(obs=state_delta, controls=boot_controls, state=state_delta)
+
+                if solver_info_delta_1['Vopt'] >= solver_info_0['Vopt']:
+                    control_0, solver_info_0 = control_delta_1, solver_info_delta_1
+
+                boot_controls = np.zeros((self.dim_u, self.N))
+                boot_controls[0, :] = self.dyn.ctrl_space[0, 0]
+                boot_controls[1, :] = self.dyn.ctrl_space[1, 1]
+                control_delta_2, solver_info_delta_2 = self.solver_1.get_action(obs=state_delta, controls=boot_controls, state=state_delta)
+
+                if solver_info_delta_2['Vopt'] >= solver_info_0['Vopt']:
+                    control_0, solver_info_0 = control_delta_2, solver_info_delta_2
         else:
             # Potential source of acceleration. We don't need to resolve both ILQs as we can reuse
             # solution from previous time. - Unused currently.
@@ -110,6 +135,31 @@ class iLQRSafetyFilter(BasePolicy):
 
         _, solver_info_1 = self.solver_1.get_action(
             obs=state_imaginary, controls=boot_controls, state=state_imaginary)
+
+        if self.reiterate_solution:
+            # Search with multiple different initialization.
+            state_delta = np.array(state_imaginary)
+            boot_controls = np.zeros((self.dim_u, self.N))
+            _, solver_info_delta_0 = self.solver_1.get_action(obs=state_delta, controls=boot_controls, state=state_delta)
+
+            if solver_info_delta_0['Vopt'] >= solver_info_1['Vopt']:
+                solver_info_1 = solver_info_delta_0
+            
+            boot_controls = np.zeros((self.dim_u, self.N))
+            boot_controls[0, :] = self.dyn.ctrl_space[0, 0]
+            boot_controls[1, :] = self.dyn.ctrl_space[1, 0]
+            _, solver_info_delta_1 = self.solver_1.get_action(obs=state_delta, controls=boot_controls, state=state_delta)
+
+            if solver_info_delta_1['Vopt'] >= solver_info_1['Vopt']:
+                solver_info_1 = solver_info_delta_1
+
+            boot_controls = np.zeros((self.dim_u, self.N))
+            boot_controls[0, :] = self.dyn.ctrl_space[0, 0]
+            boot_controls[1, :] = self.dyn.ctrl_space[1, 1]
+            _, solver_info_delta_2 = self.solver_1.get_action(obs=state_delta, controls=boot_controls, state=state_delta)
+
+            if solver_info_delta_2['Vopt'] >= solver_info_1['Vopt']:
+                solver_info_1 = solver_info_delta_2
 
         solver_info_0['Vopt_next'] = solver_info_1['Vopt']
         solver_info_0['marginopt_next'] = solver_info_1['marginopt']
@@ -234,6 +284,31 @@ class iLQRSafetyFilter(BasePolicy):
                                                             controls=jnp.array(
                                                                 solver_info_1['controls']),
                                                             state=state_imaginary)
+                if self.reiterate_solution:
+                    # Search with multiple different initialization.
+                    state_delta = np.array(state_imaginary)
+                    boot_controls = np.zeros((self.dim_u, self.N))
+                    _, solver_info_delta_0 = self.solver_1.get_action(obs=state_delta, controls=boot_controls, state=state_delta)
+
+                    if solver_info_delta_0['Vopt'] >= solver_info_1['Vopt']:
+                        solver_info_1 = solver_info_delta_0
+                    
+                    boot_controls = np.zeros((self.dim_u, self.N))
+                    boot_controls[0, :] = self.dyn.ctrl_space[0, 0]
+                    boot_controls[1, :] = self.dyn.ctrl_space[1, 0]
+                    _, solver_info_delta_1 = self.solver_1.get_action(obs=state_delta, controls=boot_controls, state=state_delta)
+
+                    if solver_info_delta_1['Vopt'] >= solver_info_1['Vopt']:
+                        solver_info_1 = solver_info_delta_1
+
+                    boot_controls = np.zeros((self.dim_u, self.N))
+                    boot_controls[0, :] = self.dyn.ctrl_space[0, 0]
+                    boot_controls[1, :] = self.dyn.ctrl_space[1, 1]
+                    _, solver_info_delta_2 = self.solver_1.get_action(obs=state_delta, controls=boot_controls, state=state_delta)
+
+                    if solver_info_delta_2['Vopt'] >= solver_info_1['Vopt']:
+                        solver_info_1 = solver_info_delta_2
+
                 solver_info_0['Vopt_next'] = solver_info_1['Vopt']
                 solver_info_0['marginopt_next'] = solver_info_1['marginopt']
                 solver_info_0['is_inside_target_next'] = solver_info_1['is_inside_target']

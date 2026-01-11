@@ -722,7 +722,7 @@ def make_bicycle_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", 
 
     ax_v = subfigs_col2[1]
     max_value = 1.0
-    for idx, safety_metrics_data in enumerate(plot_safety_metrics_list):
+    for idx, safety_metrics_data in enumerate(plot_values_list):
         if showcontrollist[idx]:
             max_value = max(max_value, 1.2*safety_metrics_data.max())
             x_times = dt*np.arange(safety_metrics_data.size)

@@ -379,6 +379,8 @@ class CarSingleEnv(BaseSingleEnv):
         vmin: float = 0., vmax: float = 20., cmap: str = 'seismic',
         alpha: float = 0.5, cost_type: str = 'cost'
     ):
+        # CAUTION: This code will not correspond correctly to intuition with 
+        # rear wheel offset correction turned on.
         xmin, xmax = self.visual_bounds[0]
         ymin, ymax = self.visual_bounds[1]
         state = np.zeros((5, nx * ny))
