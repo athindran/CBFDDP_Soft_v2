@@ -59,7 +59,7 @@ python evaluate_soft_ddpcbf_pvtol.py -cf ./test_configs/pvtol/test_config_circle
 
 ### Brax Reacher and MJX Barkour
 
-We test our method on MJX baselines while using Brax to interface with the MJX backend. The trained task policies are yet to be released.
+We test our method on MJX baselines while using Brax to interface with the MJX backend. The trained task policies are available here - https://drive.google.com/drive/folders/1t_AKCTEl5UL7rzSq7Wrr4dcnlbMxN6DD?usp=sharing. They should be located in `/brax_utils/trained_models` to run the script.
 
 To run the Reacher experiment, use `python run_mjx_brax_simulations.py --env 'reacher'`. 
 The seed is hardwired inside the code. Please use it to your convenience to test solutions and compare with ours. The reacher setup is dependent on whether the `linear` mode QP solver (with an affine constraint) or the `quadratic` mode QCQP constraint solver is used. You may need to make hardwired changes in `./brax_utils/configs/reacher.yaml` depending on your experiment. The $\gamma$ factor is tuned to convenience. The margin functions used are described in `brax_utils/costs/reacher_margin.py` 
