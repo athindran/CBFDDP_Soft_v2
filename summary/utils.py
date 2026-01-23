@@ -758,10 +758,10 @@ def make_bicycle_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", 
                         fontsize=legend_fontsize)
     if config_cost.COST_TYPE == 'Reachability':
         ax_v.set_ylabel('Reachability Value (SM)', 
-                            fontsize=6.1)
+                            fontsize=5.4)
     else:
         ax_v.set_ylabel('ReachAvoid Value (SM)',
-                    fontsize=6.1)
+                    fontsize=5.4)
     ax_v.legend(framealpha=0, fontsize=legend_fontsize, loc='upper left', 
                            ncol=1, bbox_to_anchor=(0.05, 1.2))        
     # fig_v.savefig(
