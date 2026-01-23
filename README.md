@@ -44,7 +44,7 @@ Provided are:
 * four options for line search - `baseline`, `armijo`, `trust_region_constant_margin`, `trust_region_tune_margin`
 * Naive task or ILQR task policy
 * `analytic` stopping path or `rollout` stopping path based on reach-avoid
-* '--should_animate` flag will save the figures periodically and create animation
+* `--should_animate` flag will save the figures periodically and create animation
 
 The test configs in `./test_configs/` contain the configuration options required to tune the filters. Tuning must be performed as described in the supporting document to achieve the desired results. The environment offers the option to provide `Circle`, `Box`, and `Ellipse` obstacles.
 

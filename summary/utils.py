@@ -274,7 +274,7 @@ def make_bic_animation_plots(env, obs_history, action_history, solver_info, safe
     sc = axes[0].scatter(
         obses[0, :-1], obses[1, :-1], s=3, c=c_trace, marker='o'
     )
-    axes[0].legend(fontsize=9, loc='upper left', bbox_to_anchor=(-0.3, 1.26), framealpha=0, fancybox=False, shadow=False)
+    axes[0].legend(fontsize=9, loc='upper left', bbox_to_anchor=(-0.6, 1.26), framealpha=0, fancybox=False, shadow=False)
     
     axes[0].set_xticks(ticks=[0, env.visual_extent[1]], labels=[0, env.visual_extent[1]], fontsize=8)
     axes[0].set_yticks(ticks=[env.visual_extent[2], env.visual_extent[3]], 
