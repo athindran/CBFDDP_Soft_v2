@@ -42,9 +42,9 @@ cost:
   BARRIER_CLIP_MAX: 5.0
   
   # Safety DDP parameters
-  # Yaw constraint not compatible. Set to false.
+  # Yaw constraint not fully tested. use with caution.
   USE_YAW: false
-  # Velocity constraint is not applicable to the current reach-avoid formulation.
+  # Velocity constraint is not applicable to the current reach-avoid formulation. use with reachability.
   USE_VEL: false
   USE_DELTA: true
   USE_ROAD: true
@@ -89,7 +89,7 @@ solver:
   CBF_GAMMA: 0.99
   SOFT_CBF_GAMMA: 0.99
   LR_THRESHOLD: 0.0
-  OUT_FOLDER: exps/ilqr/bic5D/reachavoid_experiment_delta_constraint_mulobs_ellipse_config1/
+  OUT_FOLDER: exps/ilqr/
   DEVICE: cpu
   # options: 'ILQR', 'DDP'.
   ORDER: 'DDP'
