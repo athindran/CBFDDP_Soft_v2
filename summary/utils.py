@@ -395,7 +395,7 @@ def make_animation_plots(env, obs_history, action_history, solver_info, safety_p
                          fig_prog_folder)
 
 
-def make_bicycle_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", plot_folder="./plots_paper/", 
+def make_bicycle_comparison_report(prefix, plot_folder, 
                     tag="reachavoid", road_boundary=1.2, dt=0.01, filters=['SoftCBF'], cbf_gamma=-10, soft_cbf_gamma=-10):
     if not os.path.exists(plot_folder):
         os.makedirs(plot_folder)
@@ -532,7 +532,15 @@ def make_bicycle_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", 
         env = CarSingleEnv(config_env, config_agent, config_cost)
 
         fig = plt.figure(layout='constrained', figsize=(5.5, 4.7))
-        title_string = config_cost.COST_TYPE + " - " + config_agent.DYN
+        constraint_active = ""
+        if config_cost.USE_YAW:
+            constraint_active += " (yaw "
+        if config_cost.USE_DELTA:
+            constraint_active += ",steering "
+        if config_cost.USE_VEL:
+            constraint_active += ",velocity "
+        constraint_active += "active) "
+        title_string = config_cost.COST_TYPE + " - " + config_agent.DYN + constraint_active      
         fig.suptitle(title_string, fontsize=10)
         subfigs = fig.subfigures(1, 2, wspace=0.05, width_ratios=[1.55, 1])
         subfigs_col1 = subfigs[0].subfigures(2, 1, height_ratios=[1, 1.4])

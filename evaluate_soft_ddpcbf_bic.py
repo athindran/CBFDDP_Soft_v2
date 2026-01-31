@@ -222,10 +222,7 @@ def main(config_file, road_boundary, filter_type, is_task_ilqr, line_search, sto
     ## ------------------------------------ Evaluation starts -------------------------------------------
     end_criterion = "failure"
 
-    out_folder = config_solver.OUT_FOLDER
-
-    if not config_agent.is_task_ilqr:
-        out_folder = os.path.join(out_folder, "naivetask/")
+    out_folder = os.path.join(config_solver.OUT_FOLDER, plot_tag) + "run/"
 
     yaw_constraint = None
     print(f"Road boundary: {road_boundary}")
@@ -241,6 +238,7 @@ def main(config_file, road_boundary, filter_type, is_task_ilqr, line_search, sto
         out_folder,
         "road_boundary=" +
         str(road_boundary))
+    print(current_out_folder)
     current_out_folder = os.path.join(current_out_folder, filter_type)
     config_solver.OUT_FOLDER = current_out_folder
     fig_folder = os.path.join(current_out_folder, "figure")
@@ -365,7 +363,7 @@ if __name__ == "__main__":
                                                     should_animate=args.should_animate,)
 
     make_bicycle_comparison_report(
-        out_folder,
+        prefix=out_folder,
         plot_folder='./plots_summary_' + args.line_search + '-' + args.stopping_computation + '/',
         tag=plot_tag + "_" + str(args.road_boundary,),
         road_boundary=args.road_boundary,
