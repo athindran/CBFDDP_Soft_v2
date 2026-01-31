@@ -55,6 +55,7 @@ cost:
   W_OMEGA: 0.05
   YAW_MIN: -1.57
   YAW_MAX: 1.57
+  # Tunable for better smoothness.
   SMOOTHING_TEMP: 2.0
 
 agent:
@@ -85,6 +86,7 @@ solver:
   # Filter options: 'none', 'LR', 'CBF'
   FILTER_TYPE: 'CBF'
   CONSTRAINT_TYPE: 'quadratic'
+  # Gamma needs to be fine-tuned in the range 0.98 - 0.996 for dt=0.01 in every environment.
   CBF_GAMMA: 0.98
   SOFT_CBF_GAMMA: 0.99
   LR_THRESHOLD: 0.0
