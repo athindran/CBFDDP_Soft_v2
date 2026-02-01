@@ -532,7 +532,7 @@ def make_bicycle_comparison_report(prefix, plot_folder,
         env = CarSingleEnv(config_env, config_agent, config_cost)
 
         fig = plt.figure(layout='constrained', figsize=(5.5, 4.7))
-        title_string = config_cost.COST_TYPE + " - " + config_agent.DYN + constraint_active      
+        title_string = config_cost.COST_TYPE + " - " + config_agent.DYN    
         fig.suptitle(title_string, fontsize=10)
         subfigs = fig.subfigures(1, 2, wspace=0.05, width_ratios=[1.55, 1])
         subfigs_col1 = subfigs[0].subfigures(2, 1, height_ratios=[1, 1.4])
