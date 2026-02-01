@@ -532,15 +532,7 @@ def make_bicycle_comparison_report(prefix, plot_folder,
         env = CarSingleEnv(config_env, config_agent, config_cost)
 
         fig = plt.figure(layout='constrained', figsize=(5.5, 4.7))
-        constraint_active = ""
-        if config_cost.USE_YAW:
-            constraint_active += " (yaw "
-        if config_cost.USE_DELTA:
-            constraint_active += ",steering "
-        if config_cost.USE_VEL:
-            constraint_active += ",velocity "
-        constraint_active += "active) "
-        title_string = config_cost.COST_TYPE + " - " + config_agent.DYN + constraint_active      
+        title_string = config_cost.COST_TYPE + " - " + config_agent.DYN    
         fig.suptitle(title_string, fontsize=10)
         subfigs = fig.subfigures(1, 2, wspace=0.05, width_ratios=[1.55, 1])
         subfigs_col1 = subfigs[0].subfigures(2, 1, height_ratios=[1, 1.4])
@@ -821,10 +813,10 @@ def make_bicycle_comparison_report(prefix, plot_folder,
 
     ax_st = subfigs_col2[2]
 
-    if 'reachability' in tag:
+    if config_cost.COST_TYPE == 'Reachability':
         max_value = 0.04
         upper_limit = 0.1
-    else:
+    elif config_cost.COST_TYPE == 'Reachavoid':
         max_value = 0.05
         upper_limit = 1.0
 

@@ -86,7 +86,8 @@ class iLQRSafetyFilter(BasePolicy):
                 obs=obs, controls=controls_initialize, state=state)
         else:
             # Potential source of acceleration. We don't need to resolve both ILQs as we can reuse
-            # solution from previous time. - Unused currently.
+            # solution from previous time.
+            # Currently enabled in line 254 - disable if problems arise.
             solver_info_0 = prev_sol['bootstrap_next_solution']
             control_0 = (solver_info_0['controls'][:, 0] 
                             + solver_info_0['K_closed_loop'][:, :, 0] @ (initial_state - solver_info_0['states'][:, 0]))
