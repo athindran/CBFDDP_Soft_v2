@@ -352,7 +352,7 @@ if __name__ == "__main__":
     # zero. With the control cost added, 0 is not a level set. The reach-avoid LR should be safe with these changes despite convergence inaccuracy.
     # Also, turn off noise for LR filters in agent code.
     # The options are ['SoftLR', 'LR', 'CBF', 'SoftCBF']. The best performing filter is 'SoftCBF'.
-    filters=['CBF', 'SoftCBF']
+    filters=['SoftCBF']
     
     out_folder, plot_tag, config_agent = None, None, None
     for filter_type in filters:
