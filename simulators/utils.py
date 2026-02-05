@@ -39,7 +39,9 @@ class PrintLogger(object):
         # this handles the flush command by doing nothing.
         # you might want to specify some extra behavior here.
         pass
-
+    
+    def __del__(self):
+        self.log_file.close()
 
 # Type Hints
 class ActionZS(TypedDict):

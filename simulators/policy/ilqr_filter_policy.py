@@ -251,7 +251,7 @@ class iLQRSafetyFilter(BasePolicy):
                     solver_info_0['mark_barrier_filter'] = True
                 solver_info_0['barrier_filter_steps'] = self.barrier_filter_steps
                 solver_info_0['filter_steps'] = self.filter_steps
-                solver_info_0['resolve'] = False
+                solver_info_0['resolve'] = True
                 solver_info_0['bootstrap_next_solution'] = solver_info_1
                 solver_info_0['reinit_controls'] = jnp.array(
                     solver_info_1['controls'])

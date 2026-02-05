@@ -118,6 +118,7 @@ def plot_bic_run_summary(dyn_id, env, obs_history, action_history, config_solver
     plt.xlabel('Time step')
     fig.savefig(os.path.join(fig_folder, "auxiliary_cbfiters.png"), dpi=200)
 
+    plt.close('all')
 
 def plot_pvtol_run_summary(dyn_id, env, obs_history, action_history, config_solver, config_agent, 
                      fig_folder="./", **kwargs):
@@ -210,6 +211,8 @@ def plot_pvtol_run_summary(dyn_id, env, obs_history, action_history, config_solv
     plt.ylabel('Solver iterations')
     plt.xlabel('Time step')
     fig.savefig(os.path.join(fig_folder, "auxiliary_cbfiters.png"), dpi=200)
+
+    plt.close('all')
 
     
 def plot_run_summary(dyn_id, env, obs_history, action_history, config_solver, config_agent, 
@@ -855,6 +858,8 @@ def make_bicycle_comparison_report(prefix, plot_folder,
             bbox_inches='tight', transparent=hide_label
         )
 
+    plt.close('all')
+
     print("Reporting stats")
     for idx, controls_data in enumerate(plot_actions_list):
         print("Type: ", labellist[idx])
@@ -1267,6 +1272,8 @@ def make_pvtol_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", pl
             plot_folder + tag + str(hide_label) + "_jax.png", dpi=400, 
             bbox_inches='tight', transparent=hide_label
         )
+
+    plt.close('all')
 
     print("Reporting stats")
     for idx, controls_data in enumerate(plot_actions_list):
