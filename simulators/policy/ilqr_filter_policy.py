@@ -91,7 +91,8 @@ class iLQRSafetyFilter(BasePolicy):
         else:
             # Potential source of acceleration. We don't need to resolve both ILQs as we can reuse
             # solution from previous time.
-            # Currently disabled in line 254 - enable if needed.
+            # Currently enabled in line 258 - disable if problems arise.
+            # If set to True, the solver will resolve both ILQR.
             solver_info_0 = prev_sol['bootstrap_next_solution']
             control_0 = (solver_info_0['controls'][:, 0] 
                             + solver_info_0['K_closed_loop'][:, :, 0] @ (initial_state - solver_info_0['states'][:, 0]))
@@ -255,7 +256,7 @@ class iLQRSafetyFilter(BasePolicy):
                     solver_info_0['mark_barrier_filter'] = True
                 solver_info_0['barrier_filter_steps'] = self.barrier_filter_steps
                 solver_info_0['filter_steps'] = self.filter_steps
-                solver_info_0['resolve'] = True
+                solver_info_0['resolve'] = False
                 solver_info_0['bootstrap_next_solution'] = solver_info_1
                 solver_info_0['reinit_controls'] = jnp.array(
                     solver_info_1['controls'])
