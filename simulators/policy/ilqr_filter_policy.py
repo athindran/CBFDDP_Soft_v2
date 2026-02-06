@@ -5,6 +5,7 @@ from jax import numpy as jnp
 
 import copy
 import numpy as np
+import gc
 
 from .ilqr_reachavoid_policy import iLQRReachAvoid
 from .ilqr_reachability_policy import iLQRReachability
@@ -68,6 +69,9 @@ class iLQRSafetyFilter(BasePolicy):
         prev_ctrl: np.ndarray = np.array([0.0, 0.0]), 
         warmup=False,
     ) -> np.ndarray:
+
+        # Turn off python cyclic garbage collection before control loop.
+        gc.disable()
 
         # Task feedback policy
         start_time = time.perf_counter()
@@ -144,7 +148,7 @@ class iLQRSafetyFilter(BasePolicy):
                     return control_0 + solver_info_0['K_closed_loop'][:, :, 0] @ (initial_state - solver_info_0['states'][:, 0]), solver_info_0
             else:
                 solver_info_0['filter_steps'] = self.filter_steps
-                solver_info_0['resolve'] = True
+                solver_info_0['resolve'] = False
                 solver_info_0['bootstrap_next_solution'] = solver_info_1
                 solver_info_0['reinit_controls'] = jnp.array(
                     solver_info_1['controls'])
