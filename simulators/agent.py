@@ -113,9 +113,8 @@ class Agent:
         assert control is not None, (
             "You need to pass in a control!"
         )
-        self.ticks = self.ticks + 1
-        return self.dyn.integrate_forward_with_noise(
-            state=state, control=control, seed = self.ticks
+        return self.dyn.integrate_forward(
+            state=state, control=control
         )
 
     def get_dyn_jacobian(
