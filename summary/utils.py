@@ -763,10 +763,10 @@ def make_bicycle_comparison_report(prefix, plot_folder,
                         fontsize=legend_fontsize)
     if config_cost.COST_TYPE == 'Reachability':
         ax_v.set_ylabel('Reachability Value (SM)', 
-                            fontsize=5.4)
+                            fontsize=5.2)
     else:
         ax_v.set_ylabel('ReachAvoid Value (SM)',
-                    fontsize=5.4)
+                    fontsize=5.2)
     ax_v.legend(framealpha=0, fontsize=legend_fontsize, loc='upper left', 
                            ncol=1, bbox_to_anchor=(0.05, 1.2))        
     # fig_v.savefig(
@@ -1227,7 +1227,7 @@ def make_pvtol_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", pl
                             fontsize=6.1)
     else:
         ax_v.set_ylabel('ReachAvoid Value (HM)', 
-                    fontsize=6.3)
+                    fontsize=6.1)
     # ax_v.legend(framealpha=0, fontsize=legend_fontsize, loc='upper left', 
     #                        ncol=3, bbox_to_anchor=(0.05, 1.1), fancybox=False, shadow=False)
         
@@ -1280,7 +1280,7 @@ def make_pvtol_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", pl
 
     ax_st = subfigs_col2[2]
     if 'reachability' in tag:
-        max_value = 0.02
+        max_value = 0.03
     else:
         max_value = 1.0
 
@@ -1305,7 +1305,8 @@ def make_pvtol_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", pl
                         fontsize=legend_fontsize)
     ax_st.set_ylabel('Computation time $(s)$', 
                         fontsize=5.6)
-    ax_st.set_title('Filter computation time')
+    ax_st.set_title('Filter computation time', 
+                        fontsize=legend_fontsize)
     # ax_st.legend(framealpha=0, fontsize=legend_fontsize, loc='upper left', 
     #                        ncol=3, bbox_to_anchor=(0.05, 1.1), fancybox=False, shadow=False)
         
