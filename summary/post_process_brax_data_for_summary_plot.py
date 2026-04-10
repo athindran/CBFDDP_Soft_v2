@@ -100,7 +100,7 @@ def make_barkour_reachability_plot(summary_dicts, seed=0):
     ax.legend(fontsize=8, loc='upper left', bbox_to_anchor=(0.05, 1.43), ncol=1, framealpha=0.0)
     
     ax = subfigs_col2[1].subplots(1, 1)
-    plot_control_cycle_time = True
+    plot_control_cycle_time = False
     if plot_control_cycle_time:
         ax.plot(range_space, barkour_cbfddp_control_cycle_times, label='CBFDDP (HM)', color='b')
         ax.plot(range_space, barkour_lrddp_control_cycle_times, label='LRDDP (HM)', color='r')
@@ -124,6 +124,10 @@ def make_barkour_reachability_plot(summary_dicts, seed=0):
         ax.set_yticks(ticks=[round(iters_min, 2), round(iters_max, 2)], 
                         labels=[round(iters_min, 2), round(iters_max, 2)], 
                         fontsize=legend_fontsize)
+        ax.fill_between(range_space, 0.0, iters_max,
+                                where=barkour_cbfddp_is_filter_active[0:nsteps], color='b', alpha=0.15)
+        ax.fill_between(range_space, 0.0, iters_max,
+                        where=barkour_cbfddp_is_filter_fail[0:nsteps], color='r', alpha=0.15)
         ax.set_ylim([round(iters_min, 2), round(iters_max + 0.5, 2)])
         ax.yaxis.set_label_coords(-0.04, 0.5)
         ax.xaxis.set_label_coords(0.5, -0.04)
@@ -210,7 +214,7 @@ def make_reacher_plot(summary_dicts, seed=0):
     ax.set_xlabel('Time (s)', 
                         fontsize=legend_fontsize)
 
-    plot_control_cycle_time = True
+    plot_control_cycle_time = False
     ax = subfigs_col1[2].subplots(1, 1)
     if plot_control_cycle_time:
         ax.plot(range_space, reacher_cbfddp_control_cycle_times, label='CBFDDP (HM)', color='b')
@@ -221,13 +225,17 @@ def make_reacher_plot(summary_dicts, seed=0):
         ax.set_yticks(ticks=[round(cycle_times_min, 2), round(cycle_times_max, 2)], 
                         labels=[round(cycle_times_min, 2), round(cycle_times_max, 2)], 
                         fontsize=legend_fontsize)
+        ax.fill_between(range_space, 0.0, cycle_times_max,
+                                where=reacher_cbfddp_is_filter_active[0:nsteps], color='b', alpha=0.15)
+        ax.fill_between(range_space, 0.0, cycle_times_max,
+                        where=reacher_cbfddp_is_filter_fail[0:nsteps], color='r', alpha=0.15)
         ax.set_ylim([round(cycle_times_min, 2), round(cycle_times_max, 2)])
         ax.yaxis.set_label_coords(-0.04, 0.5)
         ax.xaxis.set_label_coords(0.5, -0.04)
         ax.set_xlabel('Time $(s)$', 
                             fontsize=legend_fontsize)
         ax.set_ylabel('Computation time $(s)$', 
-                            fontsize=6.0)
+                            fontsize=5.0)
         ax.set_title('Safety computation time', fontsize=legend_fontsize)
     else:
         ax.plot(range_space, reacher_cbfddp_filter_iters, label='CBFDDP (HM)', color='b')
@@ -238,6 +246,10 @@ def make_reacher_plot(summary_dicts, seed=0):
         ax.set_yticks(ticks=[round(iters_min, 2), round(iters_max, 2)], 
                         labels=[round(iters_min, 2), round(iters_max, 2)], 
                         fontsize=legend_fontsize)
+        ax.fill_between(range_space, 0.0, iters_max,
+                                where=reacher_cbfddp_is_filter_active[0:nsteps], color='b', alpha=0.15)
+        ax.fill_between(range_space, 0.0, iters_max,
+                        where=reacher_cbfddp_is_filter_fail[0:nsteps], color='r', alpha=0.15)
         ax.set_ylim([round(iters_min, 2), round(iters_max + 0.5, 2)])
         ax.yaxis.set_label_coords(-0.04, 0.5)
         ax.xaxis.set_label_coords(0.5, -0.04)
