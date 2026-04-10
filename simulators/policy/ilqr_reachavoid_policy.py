@@ -128,7 +128,7 @@ class iLQRReachAvoid(iLQR):
             status=status, Vopt=J, marginopt=reachavoid_margin,
             grad_x=V_x, grad_xx=V_xx, B0=fu[:, :, 0], critical=critical,
             is_inside_target=is_inside_target, K_closed_loop=K_closed_loop, k_open_loop=k_open_loop,
-            constant_term=np.float64(constant_term_loop[0])
+            constant_term=np.float64(constant_term_loop[0]), num_ddp_iters=i+1
         )
 
         return controls[:, 0], solver_info

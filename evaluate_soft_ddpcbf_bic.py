@@ -97,6 +97,7 @@ def main(config_file, road_boundary, filter_type, is_task_ilqr, line_search, sto
             'actions': action_history,
             "values": kwargs["value_history"],
             "process_times": kwargs["process_time_history"],
+            "solver_iters": kwargs["solver_iters_history"],
             "barrier_indices": kwargs["barrier_filter_indices"],
             "complete_indices": kwargs["complete_filter_indices"],
             'deviation_history': kwargs['deviation_history'],
