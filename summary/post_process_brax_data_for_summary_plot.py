@@ -95,8 +95,8 @@ def make_barkour_reachability_plot(summary_dicts, seed=0):
     ax.set_ylim([-0.5, 6.5])
     ax.yaxis.set_label_coords(-0.04, 0.5)
     ax.xaxis.set_label_coords(0.5, -0.04)
-    ax.set_ylabel('Value function')
-    ax.set_xlabel('Time (s)')
+    ax.set_ylabel('Value function', fontsize=legend_fontsize)
+    ax.set_xlabel('Time (s)', fontsize=legend_fontsize)
     ax.legend(fontsize=8, loc='upper left', bbox_to_anchor=(0.05, 1.43), ncol=1, framealpha=0.0)
     
     ax = subfigs_col2[1].subplots(1, 1)
@@ -113,8 +113,8 @@ def make_barkour_reachability_plot(summary_dicts, seed=0):
         ax.yaxis.set_label_coords(-0.04, 0.5)
         ax.xaxis.set_label_coords(0.5, -0.04)
         ax.set_ylim([0.0, 3.0])
-        ax.set_ylabel('Filter time $(s)$')
-        ax.set_xlabel('Time (s)')
+        ax.set_ylabel('Computation time $(s)$', fontsize=9.0)
+        ax.set_xlabel('Time (s)', fontsize=10.0)
         ax.set_title('Safety computation time', fontsize=legend_fontsize)
     else:
         ax.plot(range_space, barkour_cbfddp_filter_iters, label='CBFDDP (HM)', color='b')
