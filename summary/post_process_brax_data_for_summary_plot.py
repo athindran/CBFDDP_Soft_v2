@@ -42,6 +42,7 @@ def make_barkour_reachability_plot(summary_dicts, seed=0):
     barkour_cbfddp_policy_type = barkour_cbfddp_data['policy_type']
     barkour_cbfddp_is_filter_active = barkour_cbfddp_data['filter_active']
     barkour_cbfddp_is_filter_fail = barkour_cbfddp_data['filter_failed']
+    barkour_cbfddp_filter_iters = barkour_cbfddp_data['filter_iters']
 
     barkour_lrddp_controls = barkour_lrddp_data['actions']
     barkour_lrddp_states = barkour_lrddp_data['gc_states']
@@ -50,6 +51,7 @@ def make_barkour_reachability_plot(summary_dicts, seed=0):
     barkour_lrddp_policy_type = barkour_lrddp_data['policy_type']
     barkour_lrddp_is_filter_active = barkour_lrddp_data['filter_active']
     barkour_lrddp_is_filter_fail = barkour_lrddp_data['filter_failed']
+    barkour_lrddp_filter_iters = barkour_lrddp_data['filter_iters']
 
     barkour_neural_controls = barkour_neural_data['actions']
     barkour_neural_states = barkour_neural_data['gc_states']
@@ -84,7 +86,7 @@ def make_barkour_reachability_plot(summary_dicts, seed=0):
     ax.plot(range_space, barkour_cbfddp_values, label='CBFDDP (HM)', color='b')
     ax.plot(range_space, barkour_lrddp_values, label='LRDDP (HM)', color='r')
     ax.plot(range_space, barkour_neural_values, label='Neural', color='k', alpha=0.6)
-    ax.set_xticks(ticks=[0, nsteps*brax_env.dt], labels=[0, nsteps], fontsize=legend_fontsize)
+    ax.set_xticks(ticks=[0, nsteps*brax_env.dt], labels=[0, nsteps*brax_env.dt], fontsize=legend_fontsize)
     ax.set_yticks(ticks=[0.0, 6.5], labels=[0.0, 6.5], fontsize=legend_fontsize)
     ax.fill_between(range_space, 0.0, 6.5,
                             where=barkour_cbfddp_is_filter_active[0:nsteps], color='b', alpha=0.15)
@@ -93,28 +95,54 @@ def make_barkour_reachability_plot(summary_dicts, seed=0):
     ax.set_ylim([-0.5, 6.5])
     ax.yaxis.set_label_coords(-0.04, 0.5)
     ax.xaxis.set_label_coords(0.5, -0.04)
-    ax.set_ylabel('Value function')
-    ax.set_xlabel('Time (s)')
+    ax.set_ylabel('Value function', fontsize=legend_fontsize)
+    ax.set_xlabel('Time (s)', fontsize=legend_fontsize)
     ax.legend(fontsize=8, loc='upper left', bbox_to_anchor=(0.05, 1.43), ncol=1, framealpha=0.0)
     
     ax = subfigs_col2[1].subplots(1, 1)
-    ax.plot(range_space, barkour_cbfddp_control_cycle_times, label='CBFDDP (HM)', color='b')
-    ax.plot(range_space, barkour_lrddp_control_cycle_times, label='LRDDP (HM)', color='r')
-    ax.set_xticks(ticks=[0, nsteps*brax_env.dt], labels=[0, nsteps], fontsize=legend_fontsize)
-    ax.set_yticks(ticks=[0.0, 3.0], labels=[0.0, 3.0], fontsize=legend_fontsize)
-    ax.fill_between(range_space, 0.0, 3.0,
-                            where=barkour_cbfddp_is_filter_active[0:nsteps], color='b', alpha=0.15)
-    ax.fill_between(range_space, 0.0, 3.0,
-                    where=barkour_cbfddp_is_filter_fail[0:nsteps], color='r', alpha=0.15)
-    ax.yaxis.set_label_coords(-0.04, 0.5)
-    ax.xaxis.set_label_coords(0.5, -0.04)
-    ax.set_ylim([0.0, 3.0])
-    ax.set_ylabel('Filter time $(s)$')
-    ax.set_xlabel('Time (s)')
+    plot_control_cycle_time = False
+    if plot_control_cycle_time:
+        ax.plot(range_space, barkour_cbfddp_control_cycle_times, label='CBFDDP (HM)', color='b')
+        ax.plot(range_space, barkour_lrddp_control_cycle_times, label='LRDDP (HM)', color='r')
+        ax.set_xticks(ticks=[0, nsteps*brax_env.dt], labels=[0, nsteps*brax_env.dt], fontsize=legend_fontsize)
+        ax.set_yticks(ticks=[0.0, 3.0], labels=[0.0, 3.0], fontsize=legend_fontsize)
+        ax.fill_between(range_space, 0.0, 3.0,
+                                where=barkour_cbfddp_is_filter_active[0:nsteps], color='b', alpha=0.15)
+        ax.fill_between(range_space, 0.0, 3.0,
+                        where=barkour_cbfddp_is_filter_fail[0:nsteps], color='r', alpha=0.15)
+        ax.yaxis.set_label_coords(-0.04, 0.5)
+        ax.xaxis.set_label_coords(0.5, -0.04)
+        ax.set_ylim([0.0, 3.0])
+        ax.set_ylabel('Computation time $(s)$', fontsize=9.0)
+        ax.set_xlabel('Time (s)', fontsize=10.0)
+        ax.set_title('Safety computation time', fontsize=legend_fontsize)
+    else:
+        ax.plot(range_space, barkour_cbfddp_filter_iters, label='CBFDDP (HM)', color='b')
+        ax.set_xticks(ticks=[0, round(brax_env.dt*nsteps, 2)], labels=[0, round(brax_env.dt*nsteps, 2)], fontsize=legend_fontsize)
+        iters_min = math.ceil(barkour_cbfddp_filter_iters.min() * 100.0) / 100.0
+        iters_max = math.ceil(barkour_cbfddp_filter_iters.max() * 100.0) / 100.0
+        ax.set_yticks(ticks=[round(iters_min, 2), round(iters_max, 2)], 
+                        labels=[round(iters_min, 2), round(iters_max, 2)], 
+                        fontsize=legend_fontsize)
+        ax.fill_between(range_space, 0.0, iters_max,
+                                where=barkour_cbfddp_is_filter_active[0:nsteps], color='b', alpha=0.15)
+        ax.fill_between(range_space, 0.0, iters_max,
+                        where=barkour_cbfddp_is_filter_fail[0:nsteps], color='r', alpha=0.15)
+        ax.set_ylim([round(iters_min, 2), round(iters_max + 0.5, 2)])
+        ax.yaxis.set_label_coords(-0.04, 0.5)
+        ax.xaxis.set_label_coords(0.5, -0.04)
+        ax.set_xlabel('Time $(s)$', 
+                            fontsize=legend_fontsize)
+        ax.set_ylabel('ILQR steps', 
+                            fontsize=legend_fontsize)
+        ax.set_title('Safety ILQR steps', fontsize=legend_fontsize)
 
-    plt.savefig(f'./plots_summary/barkour_summary_{seed}.pdf', bbox_inches='tight', dpi=500)
-    plt.savefig(f'./plots_summary/barkour_summary_{seed}.png', bbox_inches='tight', dpi=500)
-
+    if plot_control_cycle_time:
+        plt.savefig(f'./plots_summary/barkour_summary_{seed}_a.pdf', bbox_inches='tight', dpi=500)
+        plt.savefig(f'./plots_summary/barkour_summary_{seed}_a.png', bbox_inches='tight', dpi=500)
+    else:
+        plt.savefig(f'./plots_summary/barkour_summary_{seed}_b.pdf', bbox_inches='tight', dpi=500)
+        plt.savefig(f'./plots_summary/barkour_summary_{seed}_b.png', bbox_inches='tight', dpi=500)
 
 def make_reacher_plot(summary_dicts, seed=0):
     reacher_cbfddp_data = summary_dicts['cbfilqr_filter_with_neural_policy']
@@ -137,6 +165,7 @@ def make_reacher_plot(summary_dicts, seed=0):
     reacher_cbfddp_policy_type = reacher_cbfddp_data['policy_type']
     reacher_cbfddp_is_filter_active = reacher_cbfddp_data['filter_active']
     reacher_cbfddp_is_filter_fail = reacher_cbfddp_data['filter_failed']
+    reacher_cbfddp_filter_iters = reacher_cbfddp_data['filter_iters']
 
     reacher_lrddp_controls = reacher_lrddp_data['actions']
     reacher_lrddp_states = reacher_lrddp_data['gc_states']
@@ -145,6 +174,7 @@ def make_reacher_plot(summary_dicts, seed=0):
     reacher_lrddp_policy_type = reacher_lrddp_data['policy_type']
     reacher_lrddp_is_filter_active = reacher_lrddp_data['filter_active']
     reacher_lrddp_is_filter_fail = reacher_lrddp_data['filter_failed']
+    reacher_lrddp_filter_iters = reacher_lrddp_data['filter_iters']
 
     reacher_neural_controls = reacher_neural_data['actions']
     reacher_neural_states = reacher_neural_data['gc_states']
@@ -170,7 +200,7 @@ def make_reacher_plot(summary_dicts, seed=0):
     ax.plot(range_space, reacher_lrddp_values, label='LRDDP (HM)', color='r')
     ax.plot(range_space, reacher_neural_values, label='Neural', color='k', alpha=0.6)
     ax.plot(range_space, reacher_cbfddp_values, label='CBFDDP (HM)', color='b')
-    ax.set_xticks(ticks=[0, nsteps*brax_env.dt], labels=[0, nsteps], fontsize=legend_fontsize)
+    ax.set_xticks(ticks=[0, nsteps*brax_env.dt], labels=[0, nsteps*brax_env.dt], fontsize=legend_fontsize)
     ax.set_yticks(ticks=[0.0, 30.0], labels=[0.0, 30.0], fontsize=legend_fontsize)
     ax.fill_between(range_space, 0.0, 31.0,
                             where=reacher_cbfddp_is_filter_active[0:nsteps], color='b', alpha=0.15)
@@ -184,22 +214,50 @@ def make_reacher_plot(summary_dicts, seed=0):
     ax.set_xlabel('Time (s)', 
                         fontsize=legend_fontsize)
 
+    plot_control_cycle_time = False
     ax = subfigs_col1[2].subplots(1, 1)
-    # ax.plot(range_space, reacher_lrddp_control_cycle_times, label='LRDDP (HM)', color='r')
-    ax.plot(range_space, reacher_cbfddp_control_cycle_times, label='CBFDDP (HM)', color='b')
-    ax.set_xticks(ticks=[0, round(brax_env.dt*nsteps, 2)], labels=[0, round(brax_env.dt*nsteps, 2)], fontsize=legend_fontsize)
-    cycle_times_min = math.ceil(reacher_cbfddp_control_cycle_times.min() * 100.0) / 100.0
-    cycle_times_max = math.ceil(reacher_cbfddp_control_cycle_times.max() * 100.0) / 100.0
-    ax.set_yticks(ticks=[round(cycle_times_min, 2), round(cycle_times_max, 2)], 
-                    labels=[round(cycle_times_min, 2), round(cycle_times_max, 2)], 
-                    fontsize=legend_fontsize)
-    ax.set_ylim([round(cycle_times_min, 2), round(cycle_times_max, 2)])
-    ax.yaxis.set_label_coords(-0.04, 0.5)
-    ax.xaxis.set_label_coords(0.5, -0.04)
-    ax.set_xlabel('Time $(s)$', 
+    if plot_control_cycle_time:
+        ax.plot(range_space, reacher_cbfddp_control_cycle_times, label='CBFDDP (HM)', color='b')
+        ax.plot(range_space, reacher_lrddp_control_cycle_times, label='LRDDP (HM)', color='r')
+        ax.set_xticks(ticks=[0, round(brax_env.dt*nsteps, 2)], labels=[0, round(brax_env.dt*nsteps, 2)], fontsize=legend_fontsize)
+        cycle_times_min = math.ceil(reacher_cbfddp_control_cycle_times.min() * 100.0) / 100.0
+        cycle_times_max = math.ceil(reacher_cbfddp_control_cycle_times.max() * 100.0) / 100.0
+        ax.set_yticks(ticks=[round(cycle_times_min, 2), round(cycle_times_max, 2)], 
+                        labels=[round(cycle_times_min, 2), round(cycle_times_max, 2)], 
                         fontsize=legend_fontsize)
-    ax.set_ylabel('Filter time $(s)$', 
+        ax.fill_between(range_space, 0.0, cycle_times_max,
+                                where=reacher_cbfddp_is_filter_active[0:nsteps], color='b', alpha=0.15)
+        ax.fill_between(range_space, 0.0, cycle_times_max,
+                        where=reacher_cbfddp_is_filter_fail[0:nsteps], color='r', alpha=0.15)
+        ax.set_ylim([round(cycle_times_min, 2), round(cycle_times_max, 2)])
+        ax.yaxis.set_label_coords(-0.04, 0.5)
+        ax.xaxis.set_label_coords(0.5, -0.04)
+        ax.set_xlabel('Time $(s)$', 
+                            fontsize=legend_fontsize)
+        ax.set_ylabel('Computation time $(s)$', 
+                            fontsize=5.0)
+        ax.set_title('Safety computation time', fontsize=legend_fontsize)
+    else:
+        ax.plot(range_space, reacher_cbfddp_filter_iters, label='CBFDDP (HM)', color='b')
+        # ax.plot(range_space, reacher_lrddp_filter_iters, label='LRDDP (HM)', color='r')
+        ax.set_xticks(ticks=[0, round(brax_env.dt*nsteps, 2)], labels=[0, round(brax_env.dt*nsteps, 2)], fontsize=legend_fontsize)
+        iters_min = math.ceil(reacher_cbfddp_filter_iters.min() * 100.0) / 100.0
+        iters_max = math.ceil(reacher_cbfddp_filter_iters.max() * 100.0) / 100.0
+        ax.set_yticks(ticks=[round(iters_min, 2), round(iters_max, 2)], 
+                        labels=[round(iters_min, 2), round(iters_max, 2)], 
                         fontsize=legend_fontsize)
+        ax.fill_between(range_space, 0.0, iters_max,
+                                where=reacher_cbfddp_is_filter_active[0:nsteps], color='b', alpha=0.15)
+        ax.fill_between(range_space, 0.0, iters_max,
+                        where=reacher_cbfddp_is_filter_fail[0:nsteps], color='r', alpha=0.15)
+        ax.set_ylim([round(iters_min, 2), round(iters_max + 0.5, 2)])
+        ax.yaxis.set_label_coords(-0.04, 0.5)
+        ax.xaxis.set_label_coords(0.5, -0.04)
+        ax.set_xlabel('Time $(s)$', 
+                            fontsize=legend_fontsize)
+        ax.set_ylabel('ILQR steps', 
+                            fontsize=legend_fontsize)
+        ax.set_title('Safety ILQR steps', fontsize=legend_fontsize)
 
     col1_axes = subfigs[1].subplots(2, 1)
     col1_axes[0].plot(range_space, reacher_lrddp_controls[:, 0], color='r', label='LRDDP (HM)', alpha=0.6)
@@ -214,9 +272,9 @@ def make_reacher_plot(summary_dicts, seed=0):
                         fontsize=legend_fontsize)
     col1_axes[1].set_ylabel('Torque 1 ($Nm$)', 
                         fontsize=legend_fontsize)
-    col1_axes[0].set_xticks(ticks=[0, nsteps*brax_env.dt], labels=[0, nsteps], fontsize=legend_fontsize)
+    col1_axes[0].set_xticks(ticks=[0, nsteps*brax_env.dt], labels=[0, nsteps*brax_env.dt], fontsize=legend_fontsize)
     col1_axes[0].set_yticks(ticks=[-0.3, 0.3], labels=[-0.3, 0.3], fontsize=legend_fontsize)
-    col1_axes[1].set_xticks(ticks=[0, nsteps*brax_env.dt], labels=[0, nsteps], fontsize=legend_fontsize)
+    col1_axes[1].set_xticks(ticks=[0, nsteps*brax_env.dt], labels=[0, nsteps*brax_env.dt], fontsize=legend_fontsize)
     col1_axes[1].set_yticks(ticks=[-0.3, 0.3], labels=[-0.3, 0.3], fontsize=legend_fontsize)
     col1_axes[0].yaxis.set_label_coords(-0.04, 0.5)
     col1_axes[0].xaxis.set_label_coords(0.5, -0.04)
@@ -226,13 +284,17 @@ def make_reacher_plot(summary_dicts, seed=0):
                             where=reacher_cbfddp_is_filter_active[0:nsteps], color='b', alpha=0.15)
     col1_axes[0].fill_between(range_space, -1.0, 1.0,
                     where=reacher_cbfddp_is_filter_fail[0:nsteps], color='r', alpha=0.15)
-    col1_axes[0].set_ylim([-0.3, 0.3])
+    col1_axes[0].set_ylim([-0.3, 0.35])
     col1_axes[1].fill_between(range_space, -1.0, 1.0,
                             where=reacher_cbfddp_is_filter_active[0:nsteps], color='b', alpha=0.15)
     col1_axes[1].fill_between(range_space, -1.0, 1.0,
                     where=reacher_cbfddp_is_filter_fail[0:nsteps], color='r', alpha=0.15)
-    col1_axes[1].set_ylim([-0.3, 0.3])
+    col1_axes[1].set_ylim([-0.3, 0.35])
     col1_axes[0].legend(fontsize=9, loc='upper left', bbox_to_anchor=(-0.05, 1.48), ncol=1, framealpha=0)
-
-    plt.savefig(f'./plots_summary/reacher_summary_{seed}.pdf', bbox_inches='tight', dpi=500)
-    plt.savefig(f'./plots_summary/reacher_summary_{seed}.png', bbox_inches='tight', dpi=500)
+    
+    if plot_control_cycle_time:
+        plt.savefig(f'./plots_summary/reacher_summary_{seed}_a.pdf', bbox_inches='tight', dpi=500)
+        plt.savefig(f'./plots_summary/reacher_summary_{seed}_a.png', bbox_inches='tight', dpi=500)
+    else:
+        plt.savefig(f'./plots_summary/reacher_summary_{seed}_b.pdf', bbox_inches='tight', dpi=500)
+        plt.savefig(f'./plots_summary/reacher_summary_{seed}_b.png', bbox_inches='tight', dpi=500)

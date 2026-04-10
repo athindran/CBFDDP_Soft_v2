@@ -483,6 +483,7 @@ def make_bicycle_comparison_report(prefix, plot_folder,
     plot_safety_metrics_list = []
     plot_values_list = []
     plot_times_list = []
+    plot_ilqr_iters_list = []
     plot_deviations_list = []
     plot_obses_complete_filter_list = []
     plot_obses_barrier_filter_list = []
@@ -502,6 +503,7 @@ def make_bicycle_comparison_report(prefix, plot_folder,
         plot_values_list.append( np.array(plot_data['values']) )
         plot_safety_metrics_list.append( np.array(plot_data['safety_metrics']) )
         plot_times_list.append( np.array(plot_data['process_times']) )
+        plot_ilqr_iters_list.append( np.array(plot_data['solver_iters']) )
         plot_deviations_list.append( np.array(plot_data['deviation_history']) )
         plot_safe_opt_list.append( np.array(plot_data['safe_opt_history']) )
         plot_task_ctrl_list.append( np.array(plot_data['task_ctrl_history']) )
@@ -755,16 +757,16 @@ def make_bicycle_comparison_report(prefix, plot_folder,
                         labels=[0, max_value], 
                         fontsize=legend_fontsize)
     ax_v.set_ylim([-0.1, max_value])
-    ax_v.yaxis.set_label_coords(-0.04, 0.5)
+    ax_v.yaxis.set_label_coords(-0.04, 1.25)
     ax_v.xaxis.set_label_coords(0.5, -0.04)
     ax_v.set_xlabel('Time $(s)$', 
                         fontsize=legend_fontsize)
     if config_cost.COST_TYPE == 'Reachability':
         ax_v.set_ylabel('Reachability Value (SM)', 
-                            fontsize=5.4)
+                            fontsize=5.2)
     else:
         ax_v.set_ylabel('ReachAvoid Value (SM)',
-                    fontsize=5.4)
+                    fontsize=5.2)
     ax_v.legend(framealpha=0, fontsize=legend_fontsize, loc='upper left', 
                            ncol=1, bbox_to_anchor=(0.05, 1.2))        
     # fig_v.savefig(
@@ -816,47 +818,89 @@ def make_bicycle_comparison_report(prefix, plot_folder,
 
     ax_st = subfigs_col2[2]
 
-    if config_cost.COST_TYPE == 'Reachability':
-        max_value = 0.04
-        upper_limit = 0.1
-    elif config_cost.COST_TYPE == 'Reachavoid':
-        max_value = 0.05
-        upper_limit = 1.0
+    plot_computation_time = True
+    if plot_computation_time:
+        if config_cost.COST_TYPE == 'Reachability':
+            max_value = 0.04
+            upper_limit = 0.1
+        elif config_cost.COST_TYPE == 'Reachavoid':
+            max_value = 0.05
+            upper_limit = 1.0
 
-    for idx, process_times_data in enumerate(plot_times_list):
-        max_value = min(max(max_value, 1.2*process_times_data.max()), upper_limit)
-        x_times = dt*np.arange(process_times_data.size)
-        ax_st.plot(x_times, process_times_data, label=labellist[int(idx)], c=colorlist[int(idx)], 
-                            alpha = 1.0, linewidth=1.5, linestyle='solid')
-        nsteps = process_times_data.size
-        fillarray = np.zeros(nsteps)
-        fillarray[np.array(plot_obses_barrier_filter_list[idx], dtype=np.int64)] = 1
-        ax_st.fill_between(x_times, 0.0, max_value, 
-                                    where=fillarray, color=colorlist[int(idx)], alpha=0.15)
+        for idx, process_times_data in enumerate(plot_times_list):
+            max_value = min(max(max_value, 1.2*process_times_data.max()), upper_limit)
+            x_times = dt*np.arange(process_times_data.size)
+            ax_st.plot(x_times, process_times_data, label=labellist[int(idx)], c=colorlist[int(idx)], 
+                                alpha = 1.0, linewidth=1.5, linestyle='solid')
+            nsteps = process_times_data.size
+            fillarray = np.zeros(nsteps)
+            fillarray[np.array(plot_obses_barrier_filter_list[idx], dtype=np.int64)] = 1
+            ax_st.fill_between(x_times, 0.0, max_value, 
+                                        where=fillarray, color=colorlist[int(idx)], alpha=0.15)
+    
+        max_value = round(max_value, 2)
+        ax_st.set_xticks(ticks=[0, round(dt*maxsteps, 2)], labels=[0, round(dt*maxsteps, 2)], fontsize=legend_fontsize)
+        ax_st.set_yticks(ticks=[0, max_value], 
+                            labels=[0, max_value], 
+                            fontsize=legend_fontsize)
+        ax_st.set_ylim([0.0, max_value])
+        ax_st.yaxis.set_label_coords(-0.04, 0.54)
+        ax_st.xaxis.set_label_coords(0.5, -0.04)
+        ax_st.set_xlabel('Time $(s)$', 
+                            fontsize=legend_fontsize)
+        ax_st.set_ylabel('Computation time (s)', 
+                            fontsize=5.4)
+        ax_st.set_title('Filter computation time', 
+                            fontsize=legend_fontsize)
+        # ax_st.legend(framealpha=0, fontsize=legend_fontsize, loc='upper left', 
+        #                        ncol=3, bbox_to_anchor=(0.05, 1.1), fancybox=False, shadow=False)
+    else:
+        ticks_vals = [0, 20]
+        for idx, iters_data in enumerate(plot_ilqr_iters_list):
+            max_value = min(max(max_value, iters_data.max()), 20)
+            ticks_vals.append(iters_data.max())
+            x_times = dt*np.arange(iters_data.size)
+            ax_st.plot(x_times, iters_data, label=labellist[int(idx)], c=colorlist[int(idx)], 
+                                alpha = 1.0, linewidth=1.5, linestyle='solid')
+            nsteps = iters_data.size
+            fillarray = np.zeros(nsteps)
+            fillarray[np.array(plot_obses_barrier_filter_list[idx], dtype=np.int64)] = 1
+            ax_st.fill_between(x_times, 0.0, max_value, 
+                            where=fillarray, color=colorlist[int(idx)], alpha=0.15)
 
-    max_value = round(max_value, 2)
-    ax_st.set_xticks(ticks=[0, round(dt*maxsteps, 2)], labels=[0, round(dt*maxsteps, 2)], fontsize=legend_fontsize)
-    ax_st.set_yticks(ticks=[0, max_value], 
-                        labels=[0, max_value], 
-                        fontsize=legend_fontsize)
-    ax_st.set_ylim([0.0, max_value])
-    ax_st.yaxis.set_label_coords(-0.04, 0.5)
-    ax_st.xaxis.set_label_coords(0.5, -0.04)
-    ax_st.set_xlabel('Time $(s)$', 
-                        fontsize=legend_fontsize)
-    ax_st.set_ylabel('Filter time (s)', 
-                        fontsize=legend_fontsize)
-    # ax_st.legend(framealpha=0, fontsize=legend_fontsize, loc='upper left', 
-    #                        ncol=3, bbox_to_anchor=(0.05, 1.1), fancybox=False, shadow=False)
-        
-    fig.savefig(
-            plot_folder + tag + str(hide_label) + "_jax.pdf", dpi=400, 
-            bbox_inches='tight', transparent=hide_label
-        )
-    fig.savefig(
-            plot_folder + tag + str(hide_label) + "_jax.png", dpi=400, 
-            bbox_inches='tight', transparent=hide_label
-        )
+        max_value = round(max_value, 2)
+        ax_st.set_xticks(ticks=[0, round(dt*maxsteps, 2)], labels=[0, round(dt*maxsteps, 2)], fontsize=legend_fontsize)
+        ax_st.set_yticks(ticks=ticks_vals, 
+                            labels=ticks_vals, 
+                            fontsize=legend_fontsize)
+        ax_st.set_ylim([0.0, max_value])
+        # ax_st.yaxis.set_label_coords(-0.04, 0.54)
+        ax_st.xaxis.set_label_coords(0.5, -0.04)
+        ax_st.set_xlabel('Time $(s)$', 
+                            fontsize=legend_fontsize)
+        ax_st.set_ylabel('ILQR iters', 
+                            fontsize=legend_fontsize)
+        ax_st.set_title('Safety ILQR iters', 
+                            fontsize=legend_fontsize)
+
+    if plot_computation_time:
+        fig.savefig(
+                plot_folder + tag + str(hide_label) + "_jax_a.pdf", dpi=400, 
+                bbox_inches='tight', transparent=hide_label
+            )
+        fig.savefig(
+                plot_folder + tag + str(hide_label) + "_jax_a.png", dpi=400, 
+                bbox_inches='tight', transparent=hide_label
+            )
+    else:
+        fig.savefig(
+                plot_folder + tag + str(hide_label) + "_jax_b.pdf", dpi=400, 
+                bbox_inches='tight', transparent=hide_label
+            )
+        fig.savefig(
+                plot_folder + tag + str(hide_label) + "_jax_b.png", dpi=400, 
+                bbox_inches='tight', transparent=hide_label
+            )     
 
     plt.close('all')
 
@@ -1174,7 +1218,7 @@ def make_pvtol_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", pl
                         labels=[0, max_value], 
                         fontsize=legend_fontsize)
     ax_v.set_ylim([0.0, max_value])
-    ax_v.yaxis.set_label_coords(-0.04, 0.5)
+    ax_v.yaxis.set_label_coords(-0.04, 0.54)
     ax_v.xaxis.set_label_coords(0.5, -0.04)
     ax_v.set_xlabel('Time $(s)$', 
                         fontsize=legend_fontsize)
@@ -1183,7 +1227,7 @@ def make_pvtol_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", pl
                             fontsize=6.1)
     else:
         ax_v.set_ylabel('ReachAvoid Value (HM)', 
-                    fontsize=6.3)
+                    fontsize=6.1)
     # ax_v.legend(framealpha=0, fontsize=legend_fontsize, loc='upper left', 
     #                        ncol=3, bbox_to_anchor=(0.05, 1.1), fancybox=False, shadow=False)
         
@@ -1236,7 +1280,7 @@ def make_pvtol_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", pl
 
     ax_st = subfigs_col2[2]
     if 'reachability' in tag:
-        max_value = 0.02
+        max_value = 0.03
     else:
         max_value = 1.0
 
@@ -1259,7 +1303,9 @@ def make_pvtol_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", pl
     ax_st.xaxis.set_label_coords(0.5, -0.04)
     ax_st.set_xlabel('Time $(s)$', 
                         fontsize=legend_fontsize)
-    ax_st.set_ylabel('Filter time $(s)$', 
+    ax_st.set_ylabel('Computation time $(s)$', 
+                        fontsize=5.6)
+    ax_st.set_title('Filter computation time', 
                         fontsize=legend_fontsize)
     # ax_st.legend(framealpha=0, fontsize=legend_fontsize, loc='upper left', 
     #                        ncol=3, bbox_to_anchor=(0.05, 1.1), fancybox=False, shadow=False)

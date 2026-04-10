@@ -59,6 +59,7 @@ class LRBraxSafetyFilter(BasePolicy):
     ):
 
         task_ctrl_jp = jp.array(task_ctrl)
+        total_num_iters = 0
 
         # Find safe policy from step 0
         if prev_sol is not None:
@@ -69,6 +70,7 @@ class LRBraxSafetyFilter(BasePolicy):
         if prev_sol is None or prev_sol['resolve']:
             control_0, solver_info_0 = self.solver_0.get_action(
                 obs=obs, controls=controls_initialize, state=state)
+            total_num_iters += solver_info_0['num_ddp_iters']
         else:
             # Potential source of acceleration. We don't need to resolve both ILQs as we can reuse
             # solution from previous time. - Unused currently.
@@ -94,6 +96,7 @@ class LRBraxSafetyFilter(BasePolicy):
 
         _, solver_info_1 = self.solver_1.get_action(
             obs=state_imaginary, controls=boot_controls, state=state_imaginary)
+        total_num_iters += solver_info_1['num_ddp_iters']
 
         solver_info_0['Vopt_next'] = solver_info_1['Vopt']
         solver_info_0['marginopt_next'] = solver_info_1['marginopt']
@@ -104,7 +107,7 @@ class LRBraxSafetyFilter(BasePolicy):
             solver_info_0['bootstrap_next_solution'] = solver_info_1
             solver_info_0['reinit_controls'] = jp.array(
                 solver_info_1['controls'])
-            solver_info_0['num_iters'] = -1
+            solver_info_0['num_iters'] = total_num_iters
 
             return task_ctrl_jp.ravel(), solver_info_0
         else:
@@ -115,6 +118,6 @@ class LRBraxSafetyFilter(BasePolicy):
                 solver_info_0['controls'][:, 1:self.N])
             solver_info_0['mark_complete_filter'] = True
             safety_control = solver_info_0['controls'][:, 0]
-            solver_info_0['num_iters'] = -1
+            solver_info_0['num_iters'] = total_num_iters
 
             return safety_control.ravel(), solver_info_0

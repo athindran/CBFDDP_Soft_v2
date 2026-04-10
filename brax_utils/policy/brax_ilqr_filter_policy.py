@@ -70,6 +70,7 @@ class iLQRBraxSafetyFilter(BasePolicy):
     ):
 
         task_ctrl_jp = jp.array(task_ctrl)
+        total_num_iters = 0
 
         # Find safe policy from step 0
         if prev_sol is not None:
@@ -80,6 +81,7 @@ class iLQRBraxSafetyFilter(BasePolicy):
         if prev_sol is None or prev_sol['resolve']:
             control_0, solver_info_0 = self.solver_0.get_action(
                 obs=obs, controls=controls_initialize, state=state)
+            total_num_iters += solver_info_0['num_ddp_iters']
         else:
             # Potential source of acceleration. We don't need to resolve both ILQs as we can reuse
             # solution from previous time. - Unused currently.
@@ -105,6 +107,7 @@ class iLQRBraxSafetyFilter(BasePolicy):
 
         _, solver_info_1 = self.solver_1.get_action(
             obs=state_imaginary, controls=boot_controls, state=state_imaginary)
+        total_num_iters += solver_info_1['num_ddp_iters']
 
         solver_info_0['Vopt_next'] = solver_info_1['Vopt']
         solver_info_0['marginopt_next'] = solver_info_1['marginopt']
@@ -183,6 +186,7 @@ class iLQRBraxSafetyFilter(BasePolicy):
                                                         controls=jp.array(
                                                             solver_info_1['controls']),
                                                         state=state_imaginary)
+            total_num_iters += solver_info_1['num_ddp_iters']
             solver_info_0['Vopt_next'] = solver_info_1['Vopt']
             solver_info_0['marginopt_next'] = solver_info_1['marginopt']
             solver_info_0['is_inside_target_next'] = solver_info_1['is_inside_target']
@@ -196,7 +200,7 @@ class iLQRBraxSafetyFilter(BasePolicy):
                 self.barrier_filter_steps += 1
                 solver_info_0['mark_barrier_filter'] = True
             solver_info_0['resolve'] = False
-            solver_info_0['num_iters'] = num_iters
+            solver_info_0['num_iters'] = total_num_iters
             solver_info_0['bootstrap_next_solution'] = solver_info_1
             solver_info_0['reinit_controls'] = jp.array(
                 solver_info_1['controls'])
@@ -206,7 +210,7 @@ class iLQRBraxSafetyFilter(BasePolicy):
         self.filter_steps += 1
         # Safe policy
         solver_info_0['resolve'] = True
-        solver_info_0['num_iters'] = num_iters
+        solver_info_0['num_iters'] = total_num_iters
         solver_info_0['reinit_controls'] = jp.zeros((self.dim_u, self.N))
         solver_info_0['reinit_controls'] = solver_info_0['reinit_controls'].at[:, 0:self.N - 1].set(
             solver_info_0['controls'][:, 1:self.N])

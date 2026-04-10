@@ -78,6 +78,7 @@ class iLQRSafetyFilter(BasePolicy):
         initial_state = np.array(state)
         stopping_ctrl = np.array([self.dyn.ctrl_space[0, 0], 0])
         task_ctrl = np.array(task_ctrl)
+        total_num_iters = 0
 
         # Find safe policy from step 0
         if prev_sol is not None:
@@ -88,6 +89,7 @@ class iLQRSafetyFilter(BasePolicy):
         if prev_sol is None or prev_sol['resolve']:
             control_0, solver_info_0 = self.solver_0.get_action(
                 obs=obs, controls=controls_initialize, state=state)
+            total_num_iters += solver_info_0['num_ddp_iters']
         else:
             # Potential source of acceleration. We don't need to resolve both ILQs as we can reuse
             # solution from previous time.
@@ -116,6 +118,7 @@ class iLQRSafetyFilter(BasePolicy):
 
         _, solver_info_1 = self.solver_1.get_action(
             obs=state_imaginary, controls=boot_controls, state=state_imaginary)
+        total_num_iters += solver_info_1['num_ddp_iters']
 
         solver_info_0['Vopt_next'] = solver_info_1['Vopt']
         solver_info_0['marginopt_next'] = solver_info_1['marginopt']
@@ -247,6 +250,7 @@ class iLQRSafetyFilter(BasePolicy):
                 solver_info_0['Vopt_next'] = solver_info_1['Vopt']
                 solver_info_0['marginopt_next'] = solver_info_1['marginopt']
                 solver_info_0['is_inside_target_next'] = solver_info_1['is_inside_target']
+                total_num_iters += solver_info_1['num_ddp_iters']
 
                 control_cbf_cand_jnp = jnp.array(control_cbf_cand[:, np.newaxis])
 
@@ -266,7 +270,7 @@ class iLQRSafetyFilter(BasePolicy):
                     solver_info_1['controls'])
                 solver_info_0['reinit_states'] = jnp.array(
                     solver_info_1['states'])
-                solver_info_0['num_iters'] = num_iters
+                solver_info_0['num_iters'] = total_num_iters
                 solver_info_0['deviation'] = np.linalg.norm(
                     control_cbf_cand - task_ctrl, ord=1)
                 solver_info_0['qcqp_initialize'] = control_cbf_cand - task_ctrl
@@ -280,7 +284,7 @@ class iLQRSafetyFilter(BasePolicy):
         solver_info_0['barrier_filter_steps'] = self.barrier_filter_steps
         solver_info_0['filter_steps'] = self.filter_steps
         solver_info_0['resolve'] = True
-        solver_info_0['num_iters'] = num_iters
+        solver_info_0['num_iters'] = total_num_iters
         solver_info_0['reinit_controls'] = jnp.zeros((self.dim_u, self.N))
         solver_info_0['reinit_controls'] = solver_info_0['reinit_controls'].at[:, 0:self.N - 1].set(
             solver_info_0['controls'][:, 1:self.N])
