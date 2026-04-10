@@ -880,7 +880,7 @@ def make_bicycle_comparison_report(prefix, plot_folder,
                             fontsize=legend_fontsize)
         ax_st.set_ylabel('ILQR iters', 
                             fontsize=legend_fontsize)
-        ax_st.set_title('Total ILQR iters', 
+        ax_st.set_title('Safety ILQR iters', 
                             fontsize=legend_fontsize)
 
     if plot_computation_time:
@@ -1305,6 +1305,7 @@ def make_pvtol_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", pl
                         fontsize=legend_fontsize)
     ax_st.set_ylabel('Computation time $(s)$', 
                         fontsize=5.6)
+    ax_st.set_title('Filter computation time')
     # ax_st.legend(framealpha=0, fontsize=legend_fontsize, loc='upper left', 
     #                        ncol=3, bbox_to_anchor=(0.05, 1.1), fancybox=False, shadow=False)
         
