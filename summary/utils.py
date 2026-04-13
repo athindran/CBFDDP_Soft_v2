@@ -818,7 +818,7 @@ def make_bicycle_comparison_report(prefix, plot_folder,
 
     ax_st = subfigs_col2[2]
 
-    plot_computation_time = True
+    plot_computation_time = False
     if plot_computation_time:
         if config_cost.COST_TYPE == 'Reachability':
             max_value = 0.04
@@ -873,7 +873,7 @@ def make_bicycle_comparison_report(prefix, plot_folder,
         ax_st.set_yticks(ticks=ticks_vals, 
                             labels=ticks_vals, 
                             fontsize=legend_fontsize)
-        ax_st.set_ylim([0.0, max_value])
+        ax_st.set_ylim([0.0, max_value + 1])
         # ax_st.yaxis.set_label_coords(-0.04, 0.54)
         ax_st.xaxis.set_label_coords(0.5, -0.04)
         ax_st.set_xlabel('Time $(s)$', 
