@@ -114,9 +114,9 @@ def plot_bic_run_summary(dyn_id, env, obs_history, action_history, config_solver
 
     fig = plt.figure(figsize=(7, 4))
     plt.plot(kwargs["solver_iters_history"])
-    plt.ylabel('Solver iterations')
+    plt.ylabel('Total ILQR iterations')
     plt.xlabel('Time step')
-    fig.savefig(os.path.join(fig_folder, "auxiliary_cbfiters.png"), dpi=200)
+    fig.savefig(os.path.join(fig_folder, "auxiliary_ddpiters.png"), dpi=200)
 
     plt.close('all')
 

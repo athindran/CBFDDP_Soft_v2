@@ -240,7 +240,7 @@ class BaseSingleEnv(BaseEnv):
             reward_history.append(reward)
             step_history.append(step_info)
             process_time_history.append(solver_info['process_time'])
-            solver_iters_history.append(solver_info['num_iters'])
+            solver_iters_history.append(solver_info['num_ddp_iters'])
             deviation_history.append(solver_info['deviation'])
             safe_opt_history.append(solver_info['safe_opt_ctrl'])
             task_ctrl_history.append(solver_info['task_ctrl'])
