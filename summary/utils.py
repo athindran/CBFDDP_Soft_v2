@@ -56,7 +56,7 @@ def plot_bic_run_summary(dyn_id, env, obs_history, action_history, config_solver
     cbar = fig.colorbar(sc, ax=ax)
     cbar.set_label(r"second ctrl", size=20)
     fig.tight_layout()
-    fig.savefig(os.path.join(fig_folder, "final.png"), dpi=200)
+    fig.savefig(os.path.join(fig_folder, "final.png"), dpi=400)
     plt.close('all')
     
     action_space = np.array(config_agent.ACTION_RANGE, dtype=np.float32)
@@ -86,7 +86,7 @@ def plot_bic_run_summary(dyn_id, env, obs_history, action_history, config_solver
     ax.set_yticks(ticks=[action_space[1, 0], action_space[1, 1]], 
                 labels=[action_space[1, 0], action_space[1, 1]], fontsize=8)
 
-    fig.savefig(os.path.join(fig_folder, "auxiliary_controls.png"), dpi=200)
+    fig.savefig(os.path.join(fig_folder, "auxiliary_controls.png"), dpi=400)
 
     fig, axes = plt.subplots(
         1, 2, figsize=(10.0, 2.5)
@@ -104,19 +104,19 @@ def plot_bic_run_summary(dyn_id, env, obs_history, action_history, config_solver
         ax.set_ylabel("Road wheel angle (rad)")
         ax.grid()
 
-    fig.savefig(os.path.join(fig_folder, "auxiliary_vel_rwa.png"), dpi=200)
+    fig.savefig(os.path.join(fig_folder, "auxiliary_vel_rwa.png"), dpi=400)
 
     fig = plt.figure(figsize=(7, 4))
     plt.plot(kwargs["process_time_history"])
     plt.ylabel('Solver process time (s)')
     plt.xlabel('Time step')
-    fig.savefig(os.path.join(fig_folder, "auxiliary_cycletimes.png"), dpi=200)
+    fig.savefig(os.path.join(fig_folder, "auxiliary_cycletimes.png"), dpi=400)
 
     fig = plt.figure(figsize=(7, 4))
     plt.plot(kwargs["solver_iters_history"])
     plt.ylabel('Total ILQR iterations')
     plt.xlabel('Time step')
-    fig.savefig(os.path.join(fig_folder, "auxiliary_ddpiters.png"), dpi=200)
+    fig.savefig(os.path.join(fig_folder, "auxiliary_ddpiters.png"), dpi=400)
 
     plt.close('all')
 
@@ -152,7 +152,7 @@ def plot_pvtol_run_summary(dyn_id, env, obs_history, action_history, config_solv
     #     vmin=-0.8, vmax=0.8, edgecolor='none', marker='o'
     # )
     fig.tight_layout()
-    fig.savefig(os.path.join(fig_folder, "final.png"), dpi=200)
+    fig.savefig(os.path.join(fig_folder, "final.png"), dpi=400)
     plt.close('all')
     
     action_space = np.array(config_agent.ACTION_RANGE, dtype=np.float32)
@@ -182,7 +182,7 @@ def plot_pvtol_run_summary(dyn_id, env, obs_history, action_history, config_solv
     ax.set_yticks(ticks=[action_space[1, 0], action_space[1, 1]], 
                 labels=[action_space[1, 0], action_space[1, 1]], fontsize=8)
 
-    fig.savefig(os.path.join(fig_folder, "auxiliary_controls.png"), dpi=200)
+    fig.savefig(os.path.join(fig_folder, "auxiliary_controls.png"), dpi=400)
 
     fig, axes = plt.subplots(
         1, 2, figsize=(10.0, 2.5)
@@ -198,19 +198,19 @@ def plot_pvtol_run_summary(dyn_id, env, obs_history, action_history, config_solv
     ax.set_xlabel("Timestep")
     ax.set_ylabel("Velocity y")
     ax.grid()
-    fig.savefig(os.path.join(fig_folder, "auxiliary_velocity.png"), dpi=200)
+    fig.savefig(os.path.join(fig_folder, "auxiliary_velocity.png"), dpi=400)
 
     fig = plt.figure(figsize=(7, 4))
     plt.plot(kwargs["process_time_history"])
     plt.ylabel('Solver process time (s)')
     plt.xlabel('Time step')
-    fig.savefig(os.path.join(fig_folder, "auxiliary_cycletimes.png"), dpi=200)
+    fig.savefig(os.path.join(fig_folder, "auxiliary_cycletimes.png"), dpi=400)
 
     fig = plt.figure(figsize=(7, 4))
     plt.plot(kwargs["solver_iters_history"])
     plt.ylabel('Solver iterations')
     plt.xlabel('Time step')
-    fig.savefig(os.path.join(fig_folder, "auxiliary_cbfiters.png"), dpi=200)
+    fig.savefig(os.path.join(fig_folder, "auxiliary_cbfiters.png"), dpi=400)
 
     plt.close('all')
 
@@ -317,7 +317,7 @@ def make_bic_animation_plots(env, obs_history, action_history, solver_info, safe
     
     fig.savefig(
         os.path.join(fig_prog_folder,
-                     str(obses.shape[1] - 1) + ".png"), dpi=200, bbox_inches="tight"
+                     str(obses.shape[1] - 1) + ".png"), dpi=400, bbox_inches="tight"
     )
     plt.close('all')
 
@@ -380,7 +380,7 @@ def make_pvtol_animation_plots(env, obs_history, action_history, solver_info, sa
     
     fig.savefig(
         os.path.join(fig_prog_folder,
-                     str(obses.shape[1] - 1) + ".png"), dpi=200, bbox_inches='tight'
+                     str(obses.shape[1] - 1) + ".png"), dpi=400, bbox_inches='tight'
     )
     plt.close('all')
 
@@ -616,11 +616,11 @@ def make_bicycle_comparison_report(prefix, plot_folder,
 
 
         # fig.savefig(
-        #     plot_folder + tag + str(hide_label) + "_jax_trajectories.pdf", dpi=200,
+        #     plot_folder + tag + str(hide_label) + "_jax_trajectories.pdf", dpi=400,
         #     bbox_inches='tight', transparent=hide_label
         # )
         # fig.savefig(
-        #     plot_folder + tag + str(hide_label) + "_jax_trajectories.png", dpi=200,
+        #     plot_folder + tag + str(hide_label) + "_jax_trajectories.png", dpi=400,
         #     bbox_inches='tight', transparent=hide_label
         # )
 
@@ -693,11 +693,11 @@ def make_bicycle_comparison_report(prefix, plot_folder,
                 axes[1].set_yticklabels([])
 
         # fig.savefig(
-        #     plot_folder + tag + str(hide_label) + "_jax_controls.pdf", dpi=200, 
+        #     plot_folder + tag + str(hide_label) + "_jax_controls.pdf", dpi=400, 
         #     bbox_inches='tight', transparent=hide_label
         # )
         # fig.savefig(
-        #     plot_folder + tag + str(hide_label) + "_jax_controls.png", dpi=200, 
+        #     plot_folder + tag + str(hide_label) + "_jax_controls.png", dpi=400, 
         #     bbox_inches='tight', transparent=hide_label
         # )
 
@@ -770,11 +770,11 @@ def make_bicycle_comparison_report(prefix, plot_folder,
     ax_v.legend(framealpha=0, fontsize=legend_fontsize, loc='upper left', 
                            ncol=1, bbox_to_anchor=(0.05, 1.2))        
     # fig_v.savefig(
-    #         plot_folder + tag + str(hide_label) + "_jax_values.pdf", dpi=200, 
+    #         plot_folder + tag + str(hide_label) + "_jax_values.pdf", dpi=400, 
     #         bbox_inches='tight', transparent=hide_label
     #     )
     # fig_v.savefig(
-    #         plot_folder + tag + str(hide_label) + "_jax_values.png", dpi=200, 
+    #         plot_folder + tag + str(hide_label) + "_jax_values.png", dpi=400, 
     #         bbox_inches='tight', transparent=hide_label
     #     )
 
@@ -808,17 +808,17 @@ def make_bicycle_comparison_report(prefix, plot_folder,
     #                        ncol=3, bbox_to_anchor=(0.05, 1.1), fancybox=False, shadow=False)
         
     # fig_sf.savefig(
-    #         plot_folder + tag + str(hide_label) + "_jax_safety_metrics.pdf", dpi=200, 
+    #         plot_folder + tag + str(hide_label) + "_jax_safety_metrics.pdf", dpi=400, 
     #         bbox_inches='tight', transparent=hide_label
     #     )
     # fig_sf.savefig(
-    #         plot_folder + tag + str(hide_label) + "_jax_safety_metrics.png", dpi=200, 
+    #         plot_folder + tag + str(hide_label) + "_jax_safety_metrics.png", dpi=400, 
     #         bbox_inches='tight', transparent=hide_label
     #     )
 
     ax_st = subfigs_col2[2]
 
-    plot_computation_time = False
+    plot_computation_time = True
     if plot_computation_time:
         if config_cost.COST_TYPE == 'Reachability':
             max_value = 0.04
@@ -1098,11 +1098,11 @@ def make_pvtol_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", pl
 
 
         # fig.savefig(
-        #     plot_folder + tag + str(hide_label) + "_jax_trajectories.pdf", dpi=200,
+        #     plot_folder + tag + str(hide_label) + "_jax_trajectories.pdf", dpi=400,
         #     bbox_inches='tight', transparent=hide_label
         # )
         # fig.savefig(
-        #     plot_folder + tag + str(hide_label) + "_jax_trajectories.png", dpi=200,
+        #     plot_folder + tag + str(hide_label) + "_jax_trajectories.png", dpi=400,
         #     bbox_inches='tight', transparent=hide_label
         # )
 
@@ -1167,11 +1167,11 @@ def make_pvtol_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", pl
                 axes[1].set_yticklabels([])
 
         # fig.savefig(
-        #     plot_folder + tag + str(hide_label) + "_jax_controls.pdf", dpi=200, 
+        #     plot_folder + tag + str(hide_label) + "_jax_controls.pdf", dpi=400, 
         #     bbox_inches='tight', transparent=hide_label
         # )
         # fig.savefig(
-        #     plot_folder + tag + str(hide_label) + "_jax_controls.png", dpi=200, 
+        #     plot_folder + tag + str(hide_label) + "_jax_controls.png", dpi=400, 
         #     bbox_inches='tight', transparent=hide_label
         # )
 
@@ -1232,11 +1232,11 @@ def make_pvtol_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", pl
     #                        ncol=3, bbox_to_anchor=(0.05, 1.1), fancybox=False, shadow=False)
         
     # fig_v.savefig(
-    #         plot_folder + tag + str(hide_label) + "_jax_values.pdf", dpi=200, 
+    #         plot_folder + tag + str(hide_label) + "_jax_values.pdf", dpi=400, 
     #         bbox_inches='tight', transparent=hide_label
     #     )
     # fig_v.savefig(
-    #         plot_folder + tag + str(hide_label) + "_jax_values.png", dpi=200, 
+    #         plot_folder + tag + str(hide_label) + "_jax_values.png", dpi=400, 
     #         bbox_inches='tight', transparent=hide_label
     #     )
 
@@ -1270,11 +1270,11 @@ def make_pvtol_comparison_report(prefix="./exps_may/ilqr/bic5D/yaw_testing/", pl
     #                        ncol=3, bbox_to_anchor=(0.05, 1.1), fancybox=False, shadow=False)
         
     # fig_sf.savefig(
-    #         plot_folder + tag + str(hide_label) + "_jax_safety_metrics.pdf", dpi=200, 
+    #         plot_folder + tag + str(hide_label) + "_jax_safety_metrics.pdf", dpi=400, 
     #         bbox_inches='tight', transparent=hide_label
     #     )
     # fig_sf.savefig(
-    #         plot_folder + tag + str(hide_label) + "_jax_safety_metrics.png", dpi=200, 
+    #         plot_folder + tag + str(hide_label) + "_jax_safety_metrics.png", dpi=400, 
     #         bbox_inches='tight', transparent=hide_label
     #     )
 
