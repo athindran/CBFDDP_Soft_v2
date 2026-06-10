@@ -536,7 +536,7 @@ def make_bicycle_comparison_report(prefix, plot_folder,
         c_obs = 'k'
         env = CarSingleEnv(config_env, config_agent, config_cost)
 
-        fig = plt.figure(layout='constrained', figsize=(5.5, 4.7))
+        fig = plt.figure(layout='constrained', figsize=(5.5, 4.8))
         title_string = config_cost.COST_TYPE + " - " + config_agent.DYN    
         fig.suptitle(title_string, fontsize=10)
         subfigs = fig.subfigures(1, 2, wspace=0.05, width_ratios=[1.55, 1])
@@ -763,12 +763,12 @@ def make_bicycle_comparison_report(prefix, plot_folder,
                         fontsize=legend_fontsize)
     if config_cost.COST_TYPE == 'Reachability':
         ax_v.set_ylabel('Reachability Value (SM)', 
-                            fontsize=5.2)
+                            fontsize=5.1)
     else:
         ax_v.set_ylabel('ReachAvoid Value (SM)',
-                    fontsize=5.2)
+                    fontsize=5.1)
     ax_v.legend(framealpha=0, fontsize=legend_fontsize, loc='upper left', 
-                           ncol=1, bbox_to_anchor=(0.05, 1.2))        
+                           ncol=1, bbox_to_anchor=(0.05, 1.22))        
     # fig_v.savefig(
     #         plot_folder + tag + str(hide_label) + "_jax_values.pdf", dpi=400, 
     #         bbox_inches='tight', transparent=hide_label
