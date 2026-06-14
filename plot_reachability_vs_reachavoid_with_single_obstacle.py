@@ -81,7 +81,7 @@ out_folder, plot_tag, config_agent, config_solver = run_ddp_cbf(config_file, roa
 plot_softcbf_data_reachavoid_only_obstacle_reiterate = np.load(os.path.join(out_folder, f"road_boundary={road_boundary}/SoftCBF/figure/save_data.npy"), allow_pickle=True)
 plot_softcbf_data_reachavoid_only_obstacle_reiterate = plot_softcbf_data_reachavoid_only_obstacle_reiterate.ravel()[0]
 
-########## Reachability with all constraints ############
+########## Reachability with only obstacle constraints (corrected in thesis) ############
 config_file = './test_configs/reachability/test_config_cbf_reachability_single_obstacle_bic5D_singular.yaml'
 
 # Load the config to get key parameters needed for plot generation.

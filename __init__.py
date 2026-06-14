@@ -1,1 +1,1 @@
-from .evaluate_soft_ddpcbf import main as run_ddp_cbf
+from .evaluate_soft_ddpcbf_bic import main as run_ddp_cbf
