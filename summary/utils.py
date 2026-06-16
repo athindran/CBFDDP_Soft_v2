@@ -843,14 +843,15 @@ def make_bicycle_comparison_report(prefix, plot_folder,
         ax_st.set_yticks(ticks=[0, max_value], 
                             labels=[0, max_value], 
                             fontsize=legend_fontsize)
-        ax_st.set_ylim([0.0, max_value])
+        ax_st.set_ylim([5e-4, max_value])
+        ax_st.set_yscale('log')
         ax_st.yaxis.set_label_coords(-0.04, 0.54)
         ax_st.xaxis.set_label_coords(0.5, -0.04)
         ax_st.set_xlabel('Time $(s)$', 
                             fontsize=legend_fontsize)
-        ax_st.set_ylabel('Computation time (s)', 
-                            fontsize=5.4)
-        ax_st.set_title('Filter computation time', 
+        #ax_st.set_ylabel('Computation time (s)', 
+        #                    fontsize=5.4)
+        ax_st.set_title('Filter computation time (s)', 
                             fontsize=legend_fontsize)
         # ax_st.legend(framealpha=0, fontsize=legend_fontsize, loc='upper left', 
         #                        ncol=3, bbox_to_anchor=(0.05, 1.1), fancybox=False, shadow=False)
