@@ -270,20 +270,20 @@ def make_bic_animation_plots(env, obs_history, action_history, solver_info, safe
     if safety_plan is not None:
         axes[0].plot(
             safety_plan[0, :], safety_plan[1, :], linewidth=0.5,
-            c='g', label='Safety plan'
+            c='g', label=f'Safety plan {config_agent.DT*safety_plan.shape[1]} s'
         )
 
     if task_plan is not None:
         axes[0].plot(
             task_plan[:, 0], task_plan[:, 1], linewidth=0.5,
-            c='c', label='Task plan'
+            c='c', label=f'Task plan {np.round(config_agent.DT*(task_plan.shape[0] - 1), 2)} s' 
         )
 
     # historyory.
     sc = axes[0].scatter(
         obses[0, :-1], obses[1, :-1], s=3, c=c_trace, marker='o'
     )
-    axes[0].legend(fontsize=9, loc='upper left', bbox_to_anchor=(-0.6, 1.26), framealpha=0, fancybox=False, shadow=False)
+    axes[0].legend(fontsize=8, loc='upper left', bbox_to_anchor=(-0.7, 1.36), framealpha=0, fancybox=False, shadow=False)
     
     axes[0].set_xticks(ticks=[0, env.visual_extent[1]], labels=[0, env.visual_extent[1]], fontsize=8)
     axes[0].set_yticks(ticks=[env.visual_extent[2], env.visual_extent[3]], 

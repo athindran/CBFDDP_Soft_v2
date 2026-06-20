@@ -289,7 +289,7 @@ class BaseSingleEnv(BaseEnv):
 
                 task_policy_copy = self.agent.task_policy
                 task_plan = self.simulate_task_plan(initial_state=np.array(self.state), task_policy=task_policy_copy,
-                                                    nsteps=self.agent.safety_policy.N, is_ilqr=self.agent.is_task_ilqr)
+                                                    nsteps=2.0/self.agent.dyn.dt, is_ilqr=self.agent.is_task_ilqr)
                 del task_policy_copy
                 gc.collect()
                 if rollout_step_callback is not None:
