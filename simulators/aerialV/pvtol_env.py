@@ -204,7 +204,7 @@ class Pvtol6DEnv(BaseSingleEnv):
         elif self.cost.constraint.obsc_type == 'circle':
             for vertices in self.obs_vertices_list:
                 obs_circle = plt.Circle(
-                    [vertices[0], vertices[1]], vertices[2], color=c, alpha=1.0, facecolor=None, edgecolor=c, fill=False)
+                    [vertices[0], vertices[1]], vertices[2], color=c, alpha=1.0, fill=False)
                 ax.add_patch(obs_circle)
 
     def get_done_and_info(

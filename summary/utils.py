@@ -386,6 +386,10 @@ def make_pvtol_animation_plots(env, obs_history, action_history, solver_info, sa
         os.path.join(fig_prog_folder,
                      str(obses.shape[1] - 1) + ".png"), dpi=400, bbox_inches='tight'
     )
+    fig.savefig(
+        os.path.join(fig_prog_folder,
+                     str(obses.shape[1] - 1) + ".pdf"), dpi=400, bbox_inches='tight'
+    )
     plt.close('all')
 
 def make_animation_plots(env, obs_history, action_history, solver_info, safety_plan, config_solver, 
