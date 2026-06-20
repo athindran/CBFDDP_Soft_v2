@@ -1,6 +1,7 @@
 from abc import abstractmethod
 from typing import Any, Tuple, Optional, Callable, List, Dict, Union
 import numpy as np
+import gc
 from gym import spaces
 from tqdm import tqdm
 
@@ -284,15 +285,21 @@ class BaseSingleEnv(BaseEnv):
                     stopping_plan = self.simulate_stopping_plan(initial_state=np.array(reachavoid_plan[:, is_inside_target_index]),
                                                                 stopping_ctrl=np.array([self.agent.dyn.ctrl_space[0, 0], 0]))
 
-                    safety_plan = np.concatenate(
-                    (target_plan, np.array(stopping_plan).T), axis=1)
+                    safety_plan = np.concatenate((target_plan, np.array(stopping_plan).T), axis=1)
+
+                task_policy_copy = self.agent.task_policy
+                task_plan = self.simulate_task_plan(initial_state=np.array(self.state), task_policy=task_policy_copy,
+                                                    nsteps=self.agent.safety_policy.N, is_ilqr=self.agent.is_task_ilqr)
+                del task_policy_copy
+                gc.collect()
                 if rollout_step_callback is not None:
                     rollout_step_callback(
-                        self, state_history, obs_history, action_history, plan_history, step_history, safety_plan=safety_plan, 
+                        self, state_history, obs_history, action_history, plan_history, step_history, safety_plan=safety_plan, task_plan=task_plan,
                                 barrier_filter_indices=barrier_filter_indices, complete_filter_indices=complete_filter_indices,
                     )
             else:
                 safety_plan = np.asarray(solver_info['states'])
+                task_plan = None
 
             # Checks termination criterion.
             if done:
@@ -349,7 +356,7 @@ class BaseSingleEnv(BaseEnv):
         while idx < nsteps:
             idx = idx + 1
             if is_ilqr:
-                task_ctrl = task_policy.get_action(
+                task_ctrl, _ = task_policy.get_action(
                     current_state, None, state=current_state)
             else:
                 task_ctrl = task_policy(current_state)
@@ -357,7 +364,7 @@ class BaseSingleEnv(BaseEnv):
                 current_state, task_ctrl)
             states.append(current_state)
 
-        return states
+        return np.asarray(states)
 
     # Unused currently.
     def simulate_trajectories(

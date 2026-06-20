@@ -45,6 +45,7 @@ def main(config_file, road_boundary, filter_type, is_task_ilqr, line_search, sto
             action_history,
             solver_info,
             kwargs['safety_plan'],
+            kwargs['task_plan'],
             config_solver,
             config_agent,
             np.asarray(kwargs['barrier_filter_indices']),

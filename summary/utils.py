@@ -224,7 +224,7 @@ def plot_run_summary(dyn_id, env, obs_history, action_history, config_solver, co
         plot_pvtol_run_summary(dyn_id, env, obs_history, action_history, config_solver, config_agent, 
                      fig_folder, **kwargs)
     
-def make_bic_animation_plots(env, obs_history, action_history, solver_info, safety_plan, config_solver, 
+def make_bic_animation_plots(env, obs_history, action_history, solver_info, safety_plan, task_plan, config_solver, 
                          config_agent, barrier_filter_indices, complete_filter_indices,
                          fig_prog_folder="./"):
     action_space = np.array(config_agent.ACTION_RANGE, dtype=np.float32)
@@ -271,6 +271,12 @@ def make_bic_animation_plots(env, obs_history, action_history, solver_info, safe
         axes[0].plot(
             safety_plan[0, :], safety_plan[1, :], linewidth=0.5,
             c='g', label='Safety plan'
+        )
+
+    if task_plan is not None:
+        axes[0].plot(
+            task_plan[:, 0], task_plan[:, 1], linewidth=0.5,
+            c='c', label='Task plan'
         )
 
     # historyory.
@@ -325,7 +331,7 @@ def make_bic_animation_plots(env, obs_history, action_history, solver_info, safe
     )
     plt.close('all')
 
-def make_pvtol_animation_plots(env, obs_history, action_history, solver_info, safety_plan, config_solver,
+def make_pvtol_animation_plots(env, obs_history, action_history, solver_info, safety_plan, task_plan, config_solver,
                          config_agent, barrier_filter_indices, complete_filter_indices,
                          fig_prog_folder="./"):
     action_space = np.array(config_agent.ACTION_RANGE, dtype=np.float32)
@@ -372,6 +378,12 @@ def make_pvtol_animation_plots(env, obs_history, action_history, solver_info, sa
             c='g', label='Safety plan'
         )
 
+    if task_plan is not None:
+        ax.plot(
+            task_plan[:, 0], task_plan[:, 1], linewidth=1.0,
+            c='c', label='Task plan'
+        )
+
     # historyory.
     sc = ax.scatter(
         obses[0, :-1], obses[1, :-1], s=5, c=c_trace, marker='o'
@@ -392,16 +404,16 @@ def make_pvtol_animation_plots(env, obs_history, action_history, solver_info, sa
     )
     plt.close('all')
 
-def make_animation_plots(env, obs_history, action_history, solver_info, safety_plan, config_solver, 
+def make_animation_plots(env, obs_history, action_history, solver_info, safety_plan, task_plan, config_solver, 
                          config_agent,
                          barrier_filter_indices, complete_filter_indices,
                          fig_prog_folder="./"):
     if env.agent.dyn.id == "Bicycle4D" or env.agent.dyn.id == "Bicycle5D" or env.agent.dyn.id == "PointMass4D":
-        make_bic_animation_plots(env, obs_history, action_history, solver_info, safety_plan, config_solver, 
+        make_bic_animation_plots(env, obs_history, action_history, solver_info, safety_plan, task_plan, config_solver, 
                          config_agent, barrier_filter_indices, complete_filter_indices,
                          fig_prog_folder)
     elif env.agent.dyn.id == "PVTOL6D":
-        make_pvtol_animation_plots(env, obs_history, action_history, solver_info, safety_plan, config_solver,
+        make_pvtol_animation_plots(env, obs_history, action_history, solver_info, safety_plan, task_plan, config_solver,
                          config_agent, barrier_filter_indices, complete_filter_indices, 
                          fig_prog_folder)
 
