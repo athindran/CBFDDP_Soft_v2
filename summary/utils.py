@@ -375,20 +375,20 @@ def make_pvtol_animation_plots(env, obs_history, action_history, solver_info, sa
     if safety_plan is not None:
         ax.plot(
             safety_plan[0, :], safety_plan[1, :], linewidth=1.0,
-            c='g', label='Safety plan'
+            c='g', label=f'Safety plan {config_agent.DT*safety_plan.shape[1]} s'
         )
 
     if task_plan is not None:
         ax.plot(
             task_plan[:, 0], task_plan[:, 1], linewidth=1.0,
-            c='c', label='Task plan'
+            c='c', label=f'Task plan {np.round(config_agent.DT*(task_plan.shape[0] - 1), 2)} s' 
         )
 
     # historyory.
     sc = ax.scatter(
         obses[0, :-1], obses[1, :-1], s=5, c=c_trace, marker='o'
     )
-    ax.legend(fontsize=8, loc='upper left', bbox_to_anchor=(0.05, 1.18), fancybox=False)
+    ax.legend(fontsize=8, loc='upper left', bbox_to_anchor=(-0.05, 1.28), fancybox=False, framealpha=0)
     
     ax.set_xticks(ticks=[0, env.visual_extent[1]], labels=[0, env.visual_extent[1]], fontsize=8)
     ax.set_yticks(ticks=[env.visual_extent[2], env.visual_extent[3]], 

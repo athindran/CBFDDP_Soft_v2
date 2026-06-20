@@ -136,6 +136,7 @@ def main(config_file, filter_type, is_task_ilqr):
             action_history,
             solver_info,
             kwargs['safety_plan'],
+            kwargs['task_plan'],
             config_solver,
             config_agent,
             np.asarray(kwargs['barrier_filter_indices']),
@@ -246,7 +247,7 @@ def main(config_file, filter_type, is_task_ilqr):
     #     task_cost=task_cost)
     #env.agent.policy.get_action(obs=x_cur, state=x_cur, warmup=True)
 
-    should_animate = False
+    should_animate = True
     nominal_states, result, traj_info = env.simulate_one_trajectory(
         T_rollout=max_iter_receding, end_criterion=end_criterion,
         reset_kwargs=dict(state=x_cur),
