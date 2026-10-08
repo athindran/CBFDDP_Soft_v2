@@ -2,6 +2,8 @@
 
 This repository provides CBF-DDP with soft minimum and maximum operators, replacing the hard operators used in the initial version (https://github.com/SafeRoboticsLab/CBF_DDP). All changes are contained in the main branch. The branch `singular_point_reproduction` is used to explore local minima and singular phenomena in reach-avoid DDP.
 
+Update: Dissertation is now publick [Link](https://www.proquest.com/dissertations-theses/online-safety-filtering-autonomous-control/docview/3396044705/se-2?accountid=167280)
+
 ## Usage instructions
 
 There are two minor variations of the same methods: one intended to work with our own simulators, and the other designed to work with the Brax-MJX simulation interface. We rely on Anaconda for setting up our Python environment. The `bicycle_jax_supported_env.yml` is best suited for our own simulators. The `brax_env.yml` is best suited for the MJX simulations. The user is free to mix the versions, but the code may not be perfectly reproducible across versions.
