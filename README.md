@@ -2,7 +2,7 @@
 
 This repository provides CBF-DDP with soft minimum and maximum operators, replacing the hard operators used in the initial version (https://github.com/SafeRoboticsLab/CBF_DDP). All changes are contained in the main branch. The branch `singular_point_reproduction` is used to explore local minima and singular phenomena in reach-avoid DDP.
 
-Update: Dissertation is now public [Link](https://www.proquest.com/dissertations-theses/online-safety-filtering-autonomous-control/docview/3396044705/se-2?accountid=167280)
+Update: Dissertation is now public [Link](https://www.proquest.com/docview/3396044705/8DAB0264DDF046C2PQ/1?accountid=167280&sourcetype=Dissertations%20&%20Theses)
 
 ## Usage instructions
 
